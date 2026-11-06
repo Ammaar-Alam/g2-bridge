@@ -1,0 +1,28 @@
+# Local downloads, device captures, analysis databases, and scratch files.
+/work/
+/artifacts/
+/captures/
+/outputs/
+*.apk
+*.ipa
+*.pcap
+*.pcapng
+*.gpr
+*.rep/
+
+# Local configuration and generated files.
+.env
+.env.*
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Deliberate private-stage exceptions to personal global ignore rules.
+# Remove these exceptions and review all Git history before publication.
+!/AGENTS.md
+!/.agents/
+!/.agents/**
