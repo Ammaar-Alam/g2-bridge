@@ -4,7 +4,23 @@ The bridge sends one 1920x1080 picture, and both lenses show it. PC VR needs two
 
 ## Hardware
 
-DJI Goggles 2 has two 1080p micro-OLED panels, one for each eye. They also have head tracking: with supported aircraft, head movement turns the aircraft and tilts the gimbal. The goggles Shortcut Menu turns it on ([manual](https://dl.djicdn.com/downloads/DJI_Goggles_2/20221117/DJI_Goggles_2_User_Manual_v1.0_en.pdf), page 36). The goggles therefore contain an orientation sensor. No DJI document says how its data leaves the goggles, apart from the radio link to the aircraft.
+DJI's [specifications](https://www.dji.com/support/product/goggles-2) list, for each screen, a 0.49-inch 1920x1080 display at up to 100 Hz with a 51° field of view. The interpupillary distance range is 56 to 72 mm and the diopter range is -8.0 to +2.0. SeeYA Technology [states](https://www.seeya-tech.com/en/html/news/4037.html) that it is the exclusive supplier of these micro-OLED panels. Its [0.49-inch 1920x1080 panels](https://www.seeya-tech.com/en/html/products/3971.html) use a MIPI interface; the exact variant, lane count, and maximum refresh rate are not published.
+
+[Teardown photos](https://fpvwiki.co.uk/dji-goggles-2) show these parts:
+
+| Part | Marking or observation |
+| --- | --- |
+| DJI P1 | `P1 V10R03`, next to Samsung DDR4 `K4A4G165WF`. Community sources describe it as the OcuSync 3 radio modem |
+| DJI E3T | `E3T V10R05`, with its own memory. Community sources describe it as the media processor for the operating system and video. The PC identity reply names it: `E3T ZV900` |
+| Radio | Two `IE1000` chips with four antenna connectors |
+| Storage | Samsung eMMC `KLM8G1GETF` |
+| Displays | Each panel and lens sits in its own sliding carriage, with its own cable to the main board |
+
+Each eye therefore has a separate panel with its own link. The photos do not show whether the E3T has two independent display outputs or drives both panels from one image. In either case, the firmware decides what each panel shows. Goggles 2 firmware (`zv900`) is signed with a 3072-bit key and encrypted with a key that is not public ([dji-firmware-tools](https://github.com/o-gs/dji-firmware-tools/blob/master/dji_imah_fwsig.py)), so it cannot be modified without DJI's keys.
+
+The 51° field of view is about half that of typical PC VR headsets, so even a stereo picture would look like a window rather than surround the user.
+
+The goggles also have head tracking: with supported aircraft, head movement turns the aircraft and tilts the gimbal. The goggles Shortcut Menu turns it on ([manual](https://dl.djicdn.com/downloads/DJI_Goggles_2/20221117/DJI_Goggles_2_User_Manual_v1.0_en.pdf), page 36). The goggles therefore contain an orientation sensor. No DJI document says how its data leaves the goggles, apart from the radio link to the aircraft.
 
 ## Separate views for each eye
 
