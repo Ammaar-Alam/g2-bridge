@@ -86,6 +86,19 @@ GPU scheduling class REALTIME is set on the FFmpeg process with `D3DKMTSetProces
 
 Encoder presets were also compared at idle. Medians for render-submit to packet were 7.3 ms for `p4`, 7.1–7.3 ms for `p3`, 6.3–6.7 ms for `p2`, and 6.3–6.6 ms for `p1`. The faster presets cost measured desktop fidelity in the encoder quality table above, so the default stays `p4`.
 
+## Monitor-to-lens delay
+
+Two phone recordings at 240 fps measured how far one goggle lens trails the 240 Hz reference monitor. Both used the test pattern from [Measure video delay](../LATENCY.md), the same goggles, cable, and PC, and the default stream settings: 1920x1080, 100 fps target, 20 Mbps, High profile, `p4`, low-latency framing, and 16 KiB USB writes. Both recordings reached the PC as 1/8-speed exports rather than original camera files. The pattern's 0.65-second cadence confirmed that playback scale in each file, so one stored frame is one 4.17 ms camera frame, but the exports leave the frame timing unverified.
+
+| Recording | Bridge | GPU load during the take | Transitions | Median delay | Range |
+| --- | --- | --- | ---: | ---: | --- |
+| November 7, first | `6eacb9e`, unchanged | Idle desktop | 18 | 13.3 ms | 6.7–26.7 ms |
+| November 7, second | Realtime GPU scheduling for the encoder | Offscreen shader holding the GPU near 95% | 12 | 14.6 ms | 12.5–20.8 ms |
+
+The second take kept the lens delay within about 1 ms of the idle result while the GPU was saturated. The unchanged bridge was not filmed under that load, so the table doesn't show how much worse the first configuration gets in that condition. The PC-side timings in the preceding section are the only measurement of that difference. Threshold choice moved the medians by at most 2 ms, and three nearby lens regions agreed within 4 ms.
+
+These values are lens delay relative to the monitor, including both displays' scanout and response. They are not controller-to-photon latency.
+
 ## Live A/B comparison
 
 On November 7, the AVI reader, 16 KiB writes, and High profile each displayed video correctly. In a sequential A/B comparison, the tester preferred B for responsiveness but still noticed delay and variable quality. The runs used different live content:
