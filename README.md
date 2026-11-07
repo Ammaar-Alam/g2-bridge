@@ -16,8 +16,6 @@ See [the protocol notes](docs/PROTOCOL.md) for the working format and the bounda
 
 ## Current status
 
-Direct monitor-versus-goggles testing shows extra control delay and less smooth motion in the goggles. Reducing that delay is the current priority.
-
 - Tested: DJI Goggles 2, firmware 01.11.00.00; USB-A on the PC to USB-C on the goggles; Windows 11 x64; NVIDIA RTX 5060 Laptop GPU.
 - Working: desktop capture, aspect-preserving 1080p output, simulator handshake, batched USB video, clean shutdown, and a CLI with selectable frame rate and bitrate.
 - The current preset targets **1080p100 at 20 Mbps**. The goggles accept the stream and it has been observed as smooth and responsive. A target of 100 fps does not establish 100 distinct displayed frames: the source app, capture, and receiver all matter.
