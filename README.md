@@ -1,6 +1,13 @@
 # G2 Bridge
 
-Stream your Windows desktop to DJI Goggles 2 over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the PC.
+Stream your Windows desktop to DJI Goggles 2 or DJI Goggles Integra over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the PC.
+
+The bridge detects the model when it connects:
+
+| Goggles | Identity | Tested firmware |
+| --- | --- | --- |
+| DJI Goggles 2 | `E3T ZV900` | 01.11.00.00 |
+| DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 
 ## Requirements
 
@@ -11,7 +18,7 @@ You need the following hardware and software:
 - FFmpeg with `gfxcapture` and `h264_nvenc`. To install it, run `winget install Gyan.FFmpeg`.
 - [DJI Assistant 2 (Consumer Drones Series)](https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series), which installs the DJI USB driver 5.0.0.7. See [USB and driver requirements](docs/PROTOCOL.md#usb-and-session).
 
-Tests used Goggles 2 firmware **01.11.00.00**, FFmpeg build `2026-11-05-git-0893feba65`, and NVIDIA driver 610.74.
+Tests used FFmpeg build `2026-11-05-git-0893feba65` and NVIDIA driver 610.74.
 
 ## Start streaming
 

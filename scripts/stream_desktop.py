@@ -76,7 +76,9 @@ def main():
             print(f'Streaming 1920x1080 at target {args.fps} fps, {args.bitrate_mbps} Mbps. Ctrl+C stops.', flush=True)
         elif event == 'stats':
             print(f"Sent {row['fps']:.1f} fps | queue p95 {row['queue_ms_p95']:.1f} ms | send p95 {row['send_ms_p95']:.1f} ms", flush=True)
-        elif event in ('connected', 'ready', 'stopped'):
+        elif event == 'ready':
+            print(f"Found {row['model']} ({row['identity']})", flush=True)
+        elif event in ('connected', 'stopped'):
             print(event.capitalize(), flush=True)
 
     try:

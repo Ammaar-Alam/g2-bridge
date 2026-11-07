@@ -22,6 +22,15 @@ class SessionTests(unittest.TestCase):
         session.receive(V1Packet.parse(bytes.fromhex('550e04661c2a0260c00b1a003168')), .03)
         self.assertEqual(session.state, 'ready')
         self.assertTrue(session.identity.startswith('E3T ZV900'))
+        self.assertEqual(session.model, 'DJI Goggles 2')
+
+    def test_integra_identity_is_detected(self):
+        session = ControlSession()
+        request, = session.poll(0)
+        info, = session.receive(answer(request), .01)
+        mode, = session.receive(answer(info, b'\0E3T ZV901'), .02)
+        self.assertEqual((mode.command_set, mode.command_id), (11, 26))
+        self.assertEqual(session.model, 'DJI Goggles Integra')
 
     def test_wrong_route_and_sequence_cannot_unlock_video(self):
         session = ControlSession()

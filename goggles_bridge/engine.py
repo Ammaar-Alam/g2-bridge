@@ -229,7 +229,7 @@ class BridgeEngine:
                         send_control(packet)
                     if session.state == 'ready' and process is None:
                         self.waiting = None
-                        self.emit('ready', identity=session.identity)
+                        self.emit('ready', model=session.model, identity=session.identity)
                         process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
                             stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0,
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))

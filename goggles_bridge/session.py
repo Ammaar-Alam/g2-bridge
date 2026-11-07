@@ -7,6 +7,10 @@ from dataclasses import dataclass, replace
 from .control import heartbeat, device_info, sim_mode
 
 
+# Identity codes that have displayed video through the PC route
+MODELS = {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'}
+
+
 class SessionError(RuntimeError):
     pass
 
@@ -31,6 +35,7 @@ class ControlSession:
         self.sequence = sequence
         self.state = 'new'
         self.identity = None
+        self.model = None
         self.pending = {}
         self.started_at = None
         self.last_heartbeat_ack = None
@@ -112,8 +117,10 @@ class ControlSession:
                 return [self._new(device_info, now)]
         elif command == (0, 255) and self.state == 'identity':
             self.identity = reply.payload[1:].rstrip(b'\0').decode('ascii', errors='replace')
-            if not self.identity.upper().startswith(('E3T ZV900', 'E3T ZV901')):
-                self._fail('Device identity is not a verified ZV900/ZV901 profile')
+            self.model = next((name for code, name in MODELS.items()
+                               if self.identity.upper().startswith(f'E3T {code}')), None)
+            if self.model is None:
+                self._fail(f'Unsupported goggles ({self.identity}). Supported: {", ".join(MODELS.values())}')
             self.state = 'simulator'
             return [self._new(sim_mode, now)]
         elif command == (11, 26) and self.state == 'simulator':

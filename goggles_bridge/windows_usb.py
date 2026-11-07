@@ -42,7 +42,7 @@ def _select_control_device(devices):
                         and endpoints[0].wMaxPacketSize in (64, 512)):
                     candidates.append((device, endpoints[0].wMaxPacketSize))
     if not candidates:
-        raise DeviceNotFoundError('Waiting for powered Goggles 2 in Virtual Flight mode')
+        raise DeviceNotFoundError('Waiting for powered goggles in Virtual Flight mode')
     if len(candidates) != 1:
         raise RuntimeError(f'Expected one DJI control interface; found {len(candidates)}')
     device, packet_size = candidates[0]
