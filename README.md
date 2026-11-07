@@ -2,6 +2,8 @@
 
 Stream your Windows desktop to DJI Goggles 2 over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the PC.
 
+Measured latency is about 13-15 ms behind a 240 Hz laptop monitor at 1080p100 (RTX 5060 Laptop GPU, filmed at 240 fps with the GPU idle and with it saturated). For the method and both results, see [Measure video delay](docs/LATENCY.md) and the [experiments](docs/research/EXPERIMENTS.md#monitor-to-lens-delay).
+
 ## Requirements
 
 You need the following hardware and software:
