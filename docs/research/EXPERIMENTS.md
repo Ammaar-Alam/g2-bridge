@@ -121,9 +121,9 @@ Tests used the same goggles and firmware build, identity `E3T ZV900 AC Dec 24 20
 | Control handshake, 15 s | Simulator mode acknowledged 43 ms after start, with no discarded bytes |
 | Default stream, 120 s | Desktop displayed in the lenses. 11,947 frames at 100 fps, no reconnects, no discarded bytes, and a 95th-percentile send time of at most 0.71 ms |
 
-FFmpeg repeated 2,532 of 11,949 output frames, so capture supplied about 79 distinct frames per second. On a mostly static desktop, requested capture rates of 100, 120, and 240 fps all produced about 77 frames per second, while 30 and 60 fps limited the rate. The tester found motion less smooth than on Windows.
+FFmpeg repeated 2,532 of 11,949 output frames, so capture supplied about 79 distinct frames per second. On a mostly static desktop, requested capture rates of 100, 120, and 240 fps all produced about 77 frames per second. Requests for 30 and 60 fps held capture to those rates. The tester found motion less smooth than on Windows.
 
-Capture-to-packet delay was measured by carrying AVFoundation presentation timestamps, which use the host clock, through MPEG-TS with `-copyts`. Each packet's timestamp was compared with Python's monotonic clock when the packet arrived. Values are over 380 frames:
+To measure capture-to-packet delay, FFmpeg carried AVFoundation presentation timestamps, which use the host clock, through an MPEG transport stream with `-copyts`. A script compared each packet's timestamp with Python's monotonic clock when the packet arrived. Each row covers 380 frames:
 
 | Encoder setting | Median / p95 |
 | --- | --- |
@@ -132,7 +132,7 @@ Capture-to-packet delay was measured by carrying AVFoundation presentation times
 | libx264 `ultrafast`, `zerolatency` | 25.2 / 35.5 ms |
 | MPEG-2 encode of a 320x208 frame | 30.0–33.9 / 42.7–47.4 ms |
 
-The near-free MPEG-2 encode shows that most of the remaining delay occurs before encoding, in AVFoundation capture. GPU scaling with `scale_vt` used about a third of the CPU time of `swscale` bicubic scaling (1.1 s against 3.5 s over 5 s), with similar delay. Screen-to-lens latency on the Mac was not measured.
+The MPEG-2 encode costs almost nothing, so most of the remaining delay happens before encoding, in AVFoundation capture. GPU scaling with `scale_vt` used about a third of the CPU time of `swscale` bicubic scaling (1.1 s against 3.5 s over 5 s), with similar delay. Screen-to-lens latency on the Mac was not measured.
 
 ## Timing metadata and USB interruptions
 

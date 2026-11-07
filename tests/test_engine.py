@@ -217,7 +217,7 @@ class EngineTests(unittest.TestCase):
         settings = self.settings(capture='avfoundation')
         fail = lambda stderr: lambda command, **_: subprocess.CompletedProcess(command, 1, '', stderr)
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
-        self.assertIn('Screen Recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
+        self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
     def test_low_latency_only_changes_local_framing_and_padding(self):
         command = encoder_command(self.settings(low_latency=True))

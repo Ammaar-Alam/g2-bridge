@@ -113,9 +113,9 @@ def check_encoder(settings, run=subprocess.run):
     details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
     if settings.capture == 'avfoundation':
         if 'Filter not found' in result.stderr or 'Encoder not found' in result.stderr:
-            return 'This FFmpeg build lacks VideoToolbox. Update it with "brew upgrade ffmpeg"'
-        return ('FFmpeg test encode failed. Allow Screen Recording for this terminal in System Settings '
-                f'and check the --display index.\n  {details}')
+            return 'This FFmpeg build lacks VideoToolbox support. Update it with "brew upgrade ffmpeg"'
+        return ('FFmpeg test encode failed. In System Settings > Privacy & Security, allow screen recording '
+                f'for this terminal, and check the --display index.\n  {details}')
     if 'Filter not found' in result.stderr:
         return (f'This FFmpeg build has no {settings.capture} capture. '
                 'Update it with "winget upgrade Gyan.FFmpeg", or try --capture ddagrab')
