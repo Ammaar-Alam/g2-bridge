@@ -5,6 +5,7 @@
 The live A/B comparison favored the optimized mode, and host framing and send times decreased. Further timing measurements and receiver analysis are needed to answer these questions:
 
 - How much delay comes from capture freshness, encoding, transport, receiver buffering, and panel presentation?
+- How much does a real simulator's GPU load add in-game? Synthetic saturation roughly doubled host latency and realtime GPU scheduling for the encoder recovered most of it, but no in-game or optical measurement under load exists yet.
 - How does the receiver buffer pictures? The stream has no B frames and signals no reordering. Its three reference/decoder-buffer pictures do not establish a three-frame presentation delay.
 - Does the receiver use the one-frame decoded picture buffer (DPB) offset in picture-timing supplemental enhancement information (SEI)? Removing SEI preserved decoded pixels offline but gave no clear subjective improvement. A USB interruption also occurred. The cause is unknown, and SEI removal was not adopted.
 - How many distinct frames reach the panels? Source, capture, encoder, and panel frame rates can differ. A 100 fps send counter measures only the sender.

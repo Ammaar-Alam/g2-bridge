@@ -2,12 +2,13 @@ from dataclasses import replace
 from pathlib import Path
 import queue
 import subprocess
+import sys
 import tempfile
 import threading
 import unittest
 
 from goggles_bridge.control import V1Stream
-from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command
+from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command, prioritize_gpu
 from goggles_bridge.session import SessionError
 from goggles_bridge.windows_usb import DeviceNotFoundError, UsbTransportError
 from avi_fixture import stream as avi_stream
@@ -148,6 +149,21 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(usb.closed)
         self.assertTrue(encoders[0].terminated)
         self.assertTrue(any(e['event']=='streaming' for e in events))
+
+    def test_gpu_priority_is_best_effort(self):
+        self.assertFalse(prioritize_gpu(FakeEncoder()))
+        if sys.platform != 'win32':
+            return
+        # The kernel accepts the call only after the process touches the graphics stack, as FFmpeg has by its first frame
+        process = subprocess.Popen([sys.executable, '-c', "import ctypes; ctypes.WinDLL('user32').GetDesktopWindow()"
+                                    "; print('ready', flush=True); import time; time.sleep(5)"],
+                                   stdout=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            self.assertEqual(process.stdout.readline().strip(), b'ready')
+            self.assertTrue(prioritize_gpu(process))
+        finally:
+            process.kill()
+            process.wait(timeout=5)
 
     def test_absent_device_can_be_stopped_while_waiting(self):
         stop = threading.Event()

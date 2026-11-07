@@ -69,6 +69,23 @@ Other PC tests produced these results:
 - Sampling the Windows clock did not produce duplicate millisecond timestamps despite its reported coarse resolution.
 - Explicit RGB color flags did not expose a color-range mismatch. NVENC produced limited-range BT.601-family samples with matching bitstream metadata.
 
+## Capture under GPU load
+
+All earlier PC timings ran on an idle desktop. A simulator with no frame-rate limit saturates the GPU, so the same timestamp-strip method was repeated while an offscreen OpenGL shader kept the GPU busy at about 260 frames per second. Values are medians and 95th percentiles over 210 to 260 steady frames per run, with two or more runs per condition.
+
+| Condition | Render-submit to packet, median / p95 | Capture-timestamp to packet, median / p95 |
+| --- | --- | --- |
+| Idle, default | 7.3 / 9.3 ms | 2.4 / 2.7 ms |
+| GPU saturated, default | 12.9–13.9 / 17.5–35.0 ms | 3.8–3.9 / 6.6–6.9 ms |
+| GPU saturated, encoder GPU scheduling class HIGH | 13.0–13.1 / 17.6–18.1 ms | 3.8–4.1 / 6.6–6.8 ms |
+| GPU saturated, encoder GPU scheduling class REALTIME | 10.2–10.7 / 14.4–15.5 ms | 3.1–3.2 / 3.4–3.6 ms |
+| GPU saturated, encoder CPU class HIGH | not run | 3.3 / 6.4 ms |
+| Idle, REALTIME | not run | 2.4 / 2.7 ms |
+
+GPU scheduling class REALTIME is set on the FFmpeg process with `D3DKMTSetProcessSchedulingPriorityClass`. It did not require elevation on the tested Windows 11 machine. The call returns `0xC000000D` for a process that has not yet touched the graphics stack, so the bridge applies it when the first encoded frame arrives and records the result in the `streaming` log event. Setting it at that point measured the same as setting it at process start (loaded p95 3.1–3.2 ms against 5.2–5.3 ms unprioritized in a lighter-load repeat). The synthetic load keeps one frame in flight, which is lighter than a game with several queued frames, so the in-game gain may differ.
+
+Encoder presets were also compared at idle. Medians for render-submit to packet were 7.3 ms for `p4`, 7.1–7.3 ms for `p3`, 6.3–6.7 ms for `p2`, and 6.3–6.6 ms for `p1`. The faster presets cost measured desktop fidelity in the encoder quality table above, so the default stays `p4`.
+
 ## Live A/B comparison
 
 On November 7, the AVI reader, 16 KiB writes, and High profile each displayed video correctly. In a sequential A/B comparison, the tester preferred B for responsiveness but still noticed delay and variable quality. The runs used different live content:
