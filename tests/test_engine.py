@@ -190,3 +190,13 @@ class EngineTests(unittest.TestCase):
                            ('-thread_queue_size','1')):
             self.assertEqual(command[command.index(key)+1], value)
         self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
+
+    def test_quality_profile_keeps_latency_and_capture_settings(self):
+        for low_latency in (False, True):
+            with self.subTest(low_latency=low_latency):
+                baseline = encoder_command(self.settings(low_latency=low_latency))
+                candidate = encoder_command(self.settings(low_latency=low_latency, h264_profile='high'))
+                baseline[baseline.index('-profile:v')+1] = 'high'
+                self.assertEqual(candidate, baseline)
+        with self.assertRaises(ValueError):
+            self.settings(h264_profile='unsupported')

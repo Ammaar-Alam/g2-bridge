@@ -31,6 +31,7 @@ class BridgeSettings:
     keyframe_seconds: int = 3
     low_latency: bool = False
     usb_write_size: int = 2048
+    h264_profile: str = 'baseline'
 
     def __post_init__(self):
         if type(self.low_latency) is not bool:
@@ -39,7 +40,7 @@ class BridgeSettings:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
                               ('capture', ('gfxcapture', 'ddagrab')), ('preset', ('p1', 'p4')),
-                              ('keyframe_seconds', (1, 3))):
+                              ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
         if type(self.capture_fps) is not int or not self.fps <= self.capture_fps <= 1000:
@@ -65,7 +66,7 @@ def encoder_command(settings):
     command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
                 '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
                 '-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
-                '-profile:v', 'baseline', '-level:v', '4.2' if settings.fps == 60 else '5.1',
+                '-profile:v', settings.h264_profile, '-level:v', '4.2' if settings.fps == 60 else '5.1',
                 '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
     if settings.low_latency:
         command += ['-bsf:v', 'filter_units=remove_types=12', '-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
@@ -116,7 +117,8 @@ class BridgeEngine:
                       capture=self.settings.capture, capture_fps=self.settings.capture_fps,
                       resolution='1920x1080', preset=self.settings.preset,
                       keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
-                      low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size)
+                      low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
+                      h264_profile=self.settings.h264_profile)
             try:
                 attempt = 0
                 while not self.stopping():

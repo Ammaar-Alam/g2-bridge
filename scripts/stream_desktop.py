@@ -30,6 +30,8 @@ def main():
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
     parser.add_argument('--preset', choices=('p1', 'p4'), default='p4')
+    parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='baseline',
+                        help='H.264 coding profile; high is experimental (default: baseline)')
     parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
     parser.add_argument('--low-latency', action='store_true', help='Test reduced buffering and filler-free video')
     parser.add_argument('--usb-write-size', type=int, choices=USB_WRITE_SIZES, default=2048,
@@ -66,7 +68,7 @@ def main():
         settings = BridgeSettings(args.dll, args.ffmpeg, fps=args.fps, bitrate_mbps=args.bitrate_mbps,
             capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
             show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
-            low_latency=args.low_latency, usb_write_size=args.usb_write_size)
+            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile)
         engine = BridgeEngine(settings, log_path, on_event=report, stop_event=stop,
             stop_file=args.stop_file, duration=args.seconds, reconnect=not args.no_reconnect)
         previous_handler = signal.signal(signal.SIGINT, lambda *_: stop.set())
