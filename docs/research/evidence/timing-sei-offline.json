@@ -1,0 +1,22 @@
+{
+  "source": "${WORK}\\latency\\offline-high-20261106-215450.h264",
+  "source_sha256": "de8be23a394ccad174597e644a659005394cc5972c63e5d5255388d25f6dfe58",
+  "nal_counts": {
+    "7": 1,
+    "8": 1,
+    "6": 301,
+    "5": 1,
+    "1": 299
+  },
+  "sei_payload_type_counts": {
+    "0": 1,
+    "1": 300
+  },
+  "removed_nals": 301,
+  "retained_nal_bytes_identical": true,
+  "decoded_frames": 300,
+  "decoded_pixels_identical": true,
+  "original_bytes": 7501411,
+  "stripped_bytes": 7498395,
+  "hardware_tested": false
+}

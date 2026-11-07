@@ -1,7 +1,6 @@
-"""Stock Goggles 2 PC video, visually verified on firmware 01.11.00.00.
+"""Fragment H.264 video into DUML V1 packets for the Goggles 2 PC USB route.
 
-The recovered mobile payload is fragmented to fit raw DUML V1. The original
-mobile V2 envelope did not display video on the PC interface. See LIVE.md.
+See docs/PROTOCOL.md for the metadata layout and session requirements.
 """
 import struct
 import time
@@ -17,7 +16,7 @@ class PcVideoPacketizer:
         self.chunk_id = chunk_id
 
     def packetize(self, frame, next_sequence, *, timestamp_ms=None):
-        """Yield V1 packets; next_sequence is shared with the control session."""
+        """Yield V1 packets using the control session's next_sequence allocator."""
         frame = _bytes(frame)
         if not frame:
             raise ValueError('Empty H.264 access unit')

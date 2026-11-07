@@ -1,0 +1,12 @@
+{
+  "archive": {
+    "name": "60218EC\\FILES.7z",
+    "offset": 5507584,
+    "size": 3082720056,
+    "xor": 2
+  },
+  "decoded_sha256": "56533e27ac57b99a53de30cf75d124d0b6f3709c39433287fc6e2292464677f4",
+  "py7zr_version": "1.1.4",
+  "source": "https://service-adhoc.dji.com/download/app/pc/3cf0bf93-8700-4b6d-af16-dbdabe3abd4f",
+  "parent_full_hash_verified": false
+}

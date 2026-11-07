@@ -1,8 +1,6 @@
-"""Packet formats recovered from the ARM Virtual Flight application.
+"""Packet formats recovered from the Android Virtual Flight application.
 
-No device access or session negotiation is implemented here. Native class names
-identify profiles; they are not authenticated hardware model identifiers.
-See .agents/PROTOCOL.md for evidence, addresses, and verification limits.
+See docs/research/MOBILE_PROTOCOL.md for layouts and native addresses.
 """
 from dataclasses import dataclass
 import binascii
@@ -116,7 +114,7 @@ class V2Packet:
 
 
 def wrap_logiclink(packet, channel=LOGIC_VIDEO_CHANNEL):
-    """Add the app's eight-byte outer header; no USB endpoint is implied."""
+    """Add the app's eight-byte LogicLink header."""
     if channel not in (LOGIC_COMMAND_CHANNEL, LOGIC_VIDEO_CHANNEL):
         raise ValueError('Unsupported LogicLink channel')
     packet = _bytes(packet)
@@ -143,8 +141,7 @@ class VideoProfile:
     logiclink: bool
 
 
-# Names recovered from DeviceZV900Glass and DevicePigeonGlass constructors.
-# The attached Goggles 2 has not been identified through the app's handshake.
+# Android constructor defaults; the PC route is defined in pc_video.py.
 PROFILES = {
     'zv900': VideoProfile(Address(0x1C, 1, 0x0900), True),
     'pigeon': VideoProfile(Address(0x0E, 1, 0x0701), False),
@@ -162,15 +159,14 @@ class VideoPacketizer:
         self.chunk_id = chunk_id
 
     def packetize(self, frame, *, timestamp_ms=None):
-        """Encode one nonempty encoder output buffer, not a whole H.264 file.
+        """Packetize one nonempty H.264 access unit.
 
-        Caller supplies access-unit boundaries and valid encoded content. The
-        app prepends saved codec configuration to keyframes. This method does
-        not encode video or infer that configuration.
+        The caller supplies encoded bytes and access unit boundaries. Keyframes
+        must include codec configuration, as in the app's encoder output.
 
-        The ARM app truncates epoch milliseconds to signed 32 bits, then widens
-        to signed 64 bits. Reproduce that observed behavior deliberately. With
-        no timestamp override, the clock is sampled for every fragment.
+        Timestamps follow the ARM app: truncate epoch milliseconds to signed
+        32 bits, then sign-extend to 64 bits. Without a timestamp override, sample
+        the clock for each fragment.
         """
         frame = _bytes(frame)
         if not frame:

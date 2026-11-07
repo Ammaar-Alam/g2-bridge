@@ -17,29 +17,29 @@ from goggles_bridge.windows_usb import USB_WRITE_SIZES
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, default=os.environ.get('DJI_USB_DLL'),
-                        help='Verified DJI x64 libusb0_device.dll, or DJI_USB_DLL environment variable')
+                        help='Path to the supported DJI x64 libusb0_device.dll (or set DJI_USB_DLL)')
     parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg'),
                         help='FFmpeg executable with NVENC and the chosen capture filter')
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=(60, 100), default=100,
-                        help='Encoder/output rate; actual distinct display rate is not measured (default: 100)')
+                        help='Target encoder frame rate (default: 100)')
     parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
     parser.add_argument('--capture', choices=('gfxcapture', 'ddagrab'), default='gfxcapture',
-                        help='GPU capture/scaling, or the earlier Desktop Duplication path')
-    parser.add_argument('--capture-fps', type=int, default=240, help='Source sampling ceiling for gfxcapture')
+                        help='Windows Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling')
+    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate for gfxcapture, in fps')
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
     parser.add_argument('--preset', choices=('p1', 'p4'), default='p4')
     parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='baseline',
-                        help='H.264 coding profile; high is experimental (default: baseline)')
+                        help='H.264 profile (default: baseline)')
     parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
-    parser.add_argument('--low-latency', action='store_true', help='Test reduced buffering and filler-free video')
+    parser.add_argument('--low-latency', action='store_true', help='Release complete encoded frames immediately and remove H.264 filler data')
     parser.add_argument('--usb-write-size', type=int, choices=USB_WRITE_SIZES, default=2048,
-                        help='USB bytes per write; 16384 is experimental (default: 2048)')
-    parser.add_argument('--seconds', type=float, default=0, help='Total duration, including reconnects; 0 runs until stopped')
+                        help='Maximum bytes per USB write (default: 2048)')
+    parser.add_argument('--seconds', type=float, default=0, help='Duration in seconds, including reconnects (0 runs until stopped)')
     parser.add_argument('--no-reconnect', action='store_true', help='Exit on USB or heartbeat loss')
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
-    parser.add_argument('--log', type=Path, help='New JSONL log; defaults to work/logs with a unique name')
+    parser.add_argument('--log', type=Path, help='Path for a new JSON Lines log (default: a unique file in work/logs)')
     args = parser.parse_args()
     for name in ('dll', 'ffmpeg'):
         path = getattr(args, name)

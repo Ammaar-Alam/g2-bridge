@@ -1,0 +1,10 @@
+{
+  "original_crc": {
+    "median_ms_per_frame": 1.126292000214259,
+    "wire_sha256": "6af5973fb817512dd4b96b755a919eb01144c3f401437553d5b5eed97822c25d"
+  },
+  "fast_crc": {
+    "median_ms_per_frame": 0.1365443334604303,
+    "wire_sha256": "6af5973fb817512dd4b96b755a919eb01144c3f401437553d5b5eed97822c25d"
+  }
+}

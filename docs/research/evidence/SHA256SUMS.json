@@ -1,0 +1,162 @@
+[
+  {
+    "file": "apk-zip-inventory.json",
+    "bytes": 24735,
+    "sha256": "2041c90bc530a694ef574ce48c518dccebc48d649dd37dc363ec5405f889233a"
+  },
+  {
+    "file": "crc-benchmark.json",
+    "bytes": 314,
+    "sha256": "363200a4dd8760b8a7a7d832568dfb8a590b8de81129e071a41a2965587a5329"
+  },
+  {
+    "file": "fixture-manifest.json",
+    "bytes": 1303,
+    "sha256": "e86eb5e7606e1df7406cc06b3fb96da74e025f6dd49260ef88057b9a0ea46f7d"
+  },
+  {
+    "file": "live-host-telemetry.json",
+    "bytes": 60849,
+    "sha256": "e74a01ac214da45efdc210a72acd31814cf3ade8ecc7fe680222c261d9da8518"
+  },
+  {
+    "file": "paired-gray.json",
+    "bytes": 14590,
+    "sha256": "755b3c21fc88d724288ba9a8340104ec793ddf6639d0fc18546b1b44cffd0de9"
+  },
+  {
+    "file": "paired-motion.json",
+    "bytes": 14584,
+    "sha256": "98bdafd4031150afc101d9f2022c780bc1ed94bc7bcaf0acc9e29f6e86588ee6"
+  },
+  {
+    "file": "pc-control-session.json",
+    "bytes": 1313,
+    "sha256": "03eaaf8f996daa7a6759c8d7995f45e25d401632f2ed446d9a998c30b822518d"
+  },
+  {
+    "file": "quality-desktop-baseline.json",
+    "bytes": 21874,
+    "sha256": "76e39821ae55254385e3e28b89f59efbec69f42b910621f6b66c8d852a2f1444"
+  },
+  {
+    "file": "quality-desktop-fast_baseline.json",
+    "bytes": 22132,
+    "sha256": "a463df9b2e9a5a9188e4b490986f15698afdb25fcf37021bf59c482ba7c5089a"
+  },
+  {
+    "file": "quality-desktop-fast_high.json",
+    "bytes": 21901,
+    "sha256": "5b84b49c10213c0f836ed99482c78016efc82f178949932cb26a379fb55a15c3"
+  },
+  {
+    "file": "quality-desktop-high.json",
+    "bytes": 21850,
+    "sha256": "90082f3396460a8b8018d30ff28f40da88bab7cd23416bf15c8ff23850f72926"
+  },
+  {
+    "file": "quality-desktop-high_16.json",
+    "bytes": 22090,
+    "sha256": "61a79322bd95441594ad4350e0895e134c4ed97f325eef493e5d50b63e298d98"
+  },
+  {
+    "file": "quality-desktop-refresh.json",
+    "bytes": 21870,
+    "sha256": "b316d62ee7e33e062206d8b18b79b6bbbd4c01f79f32e2e2141702eed5e1da22"
+  },
+  {
+    "file": "quality-desktop-refresh_single_vbv.json",
+    "bytes": 22132,
+    "sha256": "4d9e8246ca94bc589a58aa0980843581a4e68266ace69133b65549ca3a5c86c2"
+  },
+  {
+    "file": "quality-desktop-single_vbv.json",
+    "bytes": 22117,
+    "sha256": "de8f1a59517c479bbc38c2ece639449c0013b32a1b4b66e78bb1649bb65c29e9"
+  },
+  {
+    "file": "quality-motion-baseline.json",
+    "bytes": 22472,
+    "sha256": "f85987b4f27cd6ff247501956bf1adb647533a2cfad252be870eb3d814cf2bd3"
+  },
+  {
+    "file": "quality-motion-fast_baseline.json",
+    "bytes": 22504,
+    "sha256": "c5d0593052142caace94ac9ff5ca620084304ed950e17a2b063a319e6b10b09d"
+  },
+  {
+    "file": "quality-motion-fast_high.json",
+    "bytes": 22493,
+    "sha256": "7e5d8b0bdd89b7b4a4aef93bcdc82edb6106b0753811b5f0139663f47794ad2e"
+  },
+  {
+    "file": "quality-motion-high.json",
+    "bytes": 22478,
+    "sha256": "bb0e7d6e82f61e61ffae44382a0fb5b65a6a6c24963418176821a262766a387d"
+  },
+  {
+    "file": "quality-motion-high_16.json",
+    "bytes": 22473,
+    "sha256": "faeb4fe92727588dc7723aca45bf3ae01b7374ccc09bb121fa953a6e0d1dbb0b"
+  },
+  {
+    "file": "quality-motion-refresh.json",
+    "bytes": 22481,
+    "sha256": "c76c93180c221e12994f53a21af2f1e31c25f556d7c1784af62d53ad65271632"
+  },
+  {
+    "file": "quality-motion-refresh_single_vbv.json",
+    "bytes": 22486,
+    "sha256": "c892b5ea3c668a9fba24a3190f6e7431b59964327fc4c991e06f889bb36ca738"
+  },
+  {
+    "file": "quality-motion-single_vbv.json",
+    "bytes": 22469,
+    "sha256": "8d3494fa6520f55b7e6101a5c0602d5a7004d4e9acd753822574020403da834f"
+  },
+  {
+    "file": "rea-inventory.json",
+    "bytes": 636546,
+    "sha256": "ae842f3098105df90d2ad1f3891aab3c4379ee0a5051028bac8f4e07db339abf"
+  },
+  {
+    "file": "sequence-storage.json",
+    "bytes": 243,
+    "sha256": "6d87e09922a9542994f9875ea73778a17bf0e4b021a5d8307037a3b444ffa9d6"
+  },
+  {
+    "file": "synthetic-frame-v1.bin",
+    "bytes": 42039,
+    "sha256": "e061791fd2860c9025b622bd3730085e47949c999096b77e6b49b70f524e4df4"
+  },
+  {
+    "file": "synthetic-frame.h264",
+    "bytes": 40149,
+    "sha256": "8b2e9ea7d0189631306e1659227abd94034ea96148f26ec8d2855962992d6735"
+  },
+  {
+    "file": "synthetic-frame.json",
+    "bytes": 952,
+    "sha256": "79a4594c9400ce92d0e5a149ec7cd048ba888963173a19fd29d2d9128291c183"
+  },
+  {
+    "file": "timing-sei-offline.json",
+    "bytes": 514,
+    "sha256": "df83935360906643abad4a0dc4d7ddf337d3b8d038f8058945fec43b80b98635"
+  },
+  {
+    "file": "usb-write-equivalence.json",
+    "bytes": 632,
+    "sha256": "b311a38d591103c109069a065c439f2496f70b7cc7555b3c1916874affd087d2"
+  },
+  {
+    "file": "windows-archive-provenance.json",
+    "bytes": 368,
+    "sha256": "725391317b3629b49b701b45ca7669fc250d6f97bc70635549169d8417a19f00"
+  },
+  {
+    "file": "windows-selected-binaries.json",
+    "bytes": 886,
+    "sha256": "7a4807f0195f2700fe4f524fb38c5ee8ba1faca0b04057757e4c251f75e687da"
+  }
+]

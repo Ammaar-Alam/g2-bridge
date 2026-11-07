@@ -1,66 +1,68 @@
-# Stock Goggles 2 PC video route
+# Goggles 2 PC video protocol
 
-This describes the route visibly verified on one DJI Goggles 2 with owner-reported firmware 01.11.00.00. Static recovery, offline verification, and observed hardware behavior are distinguished below.
+This protocol displayed video on a stock DJI Goggles 2 with reported firmware 01.11.00.00. It adapts the Android Virtual Flight application's video metadata to the PC USB interface.
 
-## Evidence and method
+## Source artifacts
 
-The Android Virtual Flight APK was inspected without installing it. REA provided package inventory/evidence capture, JADX exposed the accessory and native entry points, and focused Ghidra analysis recovered the H.264 send chain. Memory-only ARM emulation checked serializer and video-fragment outputs; concise oracle fixtures are in `tests/fixtures/`.
+REA inventoried the Android APK, JADX exposed the accessory and native entry points, and Ghidra analysis recovered the H.264 send chain. ARM emulation checked serializer and video-fragment output against the [native fixtures](../tests/fixtures).
+
+The analysis used these artifacts:
 
 | Artifact | SHA-256 |
 | --- | --- |
 | Original APK | `e6181ea1f5e1dab39f67713c647d1c175de614019b90252a082fd8f2bd122fc2` |
 | ARM32 `libUE4.so` | `c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7` |
-| Verified x64 DJI `libusb0_device.dll` | `d2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743` |
+| x64 DJI `libusb0_device.dll` | `d2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743` |
 
-Relevant original ELF virtual addresses include `VideoSend` at `049f0128`, V1 serialization at `049f5c74`, and V2 serialization at `049f6448`. `UDjiDFSMGameInstance::OnBackBufferReady_RenderThread` at `04f64a9c` selects 1920x1080 for ZV900; its actual compression callback is `OnFinishCompress` at `04f663a0`. The Android encoder configures H.264, 60 fps, 10,485,760 bits/s, and a three-second I-frame interval. Those are sender settings, not proof of a receiver display-rate limit.
+In the original ELF, `VideoSend` is at virtual address `049f0128`, V1 serialization at `049f5c74`, and V2 serialization at `049f6448`. `UDjiDFSMGameInstance::OnBackBufferReady_RenderThread` at `04f64a9c` selects 1920x1080 for ZV900. Its compression callback is `OnFinishCompress` at `04f663a0`. The Android encoder uses H.264, 60 fps, 10,485,760 bits/s, and a three-second I-frame interval.
 
-The original mobile video format is V2, with up to 65,404 encoded bytes per fragment and optional LogicLink wrapping. It was reproduced offline but remained black through the PC USB interface in bounded live tests. The smaller V1 adaptation below is original bridge behavior, not a claim that the Android app emits it.
+The mobile app sends V2 packets with up to 65,404 encoded bytes per fragment and optional LogicLink wrapping. This format matched native output in emulation but displayed a black screen through the PC USB interface. The bridge's V1 adaptation is described below. Full mobile layouts are in the [mobile protocol](research/MOBILE_PROTOCOL.md).
 
 ## USB and session
 
-The device enumerates as VID `2ca3`, PID `0020`. The verified video/control interface is **MI04**, class/subclass/protocol `ff/43/01`, bulk OUT `04`, bulk IN `85`, with 512-byte endpoint max packets. The backend checks that exact descriptor and refuses ambiguous devices. It does not reset the device or change its USB configuration.
+The device enumerates with VID `2ca3` and PID `0020`. The video and control interface is **MI04**, with class/subclass/protocol `ff/43/01`, bulk OUT `04`, bulk IN `85`, and a 512-byte endpoint maximum packet size. The backend requires this descriptor and rejects ambiguous devices. It leaves the USB configuration unchanged.
 
-DJI's x64 libusb0 ABI extends the device structure with an additional 512-byte location field. Using the unmodified upstream PyUSB structure was incompatible. The backend is therefore bound to the exact verified DLL above and PyUSB 1.3.1. Driver calls are divided into at most 2048-byte transfers. Consecutive video packets can share a transfer; offline byte reassembly and visible hardware tests confirmed batching.
+DJI's x64 libusb0 application binary interface (ABI) adds a 512-byte location field to the device structure. The upstream PyUSB structure is incompatible, so the backend checks for the DLL hash above and PyUSB 1.3.1. It uses 2 KiB writes by default. The optional 16 KiB mode also displayed video correctly. Consecutive V1 packets can share a write, and both sizes produce identical reassembled bytes. The DLL splits requests larger than 65,536 bytes internally.
 
-PC control uses V1 source type 10 / id 1. Each reply is matched by route, command, and sequence, and must have a success status. Before sending video:
+PC control uses V1 source type 10, ID 1. Each reply must match the route, command, and sequence and contain a success status. The bridge sends these requests before video:
 
 | Request | Destination | Payload |
 | --- | --- | --- |
-| Heartbeat `00/00` | type 28 / id 0 | `000020000000` |
-| Identity `00/ff` | type 28 / id 1 | `00` |
-| Simulator mode `0b/1a` | type 28 / id 0 | `01010000` |
+| Heartbeat `00/00` | Type 28, ID 0 | `000020000000` |
+| Identity `00/ff` | Type 28, ID 1 | `00` |
+| Simulator mode `0b/1a` | Type 28, ID 0 | `01010000` |
 
-The tested identity contains `E3T ZV900 AC`. Heartbeats continue every 500 ms. A simulator-mode acknowledgement alone means only that the command succeeded. Original moving imagery in the goggles established video acceptance separately.
+The tested identity contains `E3T ZV900 AC`. Heartbeats continue every 500 ms. A successful simulator-mode reply completes the handshake. Video acceptance was checked separately with a moving test pattern.
 
-## Working video packets
+## Video packets
 
-Video command `0b/53` is carried in raw DUML V1, request/no-ACK, source type 10 / id 1 to destination type 28 / id 1. The V1 size limit is 1023 bytes: 13 bytes framing/checksum + 32 bytes metadata + **978 encoded bytes**. Control and video share a 16-bit packet sequence allocator, which skips outstanding control requests.
+Video uses command `0b/53` in raw DUML V1, with no acknowledgement requested, from source type 10, ID 1 to destination type 28, ID 1. The 1,023-byte V1 limit leaves **978 encoded bytes** after 13 bytes of framing and checksums and 32 bytes of metadata. Control and video share a 16-bit sequence allocator that skips outstanding control requests.
 
 The video payload starts with this little-endian structure, followed by the encoded chunk:
 
-| Offset | Size | Meaning |
-| --- | --- | --- |
+| Offset | Bytes | Field |
+| --- | ---: | --- |
 | 0 | 1 | Zero |
 | 1 | 1 | Frame needs multiple fragments |
 | 2 | 1 | Last fragment of frame |
 | 3 | 1 | Zero |
-| 4 | 4 | Global fragment counter, wrapping uint32 |
-| 8 | 8 | Millisecond timestamp, with the native truncation below |
+| 4 | 4 | Global fragment counter, wrapping at 32 bits |
+| 8 | 8 | Millisecond timestamp, truncated as described below |
 | 16 | 4 | Metadata size: 32 |
 | 20 | 4 | Encoded bytes in this chunk |
 | 24 | 1 | First fragment of frame |
 | 25 | 7 | Zero padding |
 
-The timestamp preserves the native operation: sample Unix milliseconds, retain the low 32 bits, interpret them as signed, then sign-extend to 64 bits. It is not a full-width Unix millisecond value. The packet header CRC8 uses seed `77`, reflected polynomial `8c`; CRC16 uses seed `3692`, reflected polynomial `8408`, without a final XOR.
+The timestamp follows the native operation: sample Unix milliseconds, retain the low 32 bits, interpret them as signed, then sign-extend to 64 bits. The packet header CRC8 uses seed `0x77` and reflected polynomial `0x8c`. CRC16 uses seed `0x3692` and reflected polynomial `0x8408`, with no final XOR.
 
-The encoder supplies Annex-B H.264 with AUDs for host-side access-unit splitting. AUDs are removed before transmission; SPS/PPS and every other NAL are retained. Each complete access unit is fragmented with first/last markers. This parser deliberately requires AUD-equipped encoder output and is not a general arbitrary-H.264 picture parser.
+The default reader splits H.264 pictures at Annex-B access unit delimiters (AUDs), then removes each AUD. With `--low-latency`, the reader uses nonseekable, single-stream AVI to identify packet lengths and release complete H.264 packets immediately. AVI headers stay on the PC. This mode also removes filler network abstraction layer (NAL) units, type 12. Sequence and picture parameter sets (SPS/PPS) and picture NAL units remain unchanged. Both readers require the configured encoder output.
 
-## Quality and timing boundaries
+## Capture and encoding
 
-The current responsive desktop path is Windows Graphics Capture, GPU bicubic scaling with aspect preservation, and direct D3D11 input to NVENC. The tested preset sends 1080p100 at 20 Mbps, p4/ultra-low-latency, no B frames, a two-frame rate-control buffer, and three-second keyframes. The goggles visibly accept it; actual distinct panel frames and end-to-end latency remain unmeasured.
+The Windows Graphics Capture path uses GPU bicubic scaling, preserves the source aspect ratio, and passes D3D11 textures directly to NVENC. The tested preset targets 1080p at 100 fps and 20 Mbps, with preset `p4`, ultra-low-latency tuning, no B frames, a two-frame rate-control buffer, and three-second keyframes.
 
-Earlier Desktop Duplication capture at a requested 100 fps produced substantial repeated output frames in a static-desktop test. A moving source and the newer GPU capture path improved the observed smoothness. Neither a console fps counter nor a USB write success proves a new image was displayed. Source rendering, capture duplication, encoding, USB queueing, decode, and scanout must be considered separately.
+Desktop Duplication at a requested 100 fps produced repeated frames in the initial static-desktop test. A moving source and Windows Graphics Capture improved observed smoothness. The distinct frame rate at the goggles and end-to-end latency have not been measured.
 
-A slight gray/brightness pulse tracked the keyframe interval from one second to three seconds in a controlled visual comparison. This ties the effect to keyframes, but does not by itself identify the exact rate-control mechanism. Periodic intra-refresh and constant-quality encoding are investigation candidates, not verified fixes.
+A slight brightness pulse followed the keyframe interval when it changed from one second to three seconds. An offline intra-refresh trial reduced the synthetic keyframe dip but increased scene-change bursts, so it was not adopted. Constant-quality encoding remains untested.
 
-No firmware was flashed, unlocked, or modified. Other device models and receiver firmware remain outside the verified scope.
+See the [research index](research/README.md) for native addresses, packet examples, experiment results, and reproduction scripts. The analysis covers application binaries and USB traffic. The goggles firmware was neither decoded nor modified, and other device models and firmware versions remain untested.

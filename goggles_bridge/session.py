@@ -1,8 +1,7 @@
-"""Bounded Goggles 2 control handshake, independent of the byte transport.
+"""Manage the Goggles 2 control handshake independently of byte transport.
 
-Ready means matched simulator-mode success, never proof of visible video.
-The PC source address is observed live. The mobile route is recovered from
-the app and still requires a custom-client hardware test.
+The ready state requires a matching simulator-mode success reply. Source
+addresses default to the PC USB route.
 """
 from dataclasses import dataclass, replace
 from .control import heartbeat, device_info, sim_mode
@@ -13,7 +12,7 @@ class SessionError(RuntimeError):
 
 
 class SessionLost(SessionError):
-    """Retryable loss of control replies; device rejection remains fatal."""
+    """Control replies timed out and the connection can be retried."""
 
 
 @dataclass
@@ -76,7 +75,7 @@ class ControlSession:
             if now - item.sent_at < .5:
                 continue
             if (item.packet.command_set, item.packet.command_id) == (0, 0):
-                # A fresh heartbeat below replaces this one.
+                # The next heartbeat replaces this expired request.
                 del self.pending[seq]
             elif item.attempts >= 3:
                 self._fail('Control request received no response after three attempts', SessionLost)

@@ -1,0 +1,16 @@
+[
+  {
+    "protocol": "V1",
+    "got": "0x88a1158",
+    "storage": "0x892a7ac",
+    "initial": "",
+    "symbols": []
+  },
+  {
+    "protocol": "V2",
+    "got": "0x88a115c",
+    "storage": "0x892a7b0",
+    "initial": "",
+    "symbols": []
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "path": "tests/fixtures/serializer-oracle.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 2081,
+    "sha256": "f68e9828e6a6b587ea0d2456c73ea20c6b30ceea39a6c36ac43fc35915467ff2"
+  },
+  {
+    "path": "tests/fixtures/usb-configuration.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 623,
+    "sha256": "0d657ddade1bfb78d83694049b5049dc9eeaca21cec308a026839a8efc88e867"
+  },
+  {
+    "path": "tests/fixtures/usb-link-profiles.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 8878,
+    "sha256": "47d78bd445560401a99a30226bd1fa1acedd352d851c364afddd952db16f9cb8"
+  },
+  {
+    "path": "tests/fixtures/v1-oracle.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 2236,
+    "sha256": "e432571cc49dbd70bd36500199e034fc45dbb25ebffd16a37504531a1e47ec4c"
+  },
+  {
+    "path": "tests/fixtures/video-oracle.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 3139,
+    "sha256": "b5f6e8b4f9209a9c483f3c6d349e46a5123b7fc766073eed4ab2027f974e2d1f"
+  },
+  {
+    "path": "tests/fixtures/video-wire-oracle.json",
+    "byte_representation": "UTF-8 with LF line endings",
+    "bytes": 1778,
+    "sha256": "f7932b4be2c4edd845c26c9c049687415926c0ba1e4b911d9575e335c88e632c"
+  }
+]

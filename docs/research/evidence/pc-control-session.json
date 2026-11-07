@@ -1,0 +1,39 @@
+{
+  "source_log": "latency-20261107-01.jsonl",
+  "original_log_sha256": "d8ebcd4abd5afee96a06ab94650fee062467ef1ac288a08225b942e7e93f838a",
+  "model": "DJI Goggles 2 / ZV900",
+  "firmware_owner_reported": "01.11.00.00",
+  "interface": 4,
+  "bulk_out": "0x04",
+  "bulk_in": "0x85",
+  "note": "Exact selected CRC-valid packet bytes. Unsolicited telemetry and machine identifiers excluded.",
+  "exchanges": [
+    {
+      "name": "heartbeat",
+      "request_line": 3,
+      "response_line": 4,
+      "request_seconds": 0.091518,
+      "response_seconds": 0.102849,
+      "request_hex": "551304032a1c0000400000000020000000b5b2",
+      "response_hex": "5514046d1c2a0000c0000000000020000000e26f"
+    },
+    {
+      "name": "identity",
+      "request_line": 5,
+      "response_line": 6,
+      "request_seconds": 0.103262,
+      "response_seconds": 0.118355,
+      "request_hex": "550e04662a3c01004000ff002b4b",
+      "response_hex": "552f04633c2a0100c000ff00453354205a563930302041432044656320323420323032347c31323a33343a3034ca04"
+    },
+    {
+      "name": "simulator_mode",
+      "request_line": 7,
+      "response_line": 8,
+      "request_seconds": 0.118881,
+      "response_seconds": 0.134301,
+      "request_hex": "551104922a1c0200400b1a010100009c1f",
+      "response_hex": "550e04661c2a0200c00b1a0082c9"
+    }
+  ]
+}

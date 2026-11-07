@@ -1,0 +1,5 @@
+/docs/research/** text eol=lf
+/tools/research/** text eol=lf
+/tests/fixtures/*.json text eol=lf
+/docs/research/evidence/*.h264 binary
+/docs/research/evidence/*.bin binary

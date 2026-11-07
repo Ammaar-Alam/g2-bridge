@@ -1,4 +1,4 @@
-"""Windows capture and low-delay H.264 streaming over the verified PC route."""
+"""Capture the Windows desktop and stream H.264 over the Goggles 2 PC USB route."""
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -76,7 +76,7 @@ def encoder_command(settings):
 
 
 class BridgeEngine:
-    """One USB owner and one encoder, with bounded queues and fresh reconnects."""
+    """Manage the encoder and USB session, reconnecting after link loss."""
     def __init__(self, settings, log_path, *, on_event=None, stop_event=None,
                  stop_file=None, duration=0, reconnect=True, retry_delay=1,
                  transport_factory=None, process_factory=subprocess.Popen):

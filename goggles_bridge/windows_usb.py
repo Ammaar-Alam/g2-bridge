@@ -1,7 +1,7 @@
-"""The exact DJI 5.0.0.7 x64 libusb0_device ABI verified on this Windows host.
+"""Access the Goggles 2 USB interface through DJI's x64 driver 5.0.0.7.
 
-No driver installation, configuration change, USB reset or endpoint search.
-The DLL is obtained separately from DJI Assistant; it is not redistributed.
+The backend checks the DLL hash before using its device structure layout.
+Obtain libusb0_device.dll separately from DJI Assistant.
 """
 import ctypes as C
 import hashlib
@@ -17,11 +17,11 @@ class UsbTransportError(RuntimeError):
 
 
 class DeviceNotFoundError(UsbTransportError):
-    """The verified interface is not currently attached."""
+    """The supported USB interface is not attached."""
 
 
 class LinkSpeedError(UsbTransportError):
-    """Goggles have fallen back to the insufficient full-speed USB profile."""
+    """The USB link is full-speed (12 Mbps), which is too slow for video."""
 
 
 def _select_control_device(devices):

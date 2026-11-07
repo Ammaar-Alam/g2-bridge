@@ -1,0 +1,2377 @@
+{
+  "date": "2026-11-07",
+  "host_only": true,
+  "note": "No pixel captures, packet hex, device serials or machine paths. These timings exclude capture/encode and goggles decode/scanout.",
+  "runs": [
+    {
+      "source_log": "latency-20261107-01.jsonl",
+      "source_sha256": "d8ebcd4abd5afee96a06ab94650fee062467ef1ac288a08225b942e7e93f838a",
+      "events": [
+        {
+          "seconds": 0.000607,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 2048,
+          "h264_profile": "baseline"
+        },
+        {
+          "seconds": 0.089491,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.007074,
+          "event": "stats",
+          "frames": 405,
+          "bytes": 4388767,
+          "queued_frames": 0,
+          "fps": 80.91,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 2.12
+        },
+        {
+          "seconds": 10.008191,
+          "event": "stats",
+          "frames": 905,
+          "bytes": 9304381,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 2.03
+        },
+        {
+          "seconds": 15.014802,
+          "event": "stats",
+          "frames": 1405,
+          "bytes": 14383753,
+          "queued_frames": 0,
+          "fps": 99.87,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.98
+        },
+        {
+          "seconds": 20.018487,
+          "event": "stats",
+          "frames": 1906,
+          "bytes": 20417487,
+          "queued_frames": 0,
+          "fps": 100.13,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 2.67
+        },
+        {
+          "seconds": 25.021193,
+          "event": "stats",
+          "frames": 2406,
+          "bytes": 26262387,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 2.49
+        },
+        {
+          "seconds": 30.023313,
+          "event": "stats",
+          "frames": 2906,
+          "bytes": 38032962,
+          "queued_frames": 0,
+          "fps": 99.96,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 4.21
+        },
+        {
+          "seconds": 35.024682,
+          "event": "stats",
+          "frames": 3406,
+          "bytes": 50820271,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 4.13
+        },
+        {
+          "seconds": 39.700258,
+          "event": "session_ended",
+          "frames": 3867,
+          "bytes": 62581285,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 39.701286,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-20261107-02.jsonl",
+      "source_sha256": "1dad3587202612e0a835cd3c883c55923579050bc34c81b206fa32f32a8d87ef",
+      "events": [
+        {
+          "seconds": 0.001266,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 16384,
+          "h264_profile": "baseline"
+        },
+        {
+          "seconds": 0.046853,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.003459,
+          "event": "stats",
+          "frames": 455,
+          "bytes": 1613773,
+          "queued_frames": 0,
+          "fps": 90.97,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.92
+        },
+        {
+          "seconds": 10.007275,
+          "event": "stats",
+          "frames": 955,
+          "bytes": 3503790,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.9
+        },
+        {
+          "seconds": 15.017046,
+          "event": "stats",
+          "frames": 1456,
+          "bytes": 5300841,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 20.019837,
+          "event": "stats",
+          "frames": 1956,
+          "bytes": 7371338,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.02
+        },
+        {
+          "seconds": 25.033656,
+          "event": "stats",
+          "frames": 2461,
+          "bytes": 10123368,
+          "queued_frames": 0,
+          "fps": 100.72,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.25
+        },
+        {
+          "seconds": 30.034318,
+          "event": "stats",
+          "frames": 2961,
+          "bytes": 22805480,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.94
+        },
+        {
+          "seconds": 35.048457,
+          "event": "stats",
+          "frames": 3462,
+          "bytes": 35614768,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 40.052997,
+          "event": "stats",
+          "frames": 3963,
+          "bytes": 48558325,
+          "queued_frames": 0,
+          "fps": 100.11,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.89
+        },
+        {
+          "seconds": 45.055871,
+          "event": "stats",
+          "frames": 4463,
+          "bytes": 61230910,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.87
+        },
+        {
+          "seconds": 50.059046,
+          "event": "stats",
+          "frames": 4963,
+          "bytes": 74062444,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.97
+        },
+        {
+          "seconds": 50.254454,
+          "event": "session_ended",
+          "frames": 4977,
+          "bytes": 74436096,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 50.25516,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-20261107-03.jsonl",
+      "source_sha256": "8aaad35ca1490121c3e7ffff89caa1210b1f8ada595c42e7c762d854bb936c08",
+      "events": [
+        {
+          "seconds": 0.000538,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 16384,
+          "h264_profile": "high"
+        },
+        {
+          "seconds": 0.042624,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.004941,
+          "event": "stats",
+          "frames": 455,
+          "bytes": 1317177,
+          "queued_frames": 0,
+          "fps": 90.93,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.78
+        },
+        {
+          "seconds": 10.007001,
+          "event": "stats",
+          "frames": 956,
+          "bytes": 2693399,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 15.013178,
+          "event": "stats",
+          "frames": 1456,
+          "bytes": 4037445,
+          "queued_frames": 0,
+          "fps": 99.88,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.67
+        },
+        {
+          "seconds": 20.015014,
+          "event": "stats",
+          "frames": 1957,
+          "bytes": 5777942,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 25.015749,
+          "event": "stats",
+          "frames": 2460,
+          "bytes": 8270192,
+          "queued_frames": 0,
+          "fps": 100.59,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.37
+        },
+        {
+          "seconds": 30.020266,
+          "event": "stats",
+          "frames": 2960,
+          "bytes": 21012275,
+          "queued_frames": 0,
+          "fps": 99.91,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 35.031881,
+          "event": "stats",
+          "frames": 3461,
+          "bytes": 34014189,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 40.036207,
+          "event": "stats",
+          "frames": 3962,
+          "bytes": 47071965,
+          "queued_frames": 0,
+          "fps": 100.11,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 45.045276,
+          "event": "stats",
+          "frames": 4463,
+          "bytes": 60089121,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 50.046719,
+          "event": "stats",
+          "frames": 4963,
+          "bytes": 73051383,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 55.057554,
+          "event": "stats",
+          "frames": 5464,
+          "bytes": 86038947,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 60.070646,
+          "event": "stats",
+          "frames": 5965,
+          "bytes": 99051787,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 65.080385,
+          "event": "stats",
+          "frames": 6466,
+          "bytes": 112095715,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 70.085029,
+          "event": "stats",
+          "frames": 6967,
+          "bytes": 125078853,
+          "queued_frames": 0,
+          "fps": 100.11,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 75.091528,
+          "event": "stats",
+          "frames": 7467,
+          "bytes": 138077117,
+          "queued_frames": 0,
+          "fps": 99.87,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 80.094442,
+          "event": "stats",
+          "frames": 7968,
+          "bytes": 151064618,
+          "queued_frames": 0,
+          "fps": 100.14,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.88
+        },
+        {
+          "seconds": 85.110005,
+          "event": "stats",
+          "frames": 8469,
+          "bytes": 164127299,
+          "queued_frames": 0,
+          "fps": 99.89,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 90.119967,
+          "event": "stats",
+          "frames": 8970,
+          "bytes": 177136026,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.84
+        },
+        {
+          "seconds": 95.128682,
+          "event": "stats",
+          "frames": 9471,
+          "bytes": 190089164,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 100.136755,
+          "event": "stats",
+          "frames": 9972,
+          "bytes": 202602871,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.91
+        },
+        {
+          "seconds": 105.14394,
+          "event": "stats",
+          "frames": 10473,
+          "bytes": 215462628,
+          "queued_frames": 0,
+          "fps": 100.06,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.95
+        },
+        {
+          "seconds": 110.159194,
+          "event": "stats",
+          "frames": 10972,
+          "bytes": 223497342,
+          "queued_frames": 0,
+          "fps": 99.5,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.88
+        },
+        {
+          "seconds": 115.174019,
+          "event": "stats",
+          "frames": 11472,
+          "bytes": 225108217,
+          "queued_frames": 0,
+          "fps": 99.7,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 120.17624,
+          "event": "stats",
+          "frames": 11973,
+          "bytes": 225957623,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.56
+        },
+        {
+          "seconds": 125.181261,
+          "event": "stats",
+          "frames": 12473,
+          "bytes": 227156377,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.7
+        },
+        {
+          "seconds": 130.182227,
+          "event": "stats",
+          "frames": 12975,
+          "bytes": 228360770,
+          "queued_frames": 0,
+          "fps": 100.38,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.75
+        },
+        {
+          "seconds": 135.185012,
+          "event": "stats",
+          "frames": 13476,
+          "bytes": 229350277,
+          "queued_frames": 0,
+          "fps": 100.14,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.63
+        },
+        {
+          "seconds": 140.195102,
+          "event": "stats",
+          "frames": 13978,
+          "bytes": 231750854,
+          "queued_frames": 0,
+          "fps": 100.2,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.32
+        },
+        {
+          "seconds": 145.203128,
+          "event": "stats",
+          "frames": 14478,
+          "bytes": 234526429,
+          "queued_frames": 0,
+          "fps": 99.84,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.97
+        },
+        {
+          "seconds": 150.205637,
+          "event": "stats",
+          "frames": 14978,
+          "bytes": 238107648,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.39
+        },
+        {
+          "seconds": 155.210729,
+          "event": "stats",
+          "frames": 15479,
+          "bytes": 241260402,
+          "queued_frames": 0,
+          "fps": 100.1,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.19
+        },
+        {
+          "seconds": 160.221501,
+          "event": "stats",
+          "frames": 15980,
+          "bytes": 245936258,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.88
+        },
+        {
+          "seconds": 165.233081,
+          "event": "stats",
+          "frames": 16478,
+          "bytes": 249769278,
+          "queued_frames": 0,
+          "fps": 99.37,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.4
+        },
+        {
+          "seconds": 170.237561,
+          "event": "stats",
+          "frames": 16980,
+          "bytes": 253573111,
+          "queued_frames": 0,
+          "fps": 100.31,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.33
+        },
+        {
+          "seconds": 175.253083,
+          "event": "stats",
+          "frames": 17483,
+          "bytes": 256551068,
+          "queued_frames": 0,
+          "fps": 100.29,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.0
+        },
+        {
+          "seconds": 180.255048,
+          "event": "stats",
+          "frames": 17981,
+          "bytes": 259119832,
+          "queued_frames": 0,
+          "fps": 99.56,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 185.266286,
+          "event": "stats",
+          "frames": 18482,
+          "bytes": 262000244,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.1,
+          "send_ms_p95": 1.0
+        },
+        {
+          "seconds": 190.267151,
+          "event": "stats",
+          "frames": 18982,
+          "bytes": 264867528,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.93
+        },
+        {
+          "seconds": 195.277138,
+          "event": "stats",
+          "frames": 19483,
+          "bytes": 267402661,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 200.286206,
+          "event": "stats",
+          "frames": 19984,
+          "bytes": 270275040,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.1,
+          "send_ms_p95": 1.09
+        },
+        {
+          "seconds": 205.28932,
+          "event": "stats",
+          "frames": 20487,
+          "bytes": 273128392,
+          "queued_frames": 0,
+          "fps": 100.53,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.02
+        },
+        {
+          "seconds": 210.291461,
+          "event": "stats",
+          "frames": 20984,
+          "bytes": 274156544,
+          "queued_frames": 0,
+          "fps": 99.36,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.68
+        },
+        {
+          "seconds": 215.294444,
+          "event": "stats",
+          "frames": 21488,
+          "bytes": 284189646,
+          "queued_frames": 0,
+          "fps": 100.74,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.96
+        },
+        {
+          "seconds": 220.311057,
+          "event": "stats",
+          "frames": 21989,
+          "bytes": 296776755,
+          "queued_frames": 0,
+          "fps": 99.87,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.9
+        },
+        {
+          "seconds": 225.313242,
+          "event": "stats",
+          "frames": 22490,
+          "bytes": 309679406,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 230.316843,
+          "event": "stats",
+          "frames": 22990,
+          "bytes": 322706284,
+          "queued_frames": 0,
+          "fps": 99.93,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 235.323036,
+          "event": "stats",
+          "frames": 23491,
+          "bytes": 335760841,
+          "queued_frames": 0,
+          "fps": 100.08,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 240.327802,
+          "event": "stats",
+          "frames": 23991,
+          "bytes": 348812954,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 245.337034,
+          "event": "stats",
+          "frames": 24492,
+          "bytes": 361805854,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 250.346285,
+          "event": "stats",
+          "frames": 24993,
+          "bytes": 374739210,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 255.354669,
+          "event": "stats",
+          "frames": 25494,
+          "bytes": 387194026,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.85
+        },
+        {
+          "seconds": 260.362997,
+          "event": "stats",
+          "frames": 25995,
+          "bytes": 396530147,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.85
+        },
+        {
+          "seconds": 265.371695,
+          "event": "stats",
+          "frames": 26496,
+          "bytes": 408404174,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.86
+        },
+        {
+          "seconds": 267.266491,
+          "event": "session_ended",
+          "frames": 26677,
+          "bytes": 412106992,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 267.266996,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-ab-20261107-a.jsonl",
+      "source_sha256": "0428976d57f6e44dfaa90d754cf18ebc2b2a93f6220b94627f08a79eab8e147b",
+      "events": [
+        {
+          "seconds": 0.001229,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0
+        },
+        {
+          "seconds": 0.042635,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.015339,
+          "event": "stats",
+          "frames": 461,
+          "bytes": 12075726,
+          "queued_frames": 0,
+          "fps": 91.95,
+          "queue_ms_p95": 0.55,
+          "send_ms_p95": 5.36
+        },
+        {
+          "seconds": 10.021216,
+          "event": "stats",
+          "frames": 962,
+          "bytes": 25190399,
+          "queued_frames": 0,
+          "fps": 100.08,
+          "queue_ms_p95": 0.19,
+          "send_ms_p95": 5.22
+        },
+        {
+          "seconds": 15.022884,
+          "event": "stats",
+          "frames": 1462,
+          "bytes": 38267607,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.18,
+          "send_ms_p95": 5.66
+        },
+        {
+          "seconds": 20.031546,
+          "event": "stats",
+          "frames": 1963,
+          "bytes": 51364032,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.17,
+          "send_ms_p95": 5.25
+        },
+        {
+          "seconds": 25.041202,
+          "event": "stats",
+          "frames": 2464,
+          "bytes": 64495863,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.21,
+          "send_ms_p95": 5.41
+        },
+        {
+          "seconds": 30.047417,
+          "event": "stats",
+          "frames": 2965,
+          "bytes": 77597363,
+          "queued_frames": 0,
+          "fps": 100.08,
+          "queue_ms_p95": 1.14,
+          "send_ms_p95": 5.64
+        },
+        {
+          "seconds": 35.062137,
+          "event": "session_ended",
+          "frames": 3461,
+          "bytes": 90577877,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 35.063052,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-ab-20261107-b.jsonl",
+      "source_sha256": "020f3cfd418cf14fca12db1349fc3bd2b3f379d6432471c9f492934bc003f4fe",
+      "events": [
+        {
+          "seconds": 0.000712,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 16384,
+          "h264_profile": "high"
+        },
+        {
+          "seconds": 0.037109,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.008581,
+          "event": "stats",
+          "frames": 462,
+          "bytes": 11808194,
+          "queued_frames": 0,
+          "fps": 92.26,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.73
+        },
+        {
+          "seconds": 10.01766,
+          "event": "stats",
+          "frames": 963,
+          "bytes": 24731431,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.7
+        },
+        {
+          "seconds": 15.022553,
+          "event": "stats",
+          "frames": 1463,
+          "bytes": 37787779,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 20.026145,
+          "event": "stats",
+          "frames": 1964,
+          "bytes": 50789670,
+          "queued_frames": 0,
+          "fps": 100.13,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 25.033264,
+          "event": "stats",
+          "frames": 2464,
+          "bytes": 63792426,
+          "queued_frames": 0,
+          "fps": 99.86,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.73
+        },
+        {
+          "seconds": 30.033713,
+          "event": "stats",
+          "frames": 2964,
+          "bytes": 76788607,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.84
+        },
+        {
+          "seconds": 35.039766,
+          "event": "stats",
+          "frames": 3465,
+          "bytes": 89816641,
+          "queued_frames": 0,
+          "fps": 100.08,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 40.043254,
+          "event": "stats",
+          "frames": 3965,
+          "bytes": 102756792,
+          "queued_frames": 0,
+          "fps": 99.93,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 45.046142,
+          "event": "stats",
+          "frames": 4466,
+          "bytes": 115848009,
+          "queued_frames": 0,
+          "fps": 100.14,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.71
+        },
+        {
+          "seconds": 50.04848,
+          "event": "stats",
+          "frames": 4966,
+          "bytes": 128842238,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.1,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 55.05928,
+          "event": "stats",
+          "frames": 5467,
+          "bytes": 141884350,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.1,
+          "send_ms_p95": 1.73
+        },
+        {
+          "seconds": 60.070352,
+          "event": "stats",
+          "frames": 5968,
+          "bytes": 154871099,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 65.073371,
+          "event": "stats",
+          "frames": 6468,
+          "bytes": 167896154,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 70.078585,
+          "event": "stats",
+          "frames": 6969,
+          "bytes": 180907738,
+          "queued_frames": 0,
+          "fps": 100.09,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 75.082029,
+          "event": "stats",
+          "frames": 7469,
+          "bytes": 193948318,
+          "queued_frames": 0,
+          "fps": 99.93,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.73
+        },
+        {
+          "seconds": 80.0923,
+          "event": "stats",
+          "frames": 7970,
+          "bytes": 206906484,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 85.100529,
+          "event": "stats",
+          "frames": 8471,
+          "bytes": 219829536,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 90.102238,
+          "event": "stats",
+          "frames": 8971,
+          "bytes": 232642949,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 95.105022,
+          "event": "stats",
+          "frames": 9472,
+          "bytes": 245450042,
+          "queued_frames": 0,
+          "fps": 100.14,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 100.112982,
+          "event": "stats",
+          "frames": 9972,
+          "bytes": 258350091,
+          "queued_frames": 0,
+          "fps": 99.84,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.72
+        },
+        {
+          "seconds": 105.120533,
+          "event": "stats",
+          "frames": 10473,
+          "bytes": 271100534,
+          "queued_frames": 0,
+          "fps": 100.05,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.72
+        },
+        {
+          "seconds": 110.129404,
+          "event": "stats",
+          "frames": 10974,
+          "bytes": 283800385,
+          "queued_frames": 0,
+          "fps": 100.02,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 115.133601,
+          "event": "stats",
+          "frames": 11474,
+          "bytes": 296762396,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.66
+        },
+        {
+          "seconds": 120.142164,
+          "event": "stats",
+          "frames": 11975,
+          "bytes": 309730213,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 125.14936,
+          "event": "stats",
+          "frames": 12476,
+          "bytes": 322752415,
+          "queued_frames": 0,
+          "fps": 100.06,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 130.15327,
+          "event": "stats",
+          "frames": 12976,
+          "bytes": 335710129,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.81
+        },
+        {
+          "seconds": 135.154402,
+          "event": "stats",
+          "frames": 13476,
+          "bytes": 348340613,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.85
+        },
+        {
+          "seconds": 140.157038,
+          "event": "stats",
+          "frames": 13976,
+          "bytes": 360953693,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.81
+        },
+        {
+          "seconds": 145.16065,
+          "event": "stats",
+          "frames": 14477,
+          "bytes": 373991822,
+          "queued_frames": 0,
+          "fps": 100.13,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 150.161402,
+          "event": "stats",
+          "frames": 14977,
+          "bytes": 386437153,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.84
+        },
+        {
+          "seconds": 155.16326,
+          "event": "stats",
+          "frames": 15475,
+          "bytes": 391731253,
+          "queued_frames": 0,
+          "fps": 99.56,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.59
+        },
+        {
+          "seconds": 160.172318,
+          "event": "stats",
+          "frames": 15978,
+          "bytes": 392878878,
+          "queued_frames": 0,
+          "fps": 100.42,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.7
+        },
+        {
+          "seconds": 165.177099,
+          "event": "stats",
+          "frames": 16479,
+          "bytes": 393818025,
+          "queued_frames": 0,
+          "fps": 100.1,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.58
+        },
+        {
+          "seconds": 170.182106,
+          "event": "stats",
+          "frames": 16976,
+          "bytes": 394928661,
+          "queued_frames": 0,
+          "fps": 99.3,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.73
+        },
+        {
+          "seconds": 175.195241,
+          "event": "stats",
+          "frames": 17477,
+          "bytes": 395836303,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.63
+        },
+        {
+          "seconds": 180.196978,
+          "event": "stats",
+          "frames": 17978,
+          "bytes": 396471043,
+          "queued_frames": 0,
+          "fps": 100.17,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.52
+        },
+        {
+          "seconds": 185.201213,
+          "event": "stats",
+          "frames": 18478,
+          "bytes": 397402987,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.63
+        },
+        {
+          "seconds": 190.201321,
+          "event": "stats",
+          "frames": 18981,
+          "bytes": 398388530,
+          "queued_frames": 0,
+          "fps": 100.6,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.66
+        },
+        {
+          "seconds": 195.202129,
+          "event": "stats",
+          "frames": 19481,
+          "bytes": 400733902,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.53
+        },
+        {
+          "seconds": 200.209664,
+          "event": "stats",
+          "frames": 19982,
+          "bytes": 413376807,
+          "queued_frames": 0,
+          "fps": 100.05,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.9
+        },
+        {
+          "seconds": 205.21439,
+          "event": "stats",
+          "frames": 20482,
+          "bytes": 426285845,
+          "queued_frames": 0,
+          "fps": 99.91,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 210.219565,
+          "event": "stats",
+          "frames": 20983,
+          "bytes": 439334135,
+          "queued_frames": 0,
+          "fps": 100.1,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 215.220584,
+          "event": "stats",
+          "frames": 21483,
+          "bytes": 452225898,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 220.221451,
+          "event": "stats",
+          "frames": 21983,
+          "bytes": 465107443,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.91
+        },
+        {
+          "seconds": 225.234185,
+          "event": "stats",
+          "frames": 22484,
+          "bytes": 477836424,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.11,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 230.241371,
+          "event": "stats",
+          "frames": 22985,
+          "bytes": 490734929,
+          "queued_frames": 0,
+          "fps": 100.06,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 235.248505,
+          "event": "stats",
+          "frames": 23486,
+          "bytes": 503368142,
+          "queued_frames": 0,
+          "fps": 100.06,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 240.263674,
+          "event": "stats",
+          "frames": 23987,
+          "bytes": 516262542,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 245.267209,
+          "event": "stats",
+          "frames": 24488,
+          "bytes": 529252320,
+          "queued_frames": 0,
+          "fps": 100.13,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 250.274434,
+          "event": "stats",
+          "frames": 24988,
+          "bytes": 541954874,
+          "queued_frames": 0,
+          "fps": 99.86,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.78
+        },
+        {
+          "seconds": 255.283102,
+          "event": "stats",
+          "frames": 25489,
+          "bytes": 555027394,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 260.28738,
+          "event": "stats",
+          "frames": 25990,
+          "bytes": 565257124,
+          "queued_frames": 0,
+          "fps": 100.11,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.72
+        },
+        {
+          "seconds": 265.29219,
+          "event": "stats",
+          "frames": 26490,
+          "bytes": 577867079,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.1,
+          "send_ms_p95": 1.75
+        },
+        {
+          "seconds": 270.302217,
+          "event": "stats",
+          "frames": 26991,
+          "bytes": 590816282,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 275.308984,
+          "event": "stats",
+          "frames": 27492,
+          "bytes": 603767828,
+          "queued_frames": 0,
+          "fps": 100.06,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.8
+        },
+        {
+          "seconds": 280.309929,
+          "event": "stats",
+          "frames": 27992,
+          "bytes": 616583942,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 285.311059,
+          "event": "stats",
+          "frames": 28492,
+          "bytes": 629488262,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 290.311661,
+          "event": "stats",
+          "frames": 28992,
+          "bytes": 642441404,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 295.32103,
+          "event": "stats",
+          "frames": 29493,
+          "bytes": 654994721,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.85
+        },
+        {
+          "seconds": 300.334408,
+          "event": "stats",
+          "frames": 29994,
+          "bytes": 668006058,
+          "queued_frames": 0,
+          "fps": 99.93,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.71
+        },
+        {
+          "seconds": 305.345102,
+          "event": "stats",
+          "frames": 30495,
+          "bytes": 680994547,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.72
+        },
+        {
+          "seconds": 310.346913,
+          "event": "stats",
+          "frames": 30996,
+          "bytes": 693321659,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 315.349315,
+          "event": "stats",
+          "frames": 31496,
+          "bytes": 706112174,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 320.353206,
+          "event": "stats",
+          "frames": 31996,
+          "bytes": 718472979,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.79
+        },
+        {
+          "seconds": 325.361461,
+          "event": "stats",
+          "frames": 32497,
+          "bytes": 731452754,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 330.376038,
+          "event": "stats",
+          "frames": 32998,
+          "bytes": 744088356,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.7
+        },
+        {
+          "seconds": 335.377979,
+          "event": "stats",
+          "frames": 33499,
+          "bytes": 747546700,
+          "queued_frames": 0,
+          "fps": 100.16,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.53
+        },
+        {
+          "seconds": 340.390668,
+          "event": "stats",
+          "frames": 34000,
+          "bytes": 751897326,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.49
+        },
+        {
+          "seconds": 345.400683,
+          "event": "stats",
+          "frames": 34501,
+          "bytes": 756674628,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.65
+        },
+        {
+          "seconds": 350.411065,
+          "event": "stats",
+          "frames": 34999,
+          "bytes": 760409060,
+          "queued_frames": 0,
+          "fps": 99.39,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 1.33
+        },
+        {
+          "seconds": 355.416514,
+          "event": "stats",
+          "frames": 35502,
+          "bytes": 765287858,
+          "queued_frames": 0,
+          "fps": 100.49,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.57
+        },
+        {
+          "seconds": 360.432042,
+          "event": "stats",
+          "frames": 36001,
+          "bytes": 769714731,
+          "queued_frames": 0,
+          "fps": 99.49,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.49
+        },
+        {
+          "seconds": 365.433639,
+          "event": "stats",
+          "frames": 36504,
+          "bytes": 776956371,
+          "queued_frames": 0,
+          "fps": 100.57,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.59
+        },
+        {
+          "seconds": 370.435169,
+          "event": "stats",
+          "frames": 37001,
+          "bytes": 787136919,
+          "queued_frames": 0,
+          "fps": 99.37,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 2.01
+        },
+        {
+          "seconds": 375.440109,
+          "event": "stats",
+          "frames": 37501,
+          "bytes": 787939224,
+          "queued_frames": 1,
+          "fps": 99.9,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.57
+        },
+        {
+          "seconds": 380.440183,
+          "event": "stats",
+          "frames": 38002,
+          "bytes": 788942492,
+          "queued_frames": 0,
+          "fps": 100.2,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.72
+        },
+        {
+          "seconds": 385.441067,
+          "event": "stats",
+          "frames": 38502,
+          "bytes": 789994294,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.69
+        },
+        {
+          "seconds": 390.452529,
+          "event": "stats",
+          "frames": 39003,
+          "bytes": 790799680,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.56
+        },
+        {
+          "seconds": 395.466734,
+          "event": "stats",
+          "frames": 39504,
+          "bytes": 791801688,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.72
+        },
+        {
+          "seconds": 400.470686,
+          "event": "stats",
+          "frames": 40004,
+          "bytes": 792857440,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.66
+        },
+        {
+          "seconds": 405.480367,
+          "event": "stats",
+          "frames": 40506,
+          "bytes": 794003300,
+          "queued_frames": 0,
+          "fps": 100.21,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.64
+        },
+        {
+          "seconds": 408.917461,
+          "event": "session_ended",
+          "frames": 40844,
+          "bytes": 794981200,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 408.918144,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-restored-20261107-01.jsonl",
+      "source_sha256": "5138d9eaab3d4614c61e736715857a9318a68daf40aedac20498bc96b05c6c7d",
+      "events": [
+        {
+          "seconds": 0.000563,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 16384,
+          "h264_profile": "high"
+        },
+        {
+          "seconds": 0.040826,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 5.013726,
+          "event": "stats",
+          "frames": 461,
+          "bytes": 1025060,
+          "queued_frames": 0,
+          "fps": 91.97,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.75
+        },
+        {
+          "seconds": 10.028707,
+          "event": "stats",
+          "frames": 962,
+          "bytes": 2102465,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.76
+        },
+        {
+          "seconds": 15.03265,
+          "event": "stats",
+          "frames": 1462,
+          "bytes": 2891207,
+          "queued_frames": 0,
+          "fps": 99.92,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.6
+        },
+        {
+          "seconds": 20.035662,
+          "event": "stats",
+          "frames": 1964,
+          "bytes": 4045452,
+          "queued_frames": 0,
+          "fps": 100.34,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.7
+        },
+        {
+          "seconds": 25.04241,
+          "event": "stats",
+          "frames": 2463,
+          "bytes": 5330126,
+          "queued_frames": 0,
+          "fps": 99.67,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.76
+        },
+        {
+          "seconds": 30.043673,
+          "event": "stats",
+          "frames": 2964,
+          "bytes": 6233758,
+          "queued_frames": 0,
+          "fps": 100.17,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.6
+        },
+        {
+          "seconds": 35.05438,
+          "event": "stats",
+          "frames": 3465,
+          "bytes": 7370652,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.75
+        },
+        {
+          "seconds": 40.064379,
+          "event": "stats",
+          "frames": 3966,
+          "bytes": 8513893,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.74
+        },
+        {
+          "seconds": 45.0754,
+          "event": "stats",
+          "frames": 4468,
+          "bytes": 9350192,
+          "queued_frames": 0,
+          "fps": 100.18,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 0.63
+        },
+        {
+          "seconds": 50.075587,
+          "event": "stats",
+          "frames": 4967,
+          "bytes": 10562132,
+          "queued_frames": 0,
+          "fps": 99.8,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 55.089675,
+          "event": "stats",
+          "frames": 5470,
+          "bytes": 12036875,
+          "queued_frames": 0,
+          "fps": 100.32,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 60.102251,
+          "event": "stats",
+          "frames": 5973,
+          "bytes": 13088518,
+          "queued_frames": 0,
+          "fps": 100.35,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.59
+        },
+        {
+          "seconds": 65.109651,
+          "event": "stats",
+          "frames": 6470,
+          "bytes": 15671010,
+          "queued_frames": 0,
+          "fps": 99.25,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.32
+        },
+        {
+          "seconds": 70.121808,
+          "event": "stats",
+          "frames": 6973,
+          "bytes": 17041407,
+          "queued_frames": 0,
+          "fps": 100.36,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 75.131272,
+          "event": "stats",
+          "frames": 7474,
+          "bytes": 18250076,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.7
+        },
+        {
+          "seconds": 80.134171,
+          "event": "stats",
+          "frames": 7973,
+          "bytes": 19934529,
+          "queued_frames": 0,
+          "fps": 99.74,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 0.82
+        },
+        {
+          "seconds": 85.140186,
+          "event": "stats",
+          "frames": 8473,
+          "bytes": 21387492,
+          "queued_frames": 0,
+          "fps": 99.88,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 90.143721,
+          "event": "stats",
+          "frames": 8977,
+          "bytes": 22728563,
+          "queued_frames": 0,
+          "fps": 100.73,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 0.66
+        },
+        {
+          "seconds": 95.155592,
+          "event": "stats",
+          "frames": 9476,
+          "bytes": 24256564,
+          "queued_frames": 0,
+          "fps": 99.56,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.78
+        },
+        {
+          "seconds": 100.163651,
+          "event": "stats",
+          "frames": 9976,
+          "bytes": 25757644,
+          "queued_frames": 0,
+          "fps": 99.84,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.78
+        },
+        {
+          "seconds": 105.16416,
+          "event": "stats",
+          "frames": 10476,
+          "bytes": 26868035,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.58
+        },
+        {
+          "seconds": 110.166605,
+          "event": "stats",
+          "frames": 10976,
+          "bytes": 28439439,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 0.78
+        },
+        {
+          "seconds": 115.181859,
+          "event": "stats",
+          "frames": 11477,
+          "bytes": 30016975,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.77
+        },
+        {
+          "seconds": 116.081502,
+          "event": "session_ended",
+          "frames": 11559,
+          "bytes": 30151634,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 116.081823,
+          "event": "waiting",
+          "message": "[Errno None] b'libusb0-dll:err [_usb_reap_async] reaping request failed, win error: A device attached to the system is not functioning.\\r\\n\\n'"
+        },
+        {
+          "seconds": 117.097272,
+          "event": "waiting",
+          "message": "Waiting for powered Goggles 2 in Virtual Flight mode"
+        },
+        {
+          "seconds": 405.865205,
+          "event": "stopped"
+        }
+      ]
+    },
+    {
+      "source_log": "latency-timing-20261107-01.jsonl",
+      "source_sha256": "f9fe7cb324ce34c351d8764f6f631ec37702a6f8cba4de9408ea3179ba12a9a1",
+      "events": [
+        {
+          "seconds": 0.000605,
+          "event": "starting",
+          "fps": 100,
+          "bitrate_mbps": 20,
+          "capture": "gfxcapture",
+          "capture_fps": 240,
+          "resolution": "1920x1080",
+          "preset": "p4",
+          "keyframe_seconds": 3,
+          "display_index": 0,
+          "low_latency": true,
+          "usb_write_size": 16384,
+          "h264_profile": "high"
+        },
+        {
+          "seconds": 0.050353,
+          "event": "connected",
+          "attempt": 1
+        },
+        {
+          "seconds": 0.097973,
+          "event": "encoder_experiment",
+          "name": "remove_timing_sei",
+          "bitstream_filter": "filter_units=remove_types=6|12"
+        },
+        {
+          "seconds": 5.000937,
+          "event": "stats",
+          "frames": 456,
+          "bytes": 1095361,
+          "queued_frames": 0,
+          "fps": 91.2,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.73
+        },
+        {
+          "seconds": 10.008947,
+          "event": "stats",
+          "frames": 957,
+          "bytes": 2246991,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.71
+        },
+        {
+          "seconds": 15.020909,
+          "event": "stats",
+          "frames": 1458,
+          "bytes": 3228247,
+          "queued_frames": 0,
+          "fps": 99.96,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.6
+        },
+        {
+          "seconds": 20.032071,
+          "event": "stats",
+          "frames": 1959,
+          "bytes": 4370956,
+          "queued_frames": 0,
+          "fps": 99.98,
+          "queue_ms_p95": 0.05,
+          "send_ms_p95": 0.74
+        },
+        {
+          "seconds": 25.034746,
+          "event": "stats",
+          "frames": 2463,
+          "bytes": 5740388,
+          "queued_frames": 0,
+          "fps": 100.75,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.75
+        },
+        {
+          "seconds": 30.042745,
+          "event": "stats",
+          "frames": 2964,
+          "bytes": 7443083,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.12,
+          "send_ms_p95": 0.67
+        },
+        {
+          "seconds": 35.042803,
+          "event": "stats",
+          "frames": 3464,
+          "bytes": 9502235,
+          "queued_frames": 0,
+          "fps": 100.0,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 0.79
+        },
+        {
+          "seconds": 40.04718,
+          "event": "stats",
+          "frames": 3964,
+          "bytes": 11704178,
+          "queued_frames": 0,
+          "fps": 99.91,
+          "queue_ms_p95": 0.09,
+          "send_ms_p95": 0.81
+        },
+        {
+          "seconds": 45.055138,
+          "event": "stats",
+          "frames": 4465,
+          "bytes": 13162725,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 0.84
+        },
+        {
+          "seconds": 50.057515,
+          "event": "stats",
+          "frames": 4965,
+          "bytes": 25077274,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 55.060069,
+          "event": "stats",
+          "frames": 5466,
+          "bytes": 37932380,
+          "queued_frames": 0,
+          "fps": 100.15,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 60.066232,
+          "event": "stats",
+          "frames": 5966,
+          "bytes": 50707605,
+          "queued_frames": 0,
+          "fps": 99.88,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 65.077785,
+          "event": "stats",
+          "frames": 6467,
+          "bytes": 63292001,
+          "queued_frames": 0,
+          "fps": 99.97,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.89
+        },
+        {
+          "seconds": 70.085903,
+          "event": "stats",
+          "frames": 6968,
+          "bytes": 76033363,
+          "queued_frames": 0,
+          "fps": 100.04,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.85
+        },
+        {
+          "seconds": 70.232684,
+          "event": "session_ended",
+          "frames": 6975,
+          "bytes": 76222534,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 70.240042,
+          "event": "waiting",
+          "message": "[Errno None] b'libusb0-dll:err [submit_async] submitting request failed, win error: A device which does not exist was specified.\\r\\n'"
+        },
+        {
+          "seconds": 71.256917,
+          "event": "waiting",
+          "message": "Waiting for powered Goggles 2 in Virtual Flight mode"
+        },
+        {
+          "seconds": 72.2674,
+          "event": "connected",
+          "attempt": 3
+        },
+        {
+          "seconds": 72.31147,
+          "event": "encoder_experiment",
+          "name": "remove_timing_sei",
+          "bitstream_filter": "filter_units=remove_types=6|12"
+        },
+        {
+          "seconds": 77.274182,
+          "event": "stats",
+          "frames": 464,
+          "bytes": 11748046,
+          "queued_frames": 0,
+          "fps": 92.62,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.82
+        },
+        {
+          "seconds": 82.27668,
+          "event": "stats",
+          "frames": 964,
+          "bytes": 24558942,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.7
+        },
+        {
+          "seconds": 87.27701,
+          "event": "stats",
+          "frames": 1464,
+          "bytes": 37298923,
+          "queued_frames": 0,
+          "fps": 99.99,
+          "queue_ms_p95": 0.06,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 92.279795,
+          "event": "stats",
+          "frames": 1964,
+          "bytes": 50189242,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.88
+        },
+        {
+          "seconds": 97.288258,
+          "event": "stats",
+          "frames": 2465,
+          "bytes": 62970523,
+          "queued_frames": 0,
+          "fps": 100.03,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 102.294917,
+          "event": "stats",
+          "frames": 2966,
+          "bytes": 74775857,
+          "queued_frames": 0,
+          "fps": 100.07,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 2.05
+        },
+        {
+          "seconds": 107.299846,
+          "event": "stats",
+          "frames": 3466,
+          "bytes": 85892440,
+          "queued_frames": 0,
+          "fps": 99.9,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 112.302699,
+          "event": "stats",
+          "frames": 3967,
+          "bytes": 98496396,
+          "queued_frames": 0,
+          "fps": 100.14,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 117.305073,
+          "event": "stats",
+          "frames": 4467,
+          "bytes": 111479023,
+          "queued_frames": 0,
+          "fps": 99.95,
+          "queue_ms_p95": 0.08,
+          "send_ms_p95": 1.74
+        },
+        {
+          "seconds": 122.307931,
+          "event": "stats",
+          "frames": 4967,
+          "bytes": 124432153,
+          "queued_frames": 0,
+          "fps": 99.94,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.76
+        },
+        {
+          "seconds": 127.317602,
+          "event": "stats",
+          "frames": 5468,
+          "bytes": 137390183,
+          "queued_frames": 0,
+          "fps": 100.01,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.68
+        },
+        {
+          "seconds": 132.32282,
+          "event": "stats",
+          "frames": 5969,
+          "bytes": 150433395,
+          "queued_frames": 0,
+          "fps": 100.09,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.83
+        },
+        {
+          "seconds": 137.329812,
+          "event": "stats",
+          "frames": 6469,
+          "bytes": 163019154,
+          "queued_frames": 0,
+          "fps": 99.86,
+          "queue_ms_p95": 0.07,
+          "send_ms_p95": 1.77
+        },
+        {
+          "seconds": 140.605275,
+          "event": "session_ended",
+          "frames": 6790,
+          "bytes": 171174992,
+          "discarded_bytes": 0
+        },
+        {
+          "seconds": 140.606258,
+          "event": "stopped"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "path": "WindowsNoEditor/DFSM/Binaries/Win64/DFSM-Win64-Shipping.exe",
+    "size": 81050112,
+    "sha256": "7a9a7bc2c05a8b2eabd1b83d8b688655b76848355e3f1ff46d28d80572126722"
+  },
+  {
+    "path": "WindowsNoEditor/DFSM/Binaries/Win64/fc_lib.dll",
+    "size": 179712,
+    "sha256": "ba34aaefea27fb67585c6790e45a839ba8514586ce4f8ca8a5a8314cebe0a03f"
+  },
+  {
+    "path": "WindowsNoEditor/DFSM/Binaries/Win64/libusb-1.0.dll",
+    "size": 108032,
+    "sha256": "9a6d52cf0f9cf6df8986c426f452b6655aa3575c181d7167daf9d9552a827cd4"
+  },
+  {
+    "path": "WindowsNoEditor/DFSM/Binaries/Win64/libusb0.dll",
+    "size": 87280,
+    "sha256": "c24b231889c6c4856eafb9c90b99ae01cbbbe897498be161624d3bd36266a921"
+  },
+  {
+    "path": "WindowsNoEditor/DFSM/Binaries/Win64/libusb0_dji.dll",
+    "size": 83824,
+    "sha256": "23e6ca9418a102976485110cfb11c20aa3c69d0701cd993b782ca97012b01831"
+  }
+]

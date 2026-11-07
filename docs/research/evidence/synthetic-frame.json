@@ -1,0 +1,29 @@
+{
+  "generated": true,
+  "not_a_usb_capture": true,
+  "source": "First NVENC frame of generated testsrc2=size=1920x1080:rate=100",
+  "settings": {
+    "encoder": "h264_nvenc",
+    "preset": "p4",
+    "tune": "ull",
+    "profile": "baseline",
+    "level": "5.1",
+    "bitrate": 20000000,
+    "vbv": 400000,
+    "b_frames": 0,
+    "gop": 300
+  },
+  "ffmpeg_commit": "0893feba65",
+  "gpu": "RTX 5060 Laptop",
+  "driver": "610.74",
+  "timestamp_ms": 1794000000123,
+  "initial_sequence": 0,
+  "initial_fragment_counter": 0,
+  "packets": 42,
+  "aud_removed": true,
+  "frame_bytes": 40149,
+  "frame_sha256": "8b2e9ea7d0189631306e1659227abd94034ea96148f26ec8d2855962992d6735",
+  "wire_bytes": 42039,
+  "wire_sha256": "e061791fd2860c9025b622bd3730085e47949c999096b77e6b49b70f524e4df4",
+  "note": "Original synthetic media, not a desktop recording or proprietary application asset. Different GPU/driver versions need not reproduce bit-identical NVENC output."
+}

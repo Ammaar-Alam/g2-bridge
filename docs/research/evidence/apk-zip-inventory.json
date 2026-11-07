@@ -1,0 +1,1076 @@
+[
+  {
+    "name": "res/drawable-xhdpi-v4/notification_bg_normal.9.png",
+    "size": 221,
+    "compressed": 221,
+    "crc32": "9944f31a"
+  },
+  {
+    "name": "lib/armeabi-v7a/libavdevice.so",
+    "size": 46472,
+    "compressed": 21529,
+    "crc32": "4a6a6b56"
+  },
+  {
+    "name": "META-INF/androidx.localbroadcastmanager_localbroadcastmanager.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/ic_plusone_medium_off_client.png",
+    "size": 307,
+    "compressed": 307,
+    "crc32": "b31c397d"
+  },
+  {
+    "name": "res/color/common_google_signin_btn_text_dark.xml",
+    "size": 712,
+    "compressed": 277,
+    "crc32": "08bdd34b"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_dark_normal.xml",
+    "size": 548,
+    "compressed": 254,
+    "crc32": "703f66aa"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/ic_plusone_medium_off_client.png",
+    "size": 630,
+    "compressed": 630,
+    "crc32": "66ec097e"
+  },
+  {
+    "name": "META-INF/androidx.swiperefreshlayout_swiperefreshlayout.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/notification_bg_low_pressed.9.png",
+    "size": 252,
+    "compressed": 252,
+    "crc32": "c8900a8e"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png",
+    "size": 615,
+    "compressed": 615,
+    "crc32": "4199e4d9"
+  },
+  {
+    "name": "lib/armeabi-v7a/libunrealbridge.so",
+    "size": 54928,
+    "compressed": 20204,
+    "crc32": "276f25a2"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/ic_plusone_tall_off_client.png",
+    "size": 320,
+    "compressed": 320,
+    "crc32": "9fda6da2"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/notify_panel_notification_icon_bg.png",
+    "size": 1125,
+    "compressed": 1125,
+    "crc32": "d0423e44"
+  },
+  {
+    "name": "res/drawable-tvdpi-v4/ic_plusone_tall_off_client.png",
+    "size": 402,
+    "compressed": 402,
+    "crc32": "175eedc0"
+  },
+  {
+    "name": "classes4.dex",
+    "size": 5928,
+    "compressed": 3092,
+    "crc32": "c25a7b62"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-service.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "jsr305_annotations/Jsr305_annotations.gwt.xml",
+    "size": 133,
+    "compressed": 104,
+    "crc32": "da2c535b"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_disabled.xml",
+    "size": 1132,
+    "compressed": 436,
+    "crc32": "93e90611"
+  },
+  {
+    "name": "lib/armeabi-v7a/libx264_164.so",
+    "size": 1574752,
+    "compressed": 807735,
+    "crc32": "fb061db0"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_dark_focused.xml",
+    "size": 892,
+    "compressed": 373,
+    "crc32": "50c16087"
+  },
+  {
+    "name": "META-INF/androidx.print_print.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable/notification_bg_low.xml",
+    "size": 532,
+    "compressed": 252,
+    "crc32": "711dd0d9"
+  },
+  {
+    "name": "classes2.dex",
+    "size": 656108,
+    "compressed": 285167,
+    "crc32": "119968e8"
+  },
+  {
+    "name": "res/drawable-tvdpi-v4/ic_plusone_medium_off_client.png",
+    "size": 372,
+    "compressed": 372,
+    "crc32": "2b3efa5d"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-process.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "res/xml/accessory_filter.xml",
+    "size": 760,
+    "compressed": 263,
+    "crc32": "a3a5c508"
+  },
+  {
+    "name": "res/layout/notification_template_big_media_narrow_custom.xml",
+    "size": 3216,
+    "compressed": 1029,
+    "crc32": "bd948c48"
+  },
+  {
+    "name": "res/layout/notification_template_part_chronometer.xml",
+    "size": 440,
+    "compressed": 259,
+    "crc32": "075c1a69"
+  },
+  {
+    "name": "lib/armeabi-v7a/libavutil.so",
+    "size": 538636,
+    "compressed": 291771,
+    "crc32": "04ef8491"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/ic_plusone_standard_off_client.png",
+    "size": 667,
+    "compressed": 667,
+    "crc32": "fb58e863"
+  },
+  {
+    "name": "lib/armeabi-v7a/libswresample.so",
+    "size": 91712,
+    "compressed": 46492,
+    "crc32": "add4c25e"
+  },
+  {
+    "name": "META-INF/androidx.customview_customview.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png",
+    "size": 683,
+    "compressed": 683,
+    "crc32": "58fb3053"
+  },
+  {
+    "name": "META-INF/androidx.documentfile_documentfile.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/notification_bg_normal_pressed.9.png",
+    "size": 223,
+    "compressed": 223,
+    "crc32": "ed1fee6a"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/ic_plusone_tall_off_client.png",
+    "size": 635,
+    "compressed": 635,
+    "crc32": "54d571b5"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png",
+    "size": 500,
+    "compressed": 500,
+    "crc32": "c6f5722c"
+  },
+  {
+    "name": "res/xml/provider_paths.xml",
+    "size": 536,
+    "compressed": 243,
+    "crc32": "70ed967c"
+  },
+  {
+    "name": "resources.arsc",
+    "size": 180056,
+    "compressed": 180056,
+    "crc32": "4d7ee4a2"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_light.xml",
+    "size": 588,
+    "compressed": 257,
+    "crc32": "ac56f4f0"
+  },
+  {
+    "name": "META-INF/androidx.loader_loader.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "lib/armeabi-v7a/libavcodec.so",
+    "size": 12026252,
+    "compressed": 6272756,
+    "crc32": "429dfa53"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-livedata.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "third_party/java_src/error_prone/project/annotations/Annotations.gwt.xml",
+    "size": 375,
+    "compressed": 185,
+    "crc32": "3ddeaac0"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/ic_plusone_standard_off_client.png",
+    "size": 343,
+    "compressed": 343,
+    "crc32": "e986002f"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-runtime.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "lib/armeabi-v7a/libpostproc.so",
+    "size": 34232,
+    "compressed": 17947,
+    "crc32": "b60b6805"
+  },
+  {
+    "name": "res/drawable-watch-v20/common_google_signin_btn_text_light_normal.xml",
+    "size": 872,
+    "compressed": 362,
+    "crc32": "23c7803c"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-extensions.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/googleg_standard_color_18.png",
+    "size": 982,
+    "compressed": 982,
+    "crc32": "bc0a585a"
+  },
+  {
+    "name": "META-INF/androidx.viewpager_viewpager.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png",
+    "size": 1138,
+    "compressed": 1138,
+    "crc32": "aefcba59"
+  },
+  {
+    "name": "res/layout/downloader_progress.xml",
+    "size": 4300,
+    "compressed": 1016,
+    "crc32": "4f5b9c0f"
+  },
+  {
+    "name": "res/layout/notification_template_big_media_custom.xml",
+    "size": 3044,
+    "compressed": 982,
+    "crc32": "84503c4d"
+  },
+  {
+    "name": "lib/armeabi-v7a/libdjisdk_datalink.so",
+    "size": 1116256,
+    "compressed": 484084,
+    "crc32": "2db2f9d3"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+    "size": 138,
+    "compressed": 138,
+    "crc32": "04576501"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/ic_plusone_small_off_client.png",
+    "size": 667,
+    "compressed": 667,
+    "crc32": "85862b17"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/notification_bg_low_normal.9.png",
+    "size": 221,
+    "compressed": 221,
+    "crc32": "3ad03275"
+  },
+  {
+    "name": "error_prone/Annotations.gwt.xml",
+    "size": 119,
+    "compressed": 98,
+    "crc32": "c98b56d2"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png",
+    "size": 610,
+    "compressed": 610,
+    "crc32": "88698600"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png",
+    "size": 1032,
+    "compressed": 1032,
+    "crc32": "f4f0cee1"
+  },
+  {
+    "name": "res/layout-v21/notification_template_icon_group.xml",
+    "size": 988,
+    "compressed": 418,
+    "crc32": "65fc3ab7"
+  },
+  {
+    "name": "lib/armeabi-v7a/libmediandk.so",
+    "size": 17300,
+    "compressed": 3310,
+    "crc32": "5544fe1a"
+  },
+  {
+    "name": "res/layout/status_bar_ongoing_event_progress_bar.xml",
+    "size": 2568,
+    "compressed": 829,
+    "crc32": "e833d0bd"
+  },
+  {
+    "name": "META-INF/androidx.coordinatorlayout_coordinatorlayout.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/ic_plusone_small_off_client.png",
+    "size": 513,
+    "compressed": 513,
+    "crc32": "c95f4d78"
+  },
+  {
+    "name": "META-INF/androidx.legacy_legacy-support-core-ui.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_disabled.xml",
+    "size": 1152,
+    "compressed": 446,
+    "crc32": "2dbf84ec"
+  },
+  {
+    "name": "lib/armeabi-v7a/libdjisdk_jni.so",
+    "size": 6698764,
+    "compressed": 1914244,
+    "crc32": "7f2c4e11"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/icon.png",
+    "size": 2790,
+    "compressed": 2790,
+    "crc32": "ff46e1a1"
+  },
+  {
+    "name": "res/layout/notification_template_lines_media.xml",
+    "size": 2872,
+    "compressed": 801,
+    "crc32": "9f533315"
+  },
+  {
+    "name": "res/color/common_google_signin_btn_tint.xml",
+    "size": 464,
+    "compressed": 224,
+    "crc32": "14b27af0"
+  },
+  {
+    "name": "res/drawable/notification_icon_background.xml",
+    "size": 372,
+    "compressed": 185,
+    "crc32": "88924e38"
+  },
+  {
+    "name": "res/layout/notification_media_cancel_action.xml",
+    "size": 744,
+    "compressed": 374,
+    "crc32": "85e110eb"
+  },
+  {
+    "name": "META-INF/androidx.legacy_legacy-support-v13.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/common_full_open_on_phone.png",
+    "size": 681,
+    "compressed": 681,
+    "crc32": "3ae6b82e"
+  },
+  {
+    "name": "res/drawable-v21/notification_action_background.xml",
+    "size": 1180,
+    "compressed": 467,
+    "crc32": "7519451a"
+  },
+  {
+    "name": "assets/memoryadvice/lookup.json",
+    "size": 666914,
+    "compressed": 140524,
+    "crc32": "5cafe8b1"
+  },
+  {
+    "name": "assets/memoryadvice/default.json",
+    "size": 608,
+    "compressed": 250,
+    "crc32": "c3c12326"
+  },
+  {
+    "name": "res/drawable/notification_bg.xml",
+    "size": 532,
+    "compressed": 253,
+    "crc32": "6ac6998f"
+  },
+  {
+    "name": "res/drawable-watch-v20/common_google_signin_btn_text_disabled.xml",
+    "size": 1040,
+    "compressed": 401,
+    "crc32": "115fe726"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/icon.png",
+    "size": 4622,
+    "compressed": 4622,
+    "crc32": "e49d8c33"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/ic_plusone_tall_off_client.png",
+    "size": 720,
+    "compressed": 720,
+    "crc32": "15537324"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png",
+    "size": 897,
+    "compressed": 897,
+    "crc32": "85696478"
+  },
+  {
+    "name": "META-INF/androidx.legacy_legacy-support-v4.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-livedata-core.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "third_party/java_src/error_prone/project/annotations/Google_internal.gwt.xml",
+    "size": 213,
+    "compressed": 146,
+    "crc32": "b127680a"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_dark_focused.xml",
+    "size": 892,
+    "compressed": 373,
+    "crc32": "e4dde7c9"
+  },
+  {
+    "name": "META-INF/androidx.cursoradapter_cursoradapter.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/layout/notification_template_big_media.xml",
+    "size": 1696,
+    "compressed": 638,
+    "crc32": "776b751f"
+  },
+  {
+    "name": "META-INF/androidx.media_media.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable/downloadimageh.png",
+    "size": 292628,
+    "compressed": 292628,
+    "crc32": "50af2e45"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/ic_plusone_standard_off_client.png",
+    "size": 827,
+    "compressed": 827,
+    "crc32": "cb0be57d"
+  },
+  {
+    "name": "lib/armeabi-v7a/libUE4.so",
+    "size": 143645900,
+    "compressed": 49963523,
+    "crc32": "2932e595"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_light.xml",
+    "size": 588,
+    "compressed": 256,
+    "crc32": "10076bc9"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/ic_plusone_standard_off_client.png",
+    "size": 403,
+    "compressed": 403,
+    "crc32": "3cd89685"
+  },
+  {
+    "name": "META-INF/androidx.drawerlayout_drawerlayout.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_light_focused.xml",
+    "size": 892,
+    "compressed": 370,
+    "crc32": "37bf8980"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/common_google_signin_btn_text_light_normal_background.9.png",
+    "size": 694,
+    "compressed": 694,
+    "crc32": "9a55c238"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png",
+    "size": 960,
+    "compressed": 960,
+    "crc32": "d939ee0d"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/ic_plusone_tall_off_client.png",
+    "size": 403,
+    "compressed": 403,
+    "crc32": "62af0479"
+  },
+  {
+    "name": "res/layout-v21/notification_action_tombstone.xml",
+    "size": 1228,
+    "compressed": 532,
+    "crc32": "9eb678c0"
+  },
+  {
+    "name": "META-INF/androidx.versionedparcelable_versionedparcelable.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/notification_bg_low_normal.9.png",
+    "size": 215,
+    "compressed": 215,
+    "crc32": "d9fa55b7"
+  },
+  {
+    "name": "res/drawable/icon.png",
+    "size": 2790,
+    "compressed": 2790,
+    "crc32": "ff46e1a1"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/notification_bg_low_pressed.9.png",
+    "size": 223,
+    "compressed": 223,
+    "crc32": "b80ede38"
+  },
+  {
+    "name": "META-INF/androidx.interpolator_interpolator.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_dark_normal.xml",
+    "size": 584,
+    "compressed": 273,
+    "crc32": "8fe783fd"
+  },
+  {
+    "name": "lib/armeabi-v7a/libplaycore.so",
+    "size": 91744,
+    "compressed": 36666,
+    "crc32": "90a1ba49"
+  },
+  {
+    "name": "classes3.dex",
+    "size": 1308,
+    "compressed": 750,
+    "crc32": "06755bc0"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/common_google_signin_btn_text_light_normal_background.9.png",
+    "size": 465,
+    "compressed": 465,
+    "crc32": "dd5d7c6f"
+  },
+  {
+    "name": "META-INF/androidx.fragment_fragment.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/layout-v21/notification_action.xml",
+    "size": 1052,
+    "compressed": 483,
+    "crc32": "72cf387f"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/icon.png",
+    "size": 6732,
+    "compressed": 6732,
+    "crc32": "fe2d77cf"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/notification_bg_normal_pressed.9.png",
+    "size": 225,
+    "compressed": 225,
+    "crc32": "a1d68cd0"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/common_google_signin_btn_text_light_normal_background.9.png",
+    "size": 1255,
+    "compressed": 1255,
+    "crc32": "3dae25e9"
+  },
+  {
+    "name": "res/layout/notification_template_part_time.xml",
+    "size": 440,
+    "compressed": 262,
+    "crc32": "4a0edd1a"
+  },
+  {
+    "name": "res/layout/notification_template_media_custom.xml",
+    "size": 2756,
+    "compressed": 887,
+    "crc32": "315c2a4b"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/googleg_standard_color_18.png",
+    "size": 1615,
+    "compressed": 1615,
+    "crc32": "1c8ecffd"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_dark.xml",
+    "size": 588,
+    "compressed": 257,
+    "crc32": "416c8223"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/googleg_disabled_color_18.png",
+    "size": 410,
+    "compressed": 410,
+    "crc32": "0cb58331"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/notify_panel_notification_icon_bg.png",
+    "size": 1027,
+    "compressed": 1027,
+    "crc32": "f7eed13d"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/ic_plusone_medium_off_client.png",
+    "size": 395,
+    "compressed": 395,
+    "crc32": "77444459"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/googleg_disabled_color_18.png",
+    "size": 516,
+    "compressed": 516,
+    "crc32": "edf1a67b"
+  },
+  {
+    "name": "lib/armeabi-v7a/libavformat.so",
+    "size": 1959352,
+    "compressed": 1027487,
+    "crc32": "be1c77b7"
+  },
+  {
+    "name": "META-INF/androidx.legacy_legacy-support-core-utils.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png",
+    "size": 776,
+    "compressed": 776,
+    "crc32": "c1b93349"
+  },
+  {
+    "name": "lib/armeabi-v7a/libswscale.so",
+    "size": 460352,
+    "compressed": 194160,
+    "crc32": "d79e5557"
+  },
+  {
+    "name": "billing.properties",
+    "size": 50,
+    "compressed": 37,
+    "crc32": "62b26186"
+  },
+  {
+    "name": "res/drawable-ldpi-v4/icon.png",
+    "size": 1877,
+    "compressed": 1877,
+    "crc32": "01591818"
+  },
+  {
+    "name": "lib/armeabi-v7a/libtry-alloc-lib.so",
+    "size": 13904,
+    "compressed": 6485,
+    "crc32": "1b81727c"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/common_google_signin_btn_text_light_normal_background.9.png",
+    "size": 808,
+    "compressed": 808,
+    "crc32": "db1aed88"
+  },
+  {
+    "name": "res/layout/notification_media_action.xml",
+    "size": 564,
+    "compressed": 302,
+    "crc32": "39f483af"
+  },
+  {
+    "name": "res/drawable-tvdpi-v4/ic_plusone_small_off_client.png",
+    "size": 418,
+    "compressed": 418,
+    "crc32": "69a6b8ad"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/notification_bg_normal.9.png",
+    "size": 215,
+    "compressed": 215,
+    "crc32": "c135d194"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/googleg_standard_color_18.png",
+    "size": 808,
+    "compressed": 808,
+    "crc32": "7d62f5a4"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_dark.xml",
+    "size": 588,
+    "compressed": 257,
+    "crc32": "98a8d5e8"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png",
+    "size": 1510,
+    "compressed": 1510,
+    "crc32": "30b789c3"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/ic_plusone_small_off_client.png",
+    "size": 277,
+    "compressed": 277,
+    "crc32": "1b9a7f76"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png",
+    "size": 1086,
+    "compressed": 1086,
+    "crc32": "fecc21a4"
+  },
+  {
+    "name": "META-INF/androidx.asynclayoutinflater_asynclayoutinflater.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png",
+    "size": 247,
+    "compressed": 247,
+    "crc32": "c29ac558"
+  },
+  {
+    "name": "META-INF/androidx.lifecycle_lifecycle-viewmodel.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "res/drawable/notification_tile_bg.xml",
+    "size": 304,
+    "compressed": 173,
+    "crc32": "a17d604a"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/googleg_disabled_color_18.png",
+    "size": 727,
+    "compressed": 727,
+    "crc32": "2c75d16b"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/notification_bg_low_normal.9.png",
+    "size": 212,
+    "compressed": 212,
+    "crc32": "378c117e"
+  },
+  {
+    "name": "res/layout-v21/notification_template_custom_big.xml",
+    "size": 2456,
+    "compressed": 785,
+    "crc32": "da43ec20"
+  },
+  {
+    "name": "res/drawable-tvdpi-v4/ic_plusone_standard_off_client.png",
+    "size": 386,
+    "compressed": 386,
+    "crc32": "795ef827"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png",
+    "size": 1638,
+    "compressed": 1638,
+    "crc32": "89e3a379"
+  },
+  {
+    "name": "META-INF/androidx.core_core.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "build-data.properties",
+    "size": 157,
+    "compressed": 126,
+    "crc32": "67650867"
+  },
+  {
+    "name": "META-INF/androidx.arch.core_core-runtime.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "7beadac6"
+  },
+  {
+    "name": "lib/armeabi-v7a/libc++_shared.so",
+    "size": 554808,
+    "compressed": 223044,
+    "crc32": "a9609a08"
+  },
+  {
+    "name": "META-INF/androidx.slidingpanelayout_slidingpanelayout.version",
+    "size": 6,
+    "compressed": 6,
+    "crc32": "fd7ea868"
+  },
+  {
+    "name": "lib/armeabi-v7a/libavfilter.so",
+    "size": 3012224,
+    "compressed": 1422661,
+    "crc32": "3880c650"
+  },
+  {
+    "name": "res/color/common_google_signin_btn_text_light.xml",
+    "size": 712,
+    "compressed": 277,
+    "crc32": "1be28714"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/googleg_disabled_color_18.png",
+    "size": 281,
+    "compressed": 281,
+    "crc32": "fa60669e"
+  },
+  {
+    "name": "res/anim/noaction.xml",
+    "size": 416,
+    "compressed": 215,
+    "crc32": "8725eb0b"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_light_focused.xml",
+    "size": 892,
+    "compressed": 371,
+    "crc32": "99d89a65"
+  },
+  {
+    "name": "res/layout-land/downloader_progress.xml",
+    "size": 4340,
+    "compressed": 1046,
+    "crc32": "5b305d89"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_text_light_normal.xml",
+    "size": 584,
+    "compressed": 273,
+    "crc32": "1aee6929"
+  },
+  {
+    "name": "res/layout/notification_template_media.xml",
+    "size": 1292,
+    "compressed": 505,
+    "crc32": "2f5c8fb8"
+  },
+  {
+    "name": "lib/armeabi-v7a/libclang_rt.ubsan_standalone-arm-android.so",
+    "size": 239296,
+    "compressed": 129586,
+    "crc32": "49ba9d91"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/ic_plusone_small_off_client.png",
+    "size": 530,
+    "compressed": 530,
+    "crc32": "f4296b13"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/notification_bg_low_pressed.9.png",
+    "size": 225,
+    "compressed": 225,
+    "crc32": "5059e725"
+  },
+  {
+    "name": "res/drawable-xhdpi-v4/common_full_open_on_phone.png",
+    "size": 489,
+    "compressed": 489,
+    "crc32": "cc7eabe9"
+  },
+  {
+    "name": "res/drawable-xxhdpi-v4/ic_plusone_medium_off_client.png",
+    "size": 837,
+    "compressed": 837,
+    "crc32": "beee6ffa"
+  },
+  {
+    "name": "res/layout/notification_template_big_media_narrow.xml",
+    "size": 1824,
+    "compressed": 657,
+    "crc32": "d7e7352f"
+  },
+  {
+    "name": "res/drawable-watch-v20/common_google_signin_btn_text_dark_normal.xml",
+    "size": 908,
+    "compressed": 371,
+    "crc32": "2e518bc8"
+  },
+  {
+    "name": "res/drawable-mdpi-v4/googleg_standard_color_18.png",
+    "size": 562,
+    "compressed": 562,
+    "crc32": "76065920"
+  },
+  {
+    "name": "classes.dex",
+    "size": 8169792,
+    "compressed": 3210227,
+    "crc32": "81fb0763"
+  },
+  {
+    "name": "res/drawable-hdpi-v4/notification_bg_normal.9.png",
+    "size": 212,
+    "compressed": 212,
+    "crc32": "c22cbe9f"
+  },
+  {
+    "name": "res/drawable/common_google_signin_btn_icon_light_normal.xml",
+    "size": 548,
+    "compressed": 255,
+    "crc32": "814a7878"
+  },
+  {
+    "name": "assets/main.obb.png",
+    "size": 1924433511,
+    "compressed": 1924433511,
+    "crc32": "c9112a9d"
+  },
+  {
+    "name": "META-INF/CERT.SF",
+    "size": 21555,
+    "compressed": 8398,
+    "crc32": "ff769d98"
+  },
+  {
+    "name": "assets/UE4CommandLine.txt",
+    "size": 28,
+    "compressed": 24,
+    "crc32": "c137e81b"
+  },
+  {
+    "name": "AndroidManifest.xml",
+    "size": 14996,
+    "compressed": 3598,
+    "crc32": "9f8bcd58"
+  },
+  {
+    "name": "META-INF/CERT.RSA",
+    "size": 775,
+    "compressed": 606,
+    "crc32": "a19ef491"
+  },
+  {
+    "name": "META-INF/MANIFEST.MF",
+    "size": 21481,
+    "compressed": 7341,
+    "crc32": "e9a49736"
+  }
+]

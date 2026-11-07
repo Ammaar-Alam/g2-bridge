@@ -1,8 +1,7 @@
-"""Access units from an encoder explicitly configured to emit H.264 AUDs.
+"""Split encoder output at H.264 access unit delimiters (AUDs).
 
-This is not a general H.264 picture parser. Delimiters are used for splitting
-and removed from the transmitted access unit. SPS/PPS and all other NALs are
-preserved exactly, including codec configuration before keyframes.
+Input must include an AUD before each picture. The splitter removes the AUD
+and preserves all other NAL units, including codec configuration for keyframes.
 """
 import re
 from .protocol import _bytes

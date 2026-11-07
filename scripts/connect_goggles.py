@@ -1,4 +1,4 @@
-"""Establish the verified PC control session for a bounded observation window."""
+"""Open a Goggles 2 control session for a specified duration."""
 import argparse
 import json
 from pathlib import Path
@@ -14,8 +14,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True, help='Verified DJI x64 libusb0_device.dll')
     parser.add_argument('--python-deps', type=Path, help='Optional local PyUSB 1.3.1 installation directory')
-    parser.add_argument('--seconds', type=float, default=30, help='Bounded duration, 1 through 300 seconds')
-    parser.add_argument('--log', type=Path, required=True, help='New JSONL evidence file; existing files are refused')
+    parser.add_argument('--seconds', type=float, default=30, help='Session duration in seconds, from 1 to 300')
+    parser.add_argument('--log', type=Path, required=True, help='Path for a new JSON Lines log (must not already exist)')
     args = parser.parse_args()
     if not 1 <= args.seconds <= 300:
         parser.error('--seconds must be between 1 and 300')

@@ -1,0 +1,20 @@
+[
+  {
+    "write_size": 2048,
+    "frames": 300,
+    "total_calls": 3945,
+    "calls_per_frame_median": 13.0,
+    "wire_bytes": 7852451,
+    "wire_sha256": "f47192eaf01cbefea91702f78a335238ff1fcfaa558d5caf2e06f1b15f3ebd6b",
+    "frames_sha256": "12b23b7d230317da2a19a670b632a59b31971c7acfadceda6bf1190c7a0b07cb"
+  },
+  {
+    "write_size": 16384,
+    "frames": 300,
+    "total_calls": 601,
+    "calls_per_frame_median": 2.0,
+    "wire_bytes": 7852451,
+    "wire_sha256": "f47192eaf01cbefea91702f78a335238ff1fcfaa558d5caf2e06f1b15f3ebd6b",
+    "frames_sha256": "12b23b7d230317da2a19a670b632a59b31971c7acfadceda6bf1190c7a0b07cb"
+  }
+]

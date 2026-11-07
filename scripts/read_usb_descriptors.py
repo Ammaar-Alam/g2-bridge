@@ -1,4 +1,4 @@
-"""Read DJI USB descriptors through the Windows hub driver without changing drivers."""
+"""Read DJI USB descriptors through the Windows hub driver."""
 
 import argparse
 import ctypes as c

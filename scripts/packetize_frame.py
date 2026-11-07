@@ -1,4 +1,4 @@
-"""Write offline packets for ONE encoded video access unit. Does not access USB."""
+"""Write mobile V2 packets for one H.264 access unit to a file."""
 import argparse
 from pathlib import Path
 import sys
@@ -9,10 +9,10 @@ from goggles_bridge.protocol import VideoPacketizer
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input', type=Path, help='One H.264 encoder output buffer; not a multi-frame stream')
-    parser.add_argument('output', type=Path, help='New output file; refuses overwrite')
+    parser.add_argument('input', type=Path, help='File containing one H.264 access unit')
+    parser.add_argument('output', type=Path, help='Output file path (must not already exist)')
     parser.add_argument('--profile', choices=('zv900', 'pigeon'), required=True,
-                        help='Native class profile; hardware mapping remains unverified')
+                        help='Android destination profile')
     parser.add_argument('--sequence', type=int, default=0)
     parser.add_argument('--chunk-id', type=int, default=0)
     parser.add_argument('--timestamp-ms', type=int)
