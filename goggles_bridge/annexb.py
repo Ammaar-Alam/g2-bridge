@@ -11,6 +11,20 @@ _AUD = re.compile(rb'\x00\x00(?:\x00)?\x01\x09')
 _START = re.compile(rb'\x00\x00(?:\x00)?\x01')
 
 
+def strip_aud(data):
+    """Remove the delimiter from exactly one already-framed access unit."""
+    data = _bytes(data)
+    aud = _AUD.match(data)
+    if not aud:
+        raise ValueError('Encoder output must begin each access unit with an AUD')
+    match = _START.search(data, aud.end())
+    if match is None:
+        raise ValueError('Empty H.264 access unit')
+    if _AUD.search(data, aud.end()):
+        raise ValueError('Multiple access units in one encoder packet')
+    return data[match.start():]
+
+
 class AccessUnitStream:
     def __init__(self, max_frame_bytes=2 * 1024 * 1024):
         if type(max_frame_bytes) is not int or max_frame_bytes < 16:
@@ -19,12 +33,7 @@ class AccessUnitStream:
         self.buffer = bytearray()
 
     def _without_aud(self, data):
-        if not _AUD.match(data):
-            raise ValueError('Encoder output must begin each access unit with an AUD')
-        match = _START.search(data, _AUD.match(data).end())
-        if match is None:
-            raise ValueError('Empty H.264 access unit')
-        return bytes(data[match.start():])
+        return strip_aud(data)
 
     def feed(self, data):
         self.buffer.extend(_bytes(data))

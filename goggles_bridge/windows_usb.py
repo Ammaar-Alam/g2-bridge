@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 
 VERIFIED_DLL_SHA256 = 'd2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743'
+USB_WRITE_SIZES = (2048, 16384)
 
 
 class UsbTransportError(RuntimeError):
@@ -50,7 +51,10 @@ def _select_control_device(devices):
 
 
 class WindowsControlUsb:
-    def __init__(self, dll_path):
+    def __init__(self, dll_path, *, write_size=2048):
+        if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
+            raise ValueError(f'Unsupported USB write size: {write_size}')
+        self.write_size = write_size
         if sys.platform != 'win32' or C.sizeof(C.c_void_p) != 8:
             raise RuntimeError('This verified backend requires 64-bit Windows Python')
         dll = Path(dll_path).resolve(strict=True)
@@ -112,8 +116,8 @@ class WindowsControlUsb:
         if self.closed:
             raise RuntimeError('USB transport is closed')
         data = bytes(data)
-        for offset in range(0, len(data), 2048):
-            chunk = data[offset:offset+2048]
+        for offset in range(0, len(data), self.write_size):
+            chunk = data[offset:offset+self.write_size]
             try:
                 written = self.device.write(4, chunk, timeout=500)
             except self.core.USBError as exc:

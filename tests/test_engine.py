@@ -9,20 +9,23 @@ from goggles_bridge.control import V1Stream
 from goggles_bridge.engine import BridgeEngine, BridgeSettings, encoder_command
 from goggles_bridge.session import SessionError
 from goggles_bridge.windows_usb import DeviceNotFoundError, UsbTransportError
+from avi_fixture import stream as avi_stream
 
 
 class EncoderOutput:
-    def __init__(self, stopped, eof=False):
+    def __init__(self, stopped, eof=False, framed=False):
         self.stopped = stopped
         self.first = True
         self.eof = eof
+        self.framed = framed
 
     def read(self, _size):
         if self.eof:
             return b''
         if self.first:
             self.first = False
-            return (b'\0\0\0\1\x09\xf0\0\0\0\1\x65test-picture')*3
+            packet = b'\0\0\0\1\x09\xf0\0\0\0\1\x65test-picture'
+            return avi_stream([packet]) if self.framed else packet*3
         self.stopped.wait(2)
         return b''
 
@@ -33,9 +36,9 @@ class EncoderOutput:
 class FakeEncoder:
     pid = 123
 
-    def __init__(self, eof=False):
+    def __init__(self, eof=False, framed=False):
         self.stopped = threading.Event()
-        self.stdout = EncoderOutput(self.stopped, eof)
+        self.stdout = EncoderOutput(self.stopped, eof, framed)
         self.terminated = False
 
     def poll(self):
@@ -97,14 +100,14 @@ class EngineTests(unittest.TestCase):
     def settings(self, **kwargs):
         return BridgeSettings(Path('driver.dll'), Path('ffmpeg.exe'), **kwargs)
 
-    def run_case(self, factory, stop, *, encoder_factory=None):
+    def run_case(self, factory, stop, *, encoder_factory=None, settings=None):
         events, encoders = [], []
         def create_encoder(*args, **kwargs):
-            encoder = encoder_factory() if encoder_factory else FakeEncoder()
+            encoder = encoder_factory() if encoder_factory else FakeEncoder(framed=args[0][-2]=='avi')
             encoders.append(encoder)
             return encoder
         with tempfile.TemporaryDirectory() as folder:
-            engine = BridgeEngine(self.settings(), Path(folder)/'run.jsonl', stop_event=stop,
+            engine = BridgeEngine(settings or self.settings(), Path(folder)/'run.jsonl', stop_event=stop,
                 on_event=events.append, transport_factory=factory, process_factory=create_encoder,
                 retry_delay=.001, duration=2)
             engine.run()
@@ -135,6 +138,15 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(all(p.terminated for p in encoders))
         self.assertEqual(sum(e['event']=='ready' for e in events), 2)
         self.assertTrue(any(e['event']=='waiting' for e in events))
+
+    def test_low_latency_sends_one_complete_picture_before_any_next_frame(self):
+        stop = threading.Event()
+        usb = FakeUsb(stop)
+        events, encoders = self.run_case(lambda _: usb, stop, settings=self.settings(low_latency=True))
+        self.assertEqual(b''.join(p.payload[32:] for p in usb.video), b'\0\0\0\1\x65test-picture')
+        self.assertTrue(usb.closed)
+        self.assertTrue(encoders[0].terminated)
+        self.assertTrue(any(e['event']=='streaming' for e in events))
 
     def test_absent_device_can_be_stopped_while_waiting(self):
         stop = threading.Event()
@@ -170,3 +182,11 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings(fps=60, capture='ddagrab'))
         self.assertEqual(command[command.index('-level:v')+1], '4.2')
         self.assertIn('force_original_aspect_ratio=decrease', command[command.index('-vf')+1])
+
+    def test_low_latency_only_changes_local_framing_and_padding(self):
+        command = encoder_command(self.settings(low_latency=True))
+        for key, value in (('-r','100'), ('-b:v','20000000'), ('-preset','p4'), ('-bf','0'),
+                           ('-bufsize','400000'), ('-bsf:v','filter_units=remove_types=12'),
+                           ('-thread_queue_size','1')):
+            self.assertEqual(command[command.index(key)+1], value)
+        self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])

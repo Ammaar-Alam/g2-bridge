@@ -5,6 +5,7 @@ identify profiles; they are not authenticated hardware model identifiers.
 See .agents/PROTOCOL.md for evidence, addresses, and verification limits.
 """
 from dataclasses import dataclass
+import binascii
 import struct
 import time
 
@@ -36,7 +37,7 @@ def _crc_table(polynomial):
 
 
 _CRC8 = _crc_table(0x8C)
-_CRC16 = _crc_table(0x8408)
+_REVERSE_BITS = bytes(int(f'{value:08b}'[::-1], 2) for value in range(256))
 
 
 def crc8(data):
@@ -47,10 +48,9 @@ def crc8(data):
 
 
 def crc16(data):
-    value = 0x3692
-    for byte in data:
-        value = (value >> 8) ^ _CRC16[(value ^ byte) & 255]
-    return value
+    # crc_hqx uses the same polynomial with the opposite bit order
+    value = binascii.crc_hqx(bytes(data).translate(_REVERSE_BITS), 0x496C)
+    return (_REVERSE_BITS[value & 255] << 8) | _REVERSE_BITS[value >> 8]
 
 
 @dataclass(frozen=True)

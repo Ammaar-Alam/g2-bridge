@@ -1,5 +1,6 @@
 """Windows capture and low-delay H.264 streaming over the verified PC route."""
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 import json
 import math
@@ -8,11 +9,12 @@ import subprocess
 import threading
 import time
 
-from .annexb import AccessUnitStream
+from .annexb import AccessUnitStream, strip_aud
+from .avi import AviPacketStream
 from .control import V1Stream
 from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
-from .windows_usb import WindowsControlUsb, UsbTransportError
+from .windows_usb import WindowsControlUsb, UsbTransportError, USB_WRITE_SIZES
 
 
 @dataclass(frozen=True)
@@ -27,8 +29,14 @@ class BridgeSettings:
     show_cursor: bool = True
     preset: str = 'p4'
     keyframe_seconds: int = 3
+    low_latency: bool = False
+    usb_write_size: int = 2048
 
     def __post_init__(self):
+        if type(self.low_latency) is not bool:
+            raise ValueError('low_latency must be a boolean')
+        if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
+            raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
                               ('capture', ('gfxcapture', 'ddagrab')), ('preset', ('p1', 'p4')),
                               ('keyframe_seconds', (1, 3))):
@@ -58,7 +66,11 @@ def encoder_command(settings):
                 '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
                 '-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
                 '-profile:v', 'baseline', '-level:v', '4.2' if settings.fps == 60 else '5.1',
-                '-aud', '1', '-forced-idr', '1', '-flush_packets', '1', '-f', 'h264', 'pipe:1']
+                '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
+    if settings.low_latency:
+        command += ['-bsf:v', 'filter_units=remove_types=12', '-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
+    else:
+        command += ['-f', 'h264', 'pipe:1']
     return command
 
 
@@ -66,7 +78,7 @@ class BridgeEngine:
     """One USB owner and one encoder, with bounded queues and fresh reconnects."""
     def __init__(self, settings, log_path, *, on_event=None, stop_event=None,
                  stop_file=None, duration=0, reconnect=True, retry_delay=1,
-                 transport_factory=WindowsControlUsb, process_factory=subprocess.Popen):
+                 transport_factory=None, process_factory=subprocess.Popen):
         if not math.isfinite(duration) or duration < 0:
             raise ValueError('Duration must be nonnegative and finite')
         if not math.isfinite(retry_delay) or retry_delay < 0:
@@ -79,7 +91,8 @@ class BridgeEngine:
         self.duration = duration
         self.reconnect = reconnect
         self.retry_delay = retry_delay
-        self.transport_factory = transport_factory
+        self.transport_factory = (partial(WindowsControlUsb, write_size=settings.usb_write_size)
+                                  if transport_factory is None else transport_factory)
         self.process_factory = process_factory
         self.started = None
         self.log = None
@@ -102,7 +115,8 @@ class BridgeEngine:
             self.emit('starting', fps=self.settings.fps, bitrate_mbps=self.settings.bitrate_mbps,
                       capture=self.settings.capture, capture_fps=self.settings.capture_fps,
                       resolution='1920x1080', preset=self.settings.preset,
-                      keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index)
+                      keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
+                      low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size)
             try:
                 attempt = 0
                 while not self.stopping():
@@ -127,7 +141,7 @@ class BridgeEngine:
     def _session(self, attempt):
         local_stop = threading.Event()
         incoming = queue.Queue(maxsize=256)
-        frames = queue.Queue(maxsize=3)
+        frames = queue.Queue(maxsize=1 if self.settings.low_latency else 3)
         errors = queue.Queue()
         session = ControlSession()
         decoder = V1Stream()
@@ -152,13 +166,14 @@ class BridgeEngine:
                         errors.put(exc)
 
             def read_encoder():
-                splitter = AccessUnitStream()
+                splitter = AviPacketStream() if self.settings.low_latency else AccessUnitStream()
                 try:
                     while not local_stop.is_set():
                         data = process.stdout.read(16384)
                         if not data:
                             raise RuntimeError(f'Capture ended. See {encoder_path}')
-                        for frame in splitter.feed(data):
+                        for packet in splitter.feed(data):
+                            frame = strip_aud(packet) if self.settings.low_latency else packet
                             completed_at = time.perf_counter()
                             while not local_stop.is_set():
                                 try:
