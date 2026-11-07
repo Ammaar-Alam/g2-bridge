@@ -64,6 +64,7 @@ def main():
     parser.add_argument('--dll', type=Path, default=os.environ.get('DJI_USB_DLL') or DEFAULT_DLL)
     parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg'))
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
+    parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='New JSON Lines log (default: work/logs/stereo-LAYOUT-TIME.jsonl)')
     args = parser.parse_args()
     if not 0 < args.seconds <= 600:
@@ -83,7 +84,7 @@ def main():
         if not row['event'].startswith('control_'):
             print(row['event'], row.get('message', ''), flush=True)
 
-    engine = BridgeEngine(settings, log_path, duration=args.seconds, on_event=report,
+    engine = BridgeEngine(settings, log_path, duration=args.seconds, on_event=report, stop_file=args.stop_file,
                           process_factory=lambda _, **options: subprocess.Popen(command, **options))
     try:
         engine.run()
