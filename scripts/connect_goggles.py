@@ -8,12 +8,12 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from goggles_bridge.control import V1Stream
 from goggles_bridge.session import ControlSession
-from goggles_bridge.windows_usb import DEFAULT_DLL
+from goggles_bridge.usb_transport import DEFAULT_DLL
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dll', type=Path, default=DEFAULT_DLL, help='Verified DJI x64 libusb0_device.dll')
+    parser.add_argument('--dll', type=Path, default=DEFAULT_DLL, help='Windows only: verified DJI x64 libusb0_device.dll')
     parser.add_argument('--python-deps', type=Path, help='Optional local PyUSB 1.3.1 installation directory')
     parser.add_argument('--seconds', type=float, default=30, help='Session duration in seconds, from 1 to 300')
     parser.add_argument('--log', type=Path, required=True, help='Path for a new JSON Lines log (must not already exist)')
@@ -22,7 +22,7 @@ def main():
         parser.error('--seconds must be between 1 and 300')
     if args.python_deps:
         sys.path.insert(0, str(args.python_deps.resolve()))
-    from goggles_bridge.windows_usb import WindowsControlUsb
+    from goggles_bridge.usb_transport import ControlUsb
     session = ControlSession()
     decoder = V1Stream()
     started = time.monotonic()
@@ -33,7 +33,7 @@ def main():
             log.flush()
 
         try:
-            with WindowsControlUsb(args.dll) as usb:
+            with ControlUsb(args.dll) as usb:
                 while time.monotonic()-started < args.seconds:
                     for request in session.poll(time.monotonic()):
                         data = request.serialize()

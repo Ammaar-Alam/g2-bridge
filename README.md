@@ -1,6 +1,6 @@
 # G2 Bridge
 
-Stream your Windows desktop to DJI Goggles 2 or DJI Goggles Integra over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the PC.
+Stream your Windows or Mac desktop to DJI Goggles 2 or DJI Goggles Integra over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the computer.
 
 The bridge detects the model when it connects:
 
@@ -9,11 +9,13 @@ The bridge detects the model when it connects:
 | DJI Goggles 2 | `E3T ZV900` | 01.11.00.00 |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 
-Measured latency is about 13-15 ms behind a 240 Hz laptop monitor at 1080p100 (RTX 5060 Laptop GPU, filmed at 240 fps with the GPU idle and with it saturated). For the method and both results, see [Measure video delay](docs/LATENCY.md) and the [experiments](docs/research/EXPERIMENTS.md#monitor-to-lens-delay).
+Measured latency on Windows is about 13-15 ms behind a 240 Hz laptop monitor at 1080p100 (RTX 5060 Laptop GPU, filmed at 240 fps with the GPU idle and with it saturated). For the method and both results, see [Measure video delay](docs/LATENCY.md) and the [experiments](docs/research/EXPERIMENTS.md#monitor-to-lens-delay).
+
+On a Mac, screen capture delivers about 79 distinct frames per second, so motion is less smooth than on Windows. For details, see the [macOS results](docs/research/EXPERIMENTS.md#macos).
 
 ## Requirements
 
-You need the following hardware and software:
+On Windows, you need the following hardware and software:
 
 - 64-bit Windows and Python 3.10 or later.
 - An NVIDIA GPU with NVENC support.
@@ -22,22 +24,49 @@ You need the following hardware and software:
 
 Tests used FFmpeg build `2026-11-05-git-0893feba65` and NVIDIA driver 610.74.
 
+On macOS, you need the following:
+
+- macOS and Python 3.10 or later.
+- [Homebrew](https://brew.sh). The stream script offers to install FFmpeg and libusb with it.
+- A USB-A-to-USB-C cable. If the Mac has only USB-C ports, add a USB-C-to-USB-A adapter. Over a USB-C-to-USB-C cable, the goggles take the USB host role and the Mac can't detect them.
+
+Tests used an M2 Pro MacBook Pro with macOS 27.0 and Homebrew FFmpeg 8.1.1.
+
 ## Start streaming
 
-1. Power on the goggles, connect a USB data cable, and open **More > DJI Virtual Flight**.
-2. From the repository root, install the Python dependencies:
+1. Power on the goggles, connect a USB data cable, and open **More > DJI Virtual Flight**. On a Mac, when macOS asks whether the accessory can connect, select **Allow**.
+2. From the repository root, install the Python dependencies.
+
+   On Windows, run:
 
    ```powershell
    python -m pip install -r requirements.txt
    ```
 
-3. Start the stream:
+   On macOS, run:
+
+   ```bash
+   python3 -m venv .venv
+   .venv/bin/python -m pip install -r requirements.txt
+   ```
+
+3. Start the stream.
+
+   On Windows, run:
 
    ```powershell
    python scripts/stream_desktop.py
    ```
 
-   The script finds the DJI driver and FFmpeg automatically. If either is installed somewhere else, pass `--dll` or `--ffmpeg` with the file path.
+   On macOS, run:
+
+   ```bash
+   .venv/bin/python scripts/stream_desktop.py
+   ```
+
+   On Windows, the script finds the DJI driver and FFmpeg automatically. If either is installed somewhere else, pass `--dll` or `--ffmpeg` with the file path.
+
+   On a Mac, the script offers to install FFmpeg and libusb if either is missing. If FFmpeg can't capture the screen, go to **System Settings > Privacy & Security** and allow screen recording for your terminal.
 
 The default output is **1920x1080**, with a **100 fps encoder target** and a **20 Mbps** bitrate. Press **Ctrl+C** to stop. Logs are written to `work/logs/`.
 
@@ -49,7 +78,7 @@ Use these options to adjust the stream:
 | `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
-| `--capture` | `gfxcapture` or `ddagrab` |
+| `--capture` | `gfxcapture` or `ddagrab` (Windows only) |
 
 Run `python scripts/stream_desktop.py --help` for all options.
 

@@ -1,7 +1,9 @@
-"""Access the Goggles 2 USB interface through DJI's x64 driver 5.0.0.7.
+"""Access the Goggles 2 USB interface on Windows or macOS.
 
-The backend checks the DLL hash before using its device structure layout.
-Installing the driver places libusb0_device.dll in System32.
+Windows uses DJI's x64 driver 5.0.0.7. The backend checks the DLL hash before
+using its device structure layout. Installing the driver places
+libusb0_device.dll in System32. macOS binds no driver to the vendor interface,
+so libusb-1.0 claims it directly.
 """
 import ctypes as C
 import hashlib
@@ -52,47 +54,65 @@ def _select_control_device(devices):
     return device
 
 
-class WindowsControlUsb:
-    def __init__(self, dll_path, *, write_size=2048):
+def _windows_backend(dll_path):
+    if C.sizeof(C.c_void_p) != 8:
+        raise RuntimeError('This verified backend requires 64-bit Windows Python')
+    dll = Path(dll_path).resolve(strict=True)
+    if hashlib.sha256(dll.read_bytes()).hexdigest() != VERIFIED_DLL_SHA256:
+        raise ValueError(f'Unsupported DJI USB DLL at {dll}. Install DJI driver 5.0.0.7 from DJI Assistant 2')
+    import usb.backend.libusb0 as libusb
+    if libusb.get_backend(find_library=lambda _: str(dll)) is None:
+        raise RuntimeError('Cannot load the verified DJI USB DLL')
+    if Path(libusb._lib._name).resolve() != dll:
+        raise RuntimeError('A different libusb0 DLL is already loaded in this process')
+
+    class DjiDevice(C.Structure):
+        _pack_ = 1
+
+    DjiDevice._fields_ = [
+        ('next', C.POINTER(DjiDevice)), ('prev', C.POINTER(DjiDevice)),
+        ('filename', C.c_char * 512), ('location', C.c_char * 512),
+        ('bus', C.POINTER(libusb._usb_bus)), ('descriptor', libusb._usb_device_descriptor),
+        ('config', C.POINTER(libusb._usb_config_descriptor)), ('dev', C.c_void_p),
+        ('devnum', C.c_uint8), ('num_children', C.c_uint8),
+        ('children', C.POINTER(C.POINTER(DjiDevice))),
+    ]
+    assert DjiDevice.descriptor.offset == 1048 and C.sizeof(DjiDevice) == 1092
+
+    class Backend(libusb._LibUSB):
+        def enumerate_devices(self):
+            for device in super().enumerate_devices():
+                yield C.cast(C.pointer(device), C.POINTER(DjiDevice)).contents
+
+    libusb._lib.usb_open.argtypes = [C.POINTER(DjiDevice)]
+    return Backend()
+
+
+def _mac_backend():
+    import usb.backend.libusb1 as libusb
+    backend = libusb.get_backend()
+    if backend is None:
+        raise RuntimeError('Cannot load libusb. Run "brew install libusb"')
+    return backend
+
+
+class ControlUsb:
+    def __init__(self, dll_path=None, *, write_size=2048):
         if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {write_size}')
         self.write_size = write_size
-        if sys.platform != 'win32' or C.sizeof(C.c_void_p) != 8:
-            raise RuntimeError('This verified backend requires 64-bit Windows Python')
-        dll = Path(dll_path).resolve(strict=True)
-        if hashlib.sha256(dll.read_bytes()).hexdigest() != VERIFIED_DLL_SHA256:
-            raise ValueError(f'Unsupported DJI USB DLL at {dll}. Install DJI driver 5.0.0.7 from DJI Assistant 2')
+        if sys.platform == 'win32':
+            backend = _windows_backend(dll_path)
+        elif sys.platform == 'darwin':
+            backend = _mac_backend()
+        else:
+            raise RuntimeError('Goggles USB access requires Windows or macOS')
         import usb.core
         import usb.util
-        import usb.backend.libusb0 as libusb
         self.core = usb.core
         self.util = usb.util
-        if libusb.get_backend(find_library=lambda _: str(dll)) is None:
-            raise RuntimeError('Cannot load the verified DJI USB DLL')
-        if Path(libusb._lib._name).resolve() != dll:
-            raise RuntimeError('A different libusb0 DLL is already loaded in this process')
-
-        class DjiDevice(C.Structure):
-            _pack_ = 1
-
-        DjiDevice._fields_ = [
-            ('next', C.POINTER(DjiDevice)), ('prev', C.POINTER(DjiDevice)),
-            ('filename', C.c_char * 512), ('location', C.c_char * 512),
-            ('bus', C.POINTER(libusb._usb_bus)), ('descriptor', libusb._usb_device_descriptor),
-            ('config', C.POINTER(libusb._usb_config_descriptor)), ('dev', C.c_void_p),
-            ('devnum', C.c_uint8), ('num_children', C.c_uint8),
-            ('children', C.POINTER(C.POINTER(DjiDevice))),
-        ]
-        assert DjiDevice.descriptor.offset == 1048 and C.sizeof(DjiDevice) == 1092
-
-        class Backend(libusb._LibUSB):
-            def enumerate_devices(self):
-                for device in super().enumerate_devices():
-                    yield C.cast(C.pointer(device), C.POINTER(DjiDevice)).contents
-
-        libusb._lib.usb_open.argtypes = [C.POINTER(DjiDevice)]
         try:
-            devices = usb.core.find(find_all=True, backend=Backend(), idVendor=0x2ca3, idProduct=0x0020)
+            devices = usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3, idProduct=0x0020)
             self.device = _select_control_device(devices)
         except usb.core.USBError as exc:
             raise UsbTransportError(str(exc)) from exc

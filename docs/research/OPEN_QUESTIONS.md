@@ -9,6 +9,7 @@ The live A/B comparison favored the optimized mode, and host framing and send ti
 - How does the receiver buffer pictures? The stream has no B frames and signals no reordering. Its three reference/decoder-buffer pictures do not establish a three-frame presentation delay.
 - Does the receiver use the one-frame decoded picture buffer (DPB) offset in picture-timing supplemental enhancement information (SEI)? Removing SEI preserved decoded pixels offline but gave no clear subjective improvement. A USB interruption also occurred. The cause is unknown, and SEI removal was not adopted.
 - How many distinct frames reach the panels? Source, capture, encoder, and panel frame rates can differ. A 100 fps send counter measures only the sender.
+- Can ScreenCaptureKit raise the macOS capture rate above about 79 distinct frames per second, and cut the roughly 25 ms that AVFoundation adds before encoding? How far do the lenses trail a Mac display?
 
 ## Quality and pacing
 
@@ -31,6 +32,6 @@ The following details remain unknown:
 
 ## Other platforms and mobile work
 
-The packet layer is portable. USB access and capture target the tested Windows and DJI-driver setup. Linux and macOS backends, other goggles, and other firmware versions need descriptor checks, control exchanges, and video tests.
+The packet layer is portable. Tests cover Windows and macOS with one Goggles 2. Linux, other goggles, and other firmware versions need descriptor checks, control exchanges, and video tests.
 
 An iOS relay or diagnostic app remains unimplemented. The original iPhone Virtual Flight app displayed video, but a custom app's accessory protocols, entitlements, signing, and store eligibility have not been verified. A relay would require a phone during streaming. Apple's [EASession](https://developer.apple.com/documentation/externalaccessory/easession) and [protocol declaration](https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedexternalaccessoryprotocols) describe the APIs to investigate for a custom client. Access to the goggles' channel remains unverified.

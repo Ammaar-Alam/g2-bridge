@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from goggles_bridge.windows_usb import _select_control_device, DeviceNotFoundError, LinkSpeedError
+from goggles_bridge.usb_transport import _select_control_device, DeviceNotFoundError, LinkSpeedError
 
 
 class Interface:

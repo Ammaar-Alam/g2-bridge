@@ -110,6 +110,30 @@ At roughly 20–21 Mbps of wire traffic, the median of the five-second intervals
 
 The [host telemetry](evidence/live-host-telemetry.json) contains per-interval data and connection events.
 
+## macOS
+
+Tests used the same goggles and firmware build, identity `E3T ZV900 AC Dec 24 2024|12:34:04`. The Mac was an M2 Pro 14-inch MacBook Pro with a 3024x1964 display, macOS 27.0, Homebrew FFmpeg 8.1.1, libusb 1.0.30, and PyUSB 1.3.1. Stream settings were the defaults.
+
+| Test | Observation |
+| --- | --- |
+| USB-C-to-USB-C cable | The goggles took the host role. The Mac port reported data role Device, and no USB device enumerated |
+| USB-A-to-USB-C cable through a USB-C adapter | Enumerated as `2ca3:0020` at high speed with the same eight interfaces as the Windows fixture. macOS bound only MI02 mass storage |
+| Control handshake, 15 s | Simulator mode acknowledged 43 ms after start, with no discarded bytes |
+| Default stream, 120 s | Desktop displayed in the lenses. 11,947 frames at 100 fps, no reconnects, no discarded bytes, and a 95th-percentile send time of at most 0.71 ms |
+
+FFmpeg repeated 2,532 of 11,949 output frames, so capture supplied about 79 distinct frames per second. On a mostly static desktop, requested capture rates of 100, 120, and 240 fps all produced about 77 frames per second. Requests for 30 and 60 fps held capture to those rates. The tester found motion less smooth than on Windows.
+
+To measure capture-to-packet delay, FFmpeg carried AVFoundation presentation timestamps, which use the host clock, through an MPEG transport stream with `-copyts`. A script compared each packet's timestamp with Python's monotonic clock when the packet arrived. Each row covers 380 frames:
+
+| Encoder setting | Median / p95 |
+| --- | --- |
+| VideoToolbox, default rate control | 72.1–75.0 / 83.8–91.8 ms |
+| VideoToolbox, `-flags +low_delay` | 27.1 / 35.8 ms |
+| libx264 `ultrafast`, `zerolatency` | 25.2 / 35.5 ms |
+| MPEG-2 encode of a 320x208 frame | 30.0–33.9 / 42.7–47.4 ms |
+
+The MPEG-2 encode costs almost nothing, so most of the remaining delay happens before encoding, in AVFoundation capture. GPU scaling with `scale_vt` used about a third of the CPU time of `swscale` bicubic scaling (1.1 s against 3.5 s over 5 s), with similar delay. Screen-to-lens latency on the Mac was not measured.
+
 ## Timing metadata and USB interruptions
 
 The stream's sequence parameter set (SPS) declares a fixed rate of 100 fps. Picture-timing supplemental enhancement information (SEI) specifies a decoded picture buffer (DPB) output delay of 2 ticks, or 10 ms. Whether the goggles honor it is unknown.

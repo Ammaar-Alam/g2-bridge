@@ -24,6 +24,10 @@ The device enumerates with VID `2ca3` and PID `0020`. The video and control inte
 
 DJI's x64 libusb0 application binary interface (ABI) adds a 512-byte location field to the device structure. The upstream PyUSB structure is incompatible, so the backend checks for the DLL hash above and PyUSB 1.3.1. It uses 16 KiB writes by default. The optional 2 KiB mode also displayed video correctly. Consecutive V1 packets can share a write, and both sizes produce identical reassembled bytes. The DLL splits requests larger than 65,536 bytes internally.
 
+On macOS, libusb-1.0 claims MI04 directly and needs no driver. macOS binds a driver only to MI02, the mass-storage interface. In Virtual Flight mode, a USB-C-to-USB-C cable lets the goggles take the host role and switches the Mac's port to device mode, so the Mac needs a USB-A-to-USB-C cable.
+
+The macOS libusb backend clears the endpoint halt after every read that times out, and the bridge's 50 ms reads time out between replies. A 120-second stream still kept its heartbeat.
+
 PC control uses V1 source type 10, ID 1. Each reply must match the route, command, and sequence and contain a success status. The bridge sends these requests before video:
 
 | Request | Destination | Payload |
@@ -62,6 +66,8 @@ By default, the reader uses nonseekable, single-stream AVI to identify packet le
 The Windows Graphics Capture path uses GPU bicubic scaling, preserves the source aspect ratio, and passes D3D11 textures directly to NVENC. The tested preset targets 1080p at 100 fps and 20 Mbps, with preset `p4`, ultra-low-latency tuning, no B frames, a two-frame rate-control buffer, and three-second keyframes.
 
 Desktop Duplication at a requested 100 fps produced repeated frames in the initial static-desktop test. A moving source and Windows Graphics Capture improved observed smoothness. The distinct frame rate at the goggles and end-to-end latency have not been measured.
+
+On macOS, AVFoundation captures the screen in NV12, and `scale_vt` fits it to 1920x1080 on the GPU. CPU padding centers the result. The `h264_videotoolbox` encoder runs with `-flags +low_delay`, which selects low-latency rate control. In that mode the stream signals no frame reordering, and every picture is a long-term reference. VideoToolbox writes no AUDs, so the `h264_metadata` bitstream filter adds them for the frame readers. Low-latency mode rejects plain Baseline, so `--h264-profile baseline` selects Constrained Baseline on macOS.
 
 A slight brightness pulse followed the keyframe interval when it changed from one second to three seconds. An offline intra-refresh trial reduced the synthetic keyframe dip but increased scene-change bursts, so it was not adopted. Constant-quality encoding remains untested.
 

@@ -1,4 +1,4 @@
-"""Capture the Windows desktop and stream H.264 over the Goggles 2 PC USB route."""
+"""Capture the desktop and stream H.264 over the Goggles 2 PC USB route."""
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -15,7 +15,7 @@ from .avi import AviPacketStream
 from .control import V1Stream
 from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
-from .windows_usb import WindowsControlUsb, UsbTransportError, USB_WRITE_SIZES
+from .usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class BridgeSettings:
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
-                              ('capture', ('gfxcapture', 'ddagrab')), ('preset', ('p1', 'p4')),
+                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation')), ('preset', ('p1', 'p4')),
                               ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
@@ -53,6 +53,8 @@ class BridgeSettings:
 def encoder_command(settings):
     bitrate = settings.bitrate_mbps * 1_000_000
     command = [str(Path(settings.ffmpeg).resolve()), '-hide_banner', '-nostdin', '-loglevel', 'info']
+    if settings.capture == 'avfoundation':
+        return command + _mac_encoder_args(settings, bitrate)
     if settings.capture == 'gfxcapture':
         source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
                   ':width=1920:height=1080:resize_mode=scale_aspect:scale_mode=bicubic'
@@ -76,6 +78,28 @@ def encoder_command(settings):
     return command
 
 
+def _mac_encoder_args(settings, bitrate):
+    # Scale Retina captures on the GPU, then pad to the 1920x1080 the goggles expect
+    wide = 'gte(iw/ih,16/9)'
+    args = ['-init_hw_device', 'videotoolbox=vt', '-filter_hw_device', 'vt',
+            '-f', 'avfoundation', '-capture_cursor', str(int(settings.show_cursor)),
+            '-framerate', str(settings.capture_fps), '-pixel_format', 'nv12',
+            '-i', f'Capture screen {settings.display_index}:none', '-r', str(settings.fps), '-fps_mode', 'cfr',
+            '-vf', f"hwupload,scale_vt=w='if({wide},1920,-2)':h='if({wide},-2,1080)',hwdownload,format=nv12,"
+                   'pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
+            # low_delay enables low-latency rate control, which rejects plain baseline
+            '-an', '-c:v', 'h264_videotoolbox', '-realtime', '1', '-prio_speed', '1', '-flags', '+low_delay',
+            '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
+            '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
+            '-profile:v', 'constrained_baseline' if settings.h264_profile == 'baseline' else 'high',
+            '-level:v', '4.2' if settings.fps == 60 else '5.1', '-flush_packets', '1',
+            # VideoToolbox writes no AUDs, which both frame readers need
+            '-bsf:v', 'h264_metadata=aud=insert']
+    if settings.low_latency:
+        return args + ['-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
+    return args + ['-f', 'h264', 'pipe:1']
+
+
 def check_encoder(settings, run=subprocess.run):
     """Encode one captured frame and return a setup problem, or None if FFmpeg can stream."""
     command = encoder_command(settings)[:-3] + ['-frames:v', '1', '-f', 'null', '-']
@@ -86,12 +110,17 @@ def check_encoder(settings, run=subprocess.run):
         return 'FFmpeg did not capture a frame within 30 seconds'
     if result.returncode == 0:
         return None
+    details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
+    if settings.capture == 'avfoundation':
+        if 'Filter not found' in result.stderr or 'Encoder not found' in result.stderr:
+            return 'This FFmpeg build lacks VideoToolbox support. Update it with "brew upgrade ffmpeg"'
+        return ('FFmpeg test encode failed. In System Settings > Privacy & Security, allow screen recording '
+                f'for this terminal, and check the --display index.\n  {details}')
     if 'Filter not found' in result.stderr:
         return (f'This FFmpeg build has no {settings.capture} capture. '
                 'Update it with "winget upgrade Gyan.FFmpeg", or try --capture ddagrab')
     if 'Encoder not found' in result.stderr:
         return 'This FFmpeg build has no NVIDIA encoder. Install it with "winget install Gyan.FFmpeg"'
-    details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
     return f'FFmpeg test encode failed. Check the NVIDIA driver and --display index.\n  {details}'
 
 
@@ -129,7 +158,7 @@ class BridgeEngine:
         self.duration = duration
         self.reconnect = reconnect
         self.retry_delay = retry_delay
-        self.transport_factory = (partial(WindowsControlUsb, write_size=settings.usb_write_size)
+        self.transport_factory = (partial(ControlUsb, write_size=settings.usb_write_size)
                                   if transport_factory is None else transport_factory)
         self.process_factory = process_factory
         self.started = None
