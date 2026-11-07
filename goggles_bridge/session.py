@@ -112,8 +112,8 @@ class ControlSession:
                 return [self._new(device_info, now)]
         elif command == (0, 255) and self.state == 'identity':
             self.identity = reply.payload[1:].rstrip(b'\0').decode('ascii', errors='replace')
-            if b'ZV900' not in reply.payload.upper():
-                self._fail('Device identity is not the verified ZV900 profile')
+            if not self.identity.upper().startswith(('E3T ZV900', 'E3T ZV901')):
+                self._fail('Device identity is not a verified ZV900/ZV901 profile')
             self.state = 'simulator'
             return [self._new(sim_mode, now)]
         elif command == (11, 26) and self.state == 'simulator':
