@@ -7,7 +7,7 @@ from unittest.mock import patch
 from goggles_bridge.control import V1Stream
 from goggles_bridge.engine import BridgeEngine, BridgeSettings
 from goggles_bridge.pc_video import PcVideoPacketizer
-from goggles_bridge.windows_usb import WindowsControlUsb, UsbTransportError, USB_WRITE_SIZES
+from goggles_bridge.usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
 
 
 class DriverError(Exception):
@@ -23,7 +23,7 @@ class UsbWriteTests(unittest.TestCase):
             if fail == 'error':
                 raise DriverError('disconnected')
             return len(data)-(1 if fail == 'short' else 0)
-        usb = WindowsControlUsb.__new__(WindowsControlUsb)
+        usb = ControlUsb.__new__(ControlUsb)
         usb.device = SimpleNamespace(write=write)
         usb.core = SimpleNamespace(USBError=DriverError)
         usb.closed = False
@@ -70,13 +70,13 @@ class UsbWriteTests(unittest.TestCase):
         for value in (0, -1, True, 2048.0, 4096, 65536):
             with self.subTest(write_size=value):
                 with self.assertRaises(ValueError):
-                    WindowsControlUsb('unused.dll', write_size=value)
+                    ControlUsb('unused.dll', write_size=value)
                 with self.assertRaises(ValueError):
                     BridgeSettings(Path('unused.dll'), Path('unused.exe'), usb_write_size=value)
 
     def test_engine_passes_size_to_default_transport_on_every_connection(self):
         settings = BridgeSettings(Path('unused.dll'), Path('unused.exe'), usb_write_size=16384)
-        with patch('goggles_bridge.engine.WindowsControlUsb') as constructor:
+        with patch('goggles_bridge.engine.ControlUsb') as constructor:
             engine = BridgeEngine(settings, Path('unused.jsonl'))
             for _ in range(2):
                 engine.transport_factory(settings.dll)

@@ -1,43 +1,73 @@
-"""Stream the Windows desktop to stock DJI Goggles 2 in Virtual Flight mode."""
+"""Stream the Windows or macOS desktop to stock DJI Goggles 2 in Virtual Flight mode."""
 import argparse
 from datetime import datetime
 import os
 from pathlib import Path
 import shutil
 import signal
+import subprocess
 import sys
 import threading
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from goggles_bridge.windows_usb import DEFAULT_DLL, USB_WRITE_SIZES
+from goggles_bridge.usb_transport import DEFAULT_DLL, USB_WRITE_SIZES
+
+MAC = sys.platform == 'darwin'
+FFMPEG_INSTALL = 'brew install ffmpeg' if MAC else 'winget install Gyan.FFmpeg'
 
 # winget adds this folder to PATH but terminals opened before the install miss it
 WINGET_LINKS = Path(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WinGet', 'Links')
 SETUP_HINTS = {
     'dll': 'DJI USB driver not found. Install DJI Assistant 2 (Consumer Drones Series), or pass --dll',
-    'ffmpeg': 'FFmpeg not found. Run "winget install Gyan.FFmpeg", or pass --ffmpeg',
+    'ffmpeg': f'FFmpeg not found. Run "{FFMPEG_INSTALL}", or pass --ffmpeg',
 }
+
+
+def install_mac_dependencies(parser, args):
+    """Offer to install FFmpeg and libusb with Homebrew when either is missing."""
+    import usb.backend.libusb1
+    missing = [name for name, absent in (('ffmpeg', args.ffmpeg is None),
+                                         ('libusb', usb.backend.libusb1.get_backend() is None)) if absent]
+    if not missing:
+        return
+    names, command = ' and '.join(missing), f'brew install {" ".join(missing)}'
+    brew = shutil.which('brew') or next((p for p in ('/opt/homebrew/bin/brew', '/usr/local/bin/brew')
+                                         if Path(p).is_file()), None)
+    if brew is None:
+        parser.error(f'{names} not found. Install Homebrew from https://brew.sh, then run "{command}"')
+    try:
+        answer = input(f'{names} not found. Install with "{command}"? [y/N] ')
+    except EOFError:
+        answer = ''
+    if answer.strip().lower() not in ('y', 'yes'):
+        parser.error(f'Run "{command}", then try again')
+    if subprocess.run([brew, 'install', *missing]).returncode != 0:
+        parser.error(f'"{command}" failed')
+    if args.ffmpeg is None:
+        found = shutil.which('ffmpeg') or shutil.which('ffmpeg', path=str(Path(brew).parent))
+        args.ffmpeg = Path(found) if found else None
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dll', type=Path, default=os.environ.get('DJI_USB_DLL') or DEFAULT_DLL,
-                        help='DJI x64 libusb0_device.dll (default: DJI_USB_DLL or the installed driver copy)')
+    parser.add_argument('--dll', type=Path, default=None if MAC else os.environ.get('DJI_USB_DLL') or DEFAULT_DLL,
+                        help='Windows only: DJI x64 libusb0_device.dll (default: DJI_USB_DLL or the installed driver copy)')
     parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg')
                         or shutil.which('ffmpeg', path=str(WINGET_LINKS)),
-                        help='FFmpeg executable with NVENC and the chosen capture filter (default: GOGGLES_FFMPEG or PATH)')
+                        help='FFmpeg executable with NVENC or VideoToolbox and the chosen capture (default: GOGGLES_FFMPEG or PATH)')
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=(60, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
     parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
-    parser.add_argument('--capture', choices=('gfxcapture', 'ddagrab'), default='gfxcapture',
+    parser.add_argument('--capture', choices=('avfoundation',) if MAC else ('gfxcapture', 'ddagrab'),
+                        default='avfoundation' if MAC else 'gfxcapture',
                         help='Windows Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling')
-    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate for gfxcapture, in fps')
+    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate for gfxcapture or avfoundation, in fps')
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
-    parser.add_argument('--preset', choices=('p1', 'p4'), default='p4')
+    parser.add_argument('--preset', choices=('p1', 'p4'), default='p4', help='NVENC preset (Windows only)')
     parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='high',
                         help='H.264 profile (default: high)')
     parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
@@ -50,10 +80,6 @@ def main():
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='Path for a new JSON Lines log (default: a unique file in work/logs)')
     args = parser.parse_args()
-    for name in ('dll', 'ffmpeg'):
-        path = getattr(args, name)
-        if path is None or not path.is_file():
-            parser.error(SETUP_HINTS[name] if path in (None, DEFAULT_DLL) else f'--{name} file not found: {path}')
     if args.stop_file and args.stop_file.exists():
         parser.error('--stop-file already exists; use a new path or remove the old stop marker')
     if args.python_deps:
@@ -64,6 +90,12 @@ def main():
         usb = None
     if getattr(usb, '__version__', None) != '1.3.1':
         parser.error('PyUSB 1.3.1 is required. Run "python -m pip install -r requirements.txt"')
+    if MAC:
+        install_mac_dependencies(parser, args)
+    for name in ('ffmpeg',) if MAC else ('dll', 'ffmpeg'):
+        path = getattr(args, name)
+        if path is None or not path.is_file():
+            parser.error(SETUP_HINTS[name] if path in (None, DEFAULT_DLL) else f'--{name} file not found: {path}')
     from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder
     stop = threading.Event()
     log_path = args.log or ROOT / 'work' / 'logs' / f'{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}.jsonl'

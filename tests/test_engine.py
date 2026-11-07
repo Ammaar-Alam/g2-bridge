@@ -10,7 +10,7 @@ import unittest
 from goggles_bridge.control import V1Stream
 from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command, prioritize_gpu
 from goggles_bridge.session import SessionError
-from goggles_bridge.windows_usb import DeviceNotFoundError, UsbTransportError
+from goggles_bridge.usb_transport import DeviceNotFoundError, UsbTransportError
 from avi_fixture import stream as avi_stream
 
 
@@ -199,6 +199,25 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings(fps=60, capture='ddagrab'))
         self.assertEqual(command[command.index('-level:v')+1], '4.2')
         self.assertIn('force_original_aspect_ratio=decrease', command[command.index('-vf')+1])
+
+    def test_mac_capture_keeps_stream_contract_and_adds_delimiters(self):
+        for low_latency, tail in ((True, ['-f', 'avi', 'pipe:1']), (False, ['-f', 'h264', 'pipe:1'])):
+            with self.subTest(low_latency=low_latency):
+                command = encoder_command(self.settings(capture='avfoundation', display_index=1,
+                                                        low_latency=low_latency))
+                self.assertEqual(command[command.index('-i')+1], 'Capture screen 1:none')
+                self.assertIn('pad=1920:1080', command[command.index('-vf')+1])
+                for key, value in (('-c:v','h264_videotoolbox'), ('-flags','+low_delay'), ('-r','100'),
+                                   ('-level:v','5.1'), ('-bf','0'), ('-bufsize','400000'),
+                                   ('-bsf:v','h264_metadata=aud=insert')):
+                    self.assertEqual(command[command.index(key)+1], value)
+                self.assertEqual(command[-3:], tail)
+        command = encoder_command(self.settings(capture='avfoundation', h264_profile='baseline'))
+        self.assertEqual(command[command.index('-profile:v')+1], 'constrained_baseline')
+        settings = self.settings(capture='avfoundation')
+        fail = lambda stderr: lambda command, **_: subprocess.CompletedProcess(command, 1, '', stderr)
+        self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
+        self.assertIn('Screen Recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
     def test_low_latency_only_changes_local_framing_and_padding(self):
         command = encoder_command(self.settings(low_latency=True))
