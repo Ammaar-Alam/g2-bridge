@@ -52,7 +52,7 @@ Run the tests from the repository root:
 python -m unittest discover -s tests -v
 ```
 
-See the [PC protocol](docs/PROTOCOL.md) and [reverse-engineering data and tools](docs/research/README.md) for packet layouts and reproduction steps.
+See the [video-delay measurement guide](docs/LATENCY.md), [PC protocol](docs/PROTOCOL.md), and [reverse-engineering data and tools](docs/research/README.md).
 
 ## Contributing
 

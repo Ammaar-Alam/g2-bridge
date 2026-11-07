@@ -86,3 +86,5 @@ This runs the real NVENC encoder on paced gray and moving testsrc2 sources, with
 Use the [bridge CLI](../../README.md#start-streaming) for live tests. It checks the pinned DLL, MI04 descriptor, high-speed USB connection, ZV900 identity, and simulator-mode acknowledgement. Run one client at a time. See the [transport experiments](EXPERIMENTS.md) for the commands and packet formats already tested.
 
 Change one setting per comparison and use a repeatable moving source. Keep the full log locally. Before publishing excerpts, remove device serials and local paths. A 240 fps recording containing both the reference display and a goggle lens can measure added display delay with finite sampling uncertainty. Controller-to-photon delay additionally includes controller polling, game simulation and rendering. Host queue/send statistics alone cannot supply either measurement.
+
+For the optical test pattern, camera setup, and frame-counting procedure, see [Measure video delay](../LATENCY.md).
