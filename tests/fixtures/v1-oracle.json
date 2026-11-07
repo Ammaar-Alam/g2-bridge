@@ -1,0 +1,96 @@
+{
+  "binary_sha256": "c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7",
+  "function_elf_va": "0x49f5c74",
+  "emulator": "Unicorn 2.1.4",
+  "limit": "memory-only; 3M instructions / 5 seconds per case",
+  "cases": [
+    {
+      "name": "heartbeat",
+      "fields": {
+        "command_set": 0,
+        "command_id": 0,
+        "sender_type": 2,
+        "sender_id": 0,
+        "receiver_type": 28,
+        "receiver_id": 0,
+        "is_response": 0,
+        "ack": 2,
+        "sequence": 4660
+      },
+      "payload_hex": "000020000000",
+      "packet_hex": "55130403021c3412400000000020000000fb6d",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 1
+      }
+    },
+    {
+      "name": "device_info",
+      "fields": {
+        "command_set": 0,
+        "command_id": 255,
+        "sender_type": 2,
+        "sender_id": 0,
+        "receiver_type": 28,
+        "receiver_id": 1,
+        "is_response": 0,
+        "ack": 2,
+        "sequence": 4660
+      },
+      "payload_hex": "00",
+      "packet_hex": "550e0466023c34124000ff00f8a1",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 1
+      }
+    },
+    {
+      "name": "sim_mode",
+      "fields": {
+        "command_set": 11,
+        "command_id": 26,
+        "sender_type": 2,
+        "sender_id": 0,
+        "receiver_type": 28,
+        "receiver_id": 0,
+        "is_response": 0,
+        "ack": 2,
+        "sequence": 4660
+      },
+      "payload_hex": "01010000",
+      "packet_hex": "55110492021c3412400b1a0101000019bd",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 1
+      }
+    },
+    {
+      "name": "response",
+      "fields": {
+        "command_set": 0,
+        "command_id": 0,
+        "sender_type": 28,
+        "sender_id": 0,
+        "receiver_type": 2,
+        "receiver_id": 0,
+        "is_response": 1,
+        "ack": 0,
+        "sequence": 4660
+      },
+      "payload_hex": "00",
+      "packet_hex": "550e04661c02341280000000ff5e",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 1
+      }
+    }
+  ]
+}

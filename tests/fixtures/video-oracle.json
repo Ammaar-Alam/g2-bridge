@@ -1,0 +1,85 @@
+{
+  "binary_sha256": "c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7",
+  "function_elf_va": "0x49f0128",
+  "emulator": "Unicorn 2.1.4",
+  "hooks": "allocator, controlled clock, signed division, bounded memcpy, intercepted SendV2Packet; retained synthetic shared reference",
+  "cases": [
+    {
+      "length": 1,
+      "milliseconds": 1794000000123,
+      "initial_chunk_id": 4294967294,
+      "packets": [
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00000100feffffff7b94bbb2ffffffff20000000010000000100000000000000",
+          "data_length": 1,
+          "data_sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+        }
+      ]
+    },
+    {
+      "length": 65404,
+      "milliseconds": 1794000000123,
+      "initial_chunk_id": 4294967294,
+      "packets": [
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00000100feffffff7b94bbb2ffffffff200000007cff00000100000000000000",
+          "data_length": 65404,
+          "data_sha256": "ff435771658bc7977669c03f6680b7f9151374bb8d9a31de2a3b0c32a4bcf147"
+        }
+      ]
+    },
+    {
+      "length": 65405,
+      "milliseconds": 1794000000123,
+      "initial_chunk_id": 4294967294,
+      "packets": [
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00010000feffffff7b94bbb2ffffffff200000007cff00000100000000000000",
+          "data_length": 65404,
+          "data_sha256": "ff435771658bc7977669c03f6680b7f9151374bb8d9a31de2a3b0c32a4bcf147"
+        },
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00010100ffffffff7b94bbb2ffffffff20000000010000000000000000000000",
+          "data_length": 1,
+          "data_sha256": "cbe5cfdf7c2118a9c3d78ef1d684f3afa089201352886449a06a6511cfef74a7"
+        }
+      ]
+    },
+    {
+      "length": 130809,
+      "milliseconds": 1794000000123,
+      "initial_chunk_id": 4294967294,
+      "packets": [
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00010000feffffff7b94bbb2ffffffff200000007cff00000100000000000000",
+          "data_length": 65404,
+          "data_sha256": "ff435771658bc7977669c03f6680b7f9151374bb8d9a31de2a3b0c32a4bcf147"
+        },
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00010000ffffffff7b94bbb2ffffffff200000007cff00000000000000000000",
+          "data_length": 65404,
+          "data_sha256": "1303252cccae3d6b59b0477d187f44c88c64acc4506c6795d2d2e50271f3198c"
+        },
+        {
+          "object_hex": "0b53020001011c010009030000000000",
+          "video_argument": 1,
+          "header_hex": "00010100000000007b94bbb2ffffffff20000000010000000000000000000000",
+          "data_length": 1,
+          "data_sha256": "e596a8e5c49dd20a79bd0c1a7dd190a674507d1129785746fcc1c5e64cd8416c"
+        }
+      ]
+    }
+  ]
+}

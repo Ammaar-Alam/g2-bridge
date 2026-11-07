@@ -1,0 +1,77 @@
+{
+  "binary_sha256": "c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7",
+  "function_elf_va": "0x49f6448",
+  "emulator": "Unicorn 2.1.4",
+  "limit": "memory-only; 3M instructions / 5 seconds per case",
+  "cases": [
+    {
+      "name": "empty",
+      "fields": {
+        "command_set": 11,
+        "command_id": 83,
+        "sender_type": 2,
+        "sender_id": 0,
+        "sender_index": 257,
+        "receiver_type": 28,
+        "receiver_id": 1,
+        "receiver_index": 2304,
+        "ack": 3,
+        "sequence": 305419896
+      },
+      "payload_hex": "",
+      "packet_hex": "5518081d0060007856341200000200010100011c000009610b53004691",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 1
+      }
+    },
+    {
+      "name": "small",
+      "fields": {
+        "command_set": 11,
+        "command_id": 83,
+        "sender_type": 2,
+        "sender_id": 0,
+        "sender_index": 257,
+        "receiver_type": 28,
+        "receiver_id": 1,
+        "receiver_index": 2304,
+        "ack": 3,
+        "sequence": 305419896
+      },
+      "payload_hex": "000000016742001f",
+      "packet_hex": "551808250060007856341200000200010100011c0000094b0b5300000000016742001f4518",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 2
+      }
+    },
+    {
+      "name": "different_fields",
+      "fields": {
+        "command_set": 1,
+        "command_id": 254,
+        "sender_type": 3,
+        "sender_id": 4,
+        "sender_index": 17185,
+        "receiver_type": 5,
+        "receiver_id": 6,
+        "receiver_index": 34661,
+        "ack": 2,
+        "sequence": 4275878552
+      },
+      "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "packet_hex": "5518083d00400098badcfe0004030021430006050065871f01fe00000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fc576",
+      "hooks": {
+        "0x4f3c6dc": 1,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 2
+      }
+    }
+  ]
+}

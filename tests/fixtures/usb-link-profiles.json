@@ -1,0 +1,385 @@
+{
+  "provenance": "Standard hub-descriptor reads before and after physical USB reconnect; no serials or hub paths",
+  "full_speed": {
+    "configuration_value": 1,
+    "interface_count": 8,
+    "interfaces": [
+      {
+        "number": 0,
+        "alternate": 0,
+        "endpoint_count": 1,
+        "usb_class": 224,
+        "subclass": 1,
+        "protocol": 3,
+        "endpoints": [
+          {
+            "address": "0x82",
+            "direction": "in",
+            "transfer_type": 3,
+            "max_packet_size": 8,
+            "interval": 32
+          }
+        ]
+      },
+      {
+        "number": 1,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 10,
+        "subclass": 0,
+        "protocol": 0,
+        "endpoints": [
+          {
+            "address": "0x81",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x01",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 8,
+        "subclass": 6,
+        "protocol": 80,
+        "endpoints": [
+          {
+            "address": "0x83",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x02",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 3,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x03",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x84",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 4,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x04",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x85",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 5,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x05",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x86",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 6,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x06",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x87",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 7,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x07",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          },
+          {
+            "address": "0x88",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 64,
+            "interval": 0
+          }
+        ]
+      }
+    ]
+  },
+  "high_speed": {
+    "configuration_value": 1,
+    "interface_count": 8,
+    "interfaces": [
+      {
+        "number": 0,
+        "alternate": 0,
+        "endpoint_count": 1,
+        "usb_class": 224,
+        "subclass": 1,
+        "protocol": 3,
+        "endpoints": [
+          {
+            "address": "0x82",
+            "direction": "in",
+            "transfer_type": 3,
+            "max_packet_size": 8,
+            "interval": 9
+          }
+        ]
+      },
+      {
+        "number": 1,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 10,
+        "subclass": 0,
+        "protocol": 0,
+        "endpoints": [
+          {
+            "address": "0x81",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x01",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 8,
+        "subclass": 6,
+        "protocol": 80,
+        "endpoints": [
+          {
+            "address": "0x83",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x02",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 1
+          }
+        ]
+      },
+      {
+        "number": 3,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x03",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x84",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 4,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x04",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x85",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 5,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x05",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x86",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 6,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x06",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x87",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      },
+      {
+        "number": 7,
+        "alternate": 0,
+        "endpoint_count": 2,
+        "usb_class": 255,
+        "subclass": 67,
+        "protocol": 1,
+        "endpoints": [
+          {
+            "address": "0x07",
+            "direction": "out",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          },
+          {
+            "address": "0x88",
+            "direction": "in",
+            "transfer_type": 2,
+            "max_packet_size": 512,
+            "interval": 0
+          }
+        ]
+      }
+    ]
+  }
+}

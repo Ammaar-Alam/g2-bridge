@@ -1,0 +1,75 @@
+{
+  "binary_sha256": "c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7",
+  "cases": [
+    {
+      "length": 200,
+      "logiclink": false,
+      "packets": 1,
+      "sha256": "24485c6add6ddecab8f65f886a8f5160f0ebdc2f12d667d4ceda06e06627d424",
+      "hooks": {
+        "0x5397ad0": 1,
+        "0x5395864": 1,
+        "0x5395944": 1,
+        "0x4f3c6dc": 2,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 2,
+        "0x30000100": 1
+      }
+    },
+    {
+      "length": 200,
+      "logiclink": true,
+      "packets": 1,
+      "sha256": "6bca3bedcb7f2c280b528319c851d8b0f3620f82ccaaf1d31e456b6992622443",
+      "hooks": {
+        "0x5397ad0": 1,
+        "0x5395864": 1,
+        "0x5395944": 1,
+        "0x4f3c6dc": 3,
+        "0x5395fbc": 1,
+        "0x5395fcc": 1,
+        "0x5395814": 2,
+        "0x49e959c": 1,
+        "0x49e94bc": 2,
+        "0x30000100": 1,
+        "0x4f3c6e4": 1
+      }
+    },
+    {
+      "length": 130809,
+      "logiclink": false,
+      "packets": 3,
+      "sha256": "dfdbe4cfa4950a38d371fc804441495b45f4e54ac3dec76de0e68586d23c2729",
+      "hooks": {
+        "0x5397ad0": 3,
+        "0x5395864": 3,
+        "0x5395944": 3,
+        "0x4f3c6dc": 6,
+        "0x5395fbc": 3,
+        "0x5395fcc": 3,
+        "0x5395814": 6,
+        "0x30000100": 3
+      }
+    },
+    {
+      "length": 130809,
+      "logiclink": true,
+      "packets": 3,
+      "sha256": "38e6de1dc30b876f8e7b55c8d60cd9bb1a6daedd0d7bf2daf44cce72d0ccc588",
+      "hooks": {
+        "0x5397ad0": 3,
+        "0x5395864": 3,
+        "0x5395944": 3,
+        "0x4f3c6dc": 9,
+        "0x5395fbc": 3,
+        "0x5395fcc": 3,
+        "0x5395814": 6,
+        "0x49e959c": 3,
+        "0x49e94bc": 6,
+        "0x30000100": 3,
+        "0x4f3c6e4": 3
+      }
+    }
+  ]
+}

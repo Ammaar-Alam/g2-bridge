@@ -21,8 +21,6 @@ node_modules/
 Thumbs.db
 *.log
 
-# Deliberate private-stage exceptions to personal global ignore rules.
-# Remove these exceptions and review all Git history before publication.
-!/AGENTS.md
-!/.agents/
-!/.agents/**
+# Local agent handoff notes
+/AGENTS.md
+/.agents/
