@@ -1,15 +1,17 @@
 """Access the Goggles 2 USB interface through DJI's x64 driver 5.0.0.7.
 
 The backend checks the DLL hash before using its device structure layout.
-Obtain libusb0_device.dll separately from DJI Assistant.
+Installing the driver places libusb0_device.dll in System32.
 """
 import ctypes as C
 import hashlib
+import os
 from pathlib import Path
 import sys
 
 VERIFIED_DLL_SHA256 = 'd2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743'
 USB_WRITE_SIZES = (2048, 16384)
+DEFAULT_DLL = Path(os.environ.get('SystemRoot', r'C:\Windows'), 'System32', 'libusb0_device.dll')
 
 
 class UsbTransportError(RuntimeError):
@@ -59,7 +61,7 @@ class WindowsControlUsb:
             raise RuntimeError('This verified backend requires 64-bit Windows Python')
         dll = Path(dll_path).resolve(strict=True)
         if hashlib.sha256(dll.read_bytes()).hexdigest() != VERIFIED_DLL_SHA256:
-            raise ValueError('Unverified DJI DLL: its structure layout may differ')
+            raise ValueError(f'Unsupported DJI USB DLL at {dll}. Install DJI driver 5.0.0.7 from DJI Assistant 2')
         import usb.core
         import usb.util
         import usb.backend.libusb0 as libusb

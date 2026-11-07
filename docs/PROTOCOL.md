@@ -22,7 +22,7 @@ The mobile app sends V2 packets with up to 65,404 encoded bytes per fragment and
 
 The device enumerates with VID `2ca3` and PID `0020`. The video and control interface is **MI04**, with class/subclass/protocol `ff/43/01`, bulk OUT `04`, bulk IN `85`, and a 512-byte endpoint maximum packet size. The backend requires this descriptor and rejects ambiguous devices. It leaves the USB configuration unchanged.
 
-DJI's x64 libusb0 application binary interface (ABI) adds a 512-byte location field to the device structure. The upstream PyUSB structure is incompatible, so the backend checks for the DLL hash above and PyUSB 1.3.1. It uses 2 KiB writes by default. The optional 16 KiB mode also displayed video correctly. Consecutive V1 packets can share a write, and both sizes produce identical reassembled bytes. The DLL splits requests larger than 65,536 bytes internally.
+DJI's x64 libusb0 application binary interface (ABI) adds a 512-byte location field to the device structure. The upstream PyUSB structure is incompatible, so the backend checks for the DLL hash above and PyUSB 1.3.1. It uses 16 KiB writes by default. The optional 2 KiB mode also displayed video correctly. Consecutive V1 packets can share a write, and both sizes produce identical reassembled bytes. The DLL splits requests larger than 65,536 bytes internally.
 
 PC control uses V1 source type 10, ID 1. Each reply must match the route, command, and sequence and contain a success status. The bridge sends these requests before video:
 
@@ -55,7 +55,7 @@ The video payload starts with this little-endian structure, followed by the enco
 
 The timestamp follows the native operation: sample Unix milliseconds, retain the low 32 bits, interpret them as signed, then sign-extend to 64 bits. The packet header CRC8 uses seed `0x77` and reflected polynomial `0x8c`. CRC16 uses seed `0x3692` and reflected polynomial `0x8408`, with no final XOR.
 
-The default reader splits H.264 pictures at Annex-B access unit delimiters (AUDs), then removes each AUD. With `--low-latency`, the reader uses nonseekable, single-stream AVI to identify packet lengths and release complete H.264 packets immediately. AVI headers stay on the PC. This mode also removes filler network abstraction layer (NAL) units, type 12. Sequence and picture parameter sets (SPS/PPS) and picture NAL units remain unchanged. Both readers require the configured encoder output.
+By default, the reader uses nonseekable, single-stream AVI to identify packet lengths and release complete H.264 packets immediately. AVI headers stay on the PC. This mode also removes filler network abstraction layer (NAL) units, type 12. Sequence and picture parameter sets (SPS/PPS) and picture NAL units remain unchanged. With `--no-low-latency`, the reader instead splits H.264 pictures at Annex-B access unit delimiters (AUDs), then removes each AUD. Both readers require the configured encoder output.
 
 ## Capture and encoding
 

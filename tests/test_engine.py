@@ -1,12 +1,13 @@
 from dataclasses import replace
 from pathlib import Path
 import queue
+import subprocess
 import tempfile
 import threading
 import unittest
 
 from goggles_bridge.control import V1Stream
-from goggles_bridge.engine import BridgeEngine, BridgeSettings, encoder_command
+from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command
 from goggles_bridge.session import SessionError
 from goggles_bridge.windows_usb import DeviceNotFoundError, UsbTransportError
 from avi_fixture import stream as avi_stream
@@ -200,3 +201,18 @@ class EngineTests(unittest.TestCase):
                 self.assertEqual(candidate, baseline)
         with self.assertRaises(ValueError):
             self.settings(h264_profile='unsupported')
+
+    def test_encoder_check_runs_one_frame_and_explains_missing_features(self):
+        calls = []
+        def run(stderr, code=1):
+            def fake(command, **_):
+                calls.append(command)
+                return subprocess.CompletedProcess(command, code, '', stderr)
+            return fake
+        settings = self.settings()
+        self.assertIsNone(check_encoder(settings, run('', 0)))
+        self.assertEqual(calls[0][:-5], encoder_command(settings)[:-3])
+        self.assertEqual(calls[0][-5:], ['-frames:v', '1', '-f', 'null', '-'])
+        self.assertIn('--capture ddagrab', check_encoder(settings, run('Error opening input files: Filter not found')))
+        self.assertIn('NVIDIA encoder', check_encoder(settings, run('Error opening output files: Encoder not found')))
+        self.assertIn('OpenEncodeSessionEx failed', check_encoder(settings, run('a\nb\nOpenEncodeSessionEx failed')))

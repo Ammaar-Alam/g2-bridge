@@ -8,11 +8,12 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from goggles_bridge.control import V1Stream
 from goggles_bridge.session import ControlSession
+from goggles_bridge.windows_usb import DEFAULT_DLL
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dll', type=Path, required=True, help='Verified DJI x64 libusb0_device.dll')
+    parser.add_argument('--dll', type=Path, default=DEFAULT_DLL, help='Verified DJI x64 libusb0_device.dll')
     parser.add_argument('--python-deps', type=Path, help='Optional local PyUSB 1.3.1 installation directory')
     parser.add_argument('--seconds', type=float, default=30, help='Session duration in seconds, from 1 to 300')
     parser.add_argument('--log', type=Path, required=True, help='Path for a new JSON Lines log (must not already exist)')

@@ -29,9 +29,9 @@ class BridgeSettings:
     show_cursor: bool = True
     preset: str = 'p4'
     keyframe_seconds: int = 3
-    low_latency: bool = False
-    usb_write_size: int = 2048
-    h264_profile: str = 'baseline'
+    low_latency: bool = True
+    usb_write_size: int = 16384
+    h264_profile: str = 'high'
 
     def __post_init__(self):
         if type(self.low_latency) is not bool:
@@ -73,6 +73,25 @@ def encoder_command(settings):
     else:
         command += ['-f', 'h264', 'pipe:1']
     return command
+
+
+def check_encoder(settings, run=subprocess.run):
+    """Encode one captured frame and return a setup problem, or None if FFmpeg can stream."""
+    command = encoder_command(settings)[:-3] + ['-frames:v', '1', '-f', 'null', '-']
+    try:
+        result = run(command, capture_output=True, text=True, errors='replace', timeout=30,
+                     creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except subprocess.TimeoutExpired:
+        return 'FFmpeg did not capture a frame within 30 seconds'
+    if result.returncode == 0:
+        return None
+    if 'Filter not found' in result.stderr:
+        return (f'This FFmpeg build has no {settings.capture} capture. '
+                'Update it with "winget upgrade Gyan.FFmpeg", or try --capture ddagrab')
+    if 'Encoder not found' in result.stderr:
+        return 'This FFmpeg build has no NVIDIA encoder. Install it with "winget install Gyan.FFmpeg"'
+    details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
+    return f'FFmpeg test encode failed. Check the NVIDIA driver and --display index.\n  {details}'
 
 
 class BridgeEngine:
