@@ -1,7 +1,7 @@
 from dataclasses import replace
 import unittest
 from goggles_bridge.control import V1Packet
-from goggles_bridge.session import ControlSession, SessionError
+from goggles_bridge.session import ControlSession, SessionError, MODELS, EXPERIMENTAL_MODELS
 
 
 def answer(request, payload=b'\0'):
@@ -32,6 +32,26 @@ class SessionTests(unittest.TestCase):
         self.assertEqual((mode.command_set, mode.command_id), (11, 26))
         self.assertEqual(session.model, 'DJI Goggles Integra')
 
+    def test_goggles3_needs_experimental_models(self):
+        session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS})
+        request, = session.poll(0)
+        info, = session.receive(answer(request), .01)
+        mode, = session.receive(answer(info, b'\0E3T ZV902 AC'), .02)
+        self.assertEqual((mode.command_set, mode.command_id), (11, 26))
+        self.assertEqual(session.model, 'DJI Goggles 3')
+
+    def test_identify_only_skips_simulator_and_keeps_heartbeat(self):
+        session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS}, enter_simulator=False)
+        request, = session.poll(0)
+        info, = session.receive(answer(request), .01)
+        self.assertEqual(session.receive(answer(info, b'\0E3T ZV902'), .02), [])
+        self.assertEqual((session.state, session.model), ('identified', 'DJI Goggles 3'))
+        for now in (.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5):
+            due = session.poll(now)
+            self.assertEqual([(p.command_set, p.command_id) for p in due], [(0, 0)])
+            session.receive(answer(due[0]), now+.01)
+        self.assertEqual(session.state, 'identified')
+
     def test_wrong_route_and_sequence_cannot_unlock_video(self):
         session = ControlSession()
         request, = session.poll(0)
@@ -40,7 +60,7 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(session.state, 'heartbeat')
 
     def test_rejected_identity_and_error_code(self):
-        for payload in (b'\0E3T ZV902', b'\xe0'):
+        for payload in (b'\0E3T ZV999', b'\0E3T ZV902', b'\xe0'):
             session = ControlSession()
             request, = session.poll(0)
             info, = session.receive(answer(request), .01)

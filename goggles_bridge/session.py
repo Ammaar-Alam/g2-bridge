@@ -1,7 +1,10 @@
-"""Manage the Goggles 2 control handshake independently of byte transport.
+"""Manage the goggles control handshake independently of byte transport.
 
 The ready state requires a matching simulator-mode success reply. Source
-addresses default to the PC USB route.
+addresses default to the PC USB route. With enter_simulator=False the session
+stops in the identified state after the identity reply and keeps heartbeats
+running, which lets diagnostics read an untested model's identity without
+changing its display mode.
 """
 from dataclasses import dataclass, replace
 from .control import heartbeat, device_info, sim_mode
@@ -9,6 +12,9 @@ from .control import heartbeat, device_info, sim_mode
 
 # Identity codes that have displayed video through the PC route
 MODELS = {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'}
+# Identity codes from other sources that have not displayed video through the PC route.
+# ZV902 is Goggles 3, as named by github.com/ggurov/dji-goggles3-display-unit.
+EXPERIMENTAL_MODELS = {'ZV902': 'DJI Goggles 3'}
 
 
 class SessionError(RuntimeError):
@@ -27,9 +33,11 @@ class Pending:
 
 
 class ControlSession:
-    def __init__(self, *, source_type=10, source_id=1, sequence=0):
+    def __init__(self, *, source_type=10, source_id=1, sequence=0, models=MODELS, enter_simulator=True):
         # Validate addresses and sequence using the actual serializer.
         replace(heartbeat(sequence), sender_type=source_type, sender_id=source_id).serialize()
+        self.models = dict(models)
+        self.enter_simulator = enter_simulator
         self.source_type = source_type
         self.source_id = source_id
         self.sequence = sequence
@@ -73,7 +81,7 @@ class ControlSession:
             self.state = 'heartbeat'
         if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= 1.5:
             self._fail('Three heartbeat intervals passed without a matching success reply', SessionLost)
-        if self.state != 'ready' and now - self.started_at >= 4:
+        if self.state not in ('ready', 'identified') and now - self.started_at >= 4:
             self._fail('Control handshake timed out', SessionLost)
         outgoing = []
         for seq, item in list(self.pending.items()):
@@ -117,10 +125,13 @@ class ControlSession:
                 return [self._new(device_info, now)]
         elif command == (0, 255) and self.state == 'identity':
             self.identity = reply.payload[1:].rstrip(b'\0').decode('ascii', errors='replace')
-            self.model = next((name for code, name in MODELS.items()
+            self.model = next((name for code, name in self.models.items()
                                if self.identity.upper().startswith(f'E3T {code}')), None)
             if self.model is None:
-                self._fail(f'Unsupported goggles ({self.identity}). Supported: {", ".join(MODELS.values())}')
+                self._fail(f'Unsupported goggles ({self.identity}). Supported: {", ".join(self.models.values())}')
+            if not self.enter_simulator:
+                self.state = 'identified'
+                return []
             self.state = 'simulator'
             return [self._new(sim_mode, now)]
         elif command == (11, 26) and self.state == 'simulator':

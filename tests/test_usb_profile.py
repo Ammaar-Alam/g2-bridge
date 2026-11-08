@@ -32,6 +32,15 @@ class UsbProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(LinkSpeedError, '12 Mbps'):
             _select_control_device([self.device('full_speed')])
 
+    def test_superspeed_is_claimed_only_on_request(self):
+        device = self.device('high_speed')
+        for interface in device[0]:
+            for endpoint in interface:
+                endpoint.wMaxPacketSize = 1024
+        with self.assertRaisesRegex(LinkSpeedError, 'SuperSpeed'):
+            _select_control_device([device])
+        self.assertIs(_select_control_device([device], allow_superspeed=True), device)
+
     def test_two_devices_are_ambiguous_even_if_one_is_slow(self):
         with self.assertRaisesRegex(RuntimeError, 'found 2'):
             _select_control_device([self.device('high_speed'), self.device('full_speed')])

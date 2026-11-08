@@ -17,6 +17,7 @@ The following pages describe the protocol and how to reproduce the analysis:
 | [Experiments](EXPERIMENTS.md) | Transport tests, host timings, and encoder quality measurements |
 | [Reproduction](REPRODUCE.md) | Emulation, Ghidra scripts, packet fixtures, and benchmarks |
 | [Stereo and head tracking](STEREO.md) | Separate views for each eye, head orientation over USB, and SteamVR |
+| [Goggles 3 probe](GOGGLES3.md) | Reported Goggles 3 USB details, a step-by-step hardware probe, and Android OTG role tests |
 | [Open questions](OPEN_QUESTIONS.md) | Receiver timing, frame pacing, quality, and USB interruptions |
 | [Related work](RELATED.md) | External sources, device models, and video input or output support |
 

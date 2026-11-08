@@ -32,6 +32,6 @@ The following details remain unknown:
 
 ## Other platforms and mobile work
 
-The packet layer is portable. Tests cover Windows and macOS with one Goggles 2. Linux, other goggles, and other firmware versions need descriptor checks, control exchanges, and video tests.
+The packet layer is portable. Tests cover Windows and macOS with one Goggles 2. The USB transport also loads libusb-1.0 on Linux, but no Linux hardware session has been recorded. Other goggles and firmware versions need descriptor checks, control exchanges, and video tests. The [Goggles 3 probe](GOGGLES3.md) runs these checks step by step.
 
 An iOS relay or diagnostic app remains unimplemented. The original iPhone Virtual Flight app displayed video, but a custom app's accessory protocols, entitlements, signing, and store eligibility have not been verified. A relay would require a phone during streaming. Apple's [EASession](https://developer.apple.com/documentation/externalaccessory/easession) and [protocol declaration](https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedexternalaccessoryprotocols) describe the APIs to investigate for a custom client. Access to the goggles' channel remains unverified.
