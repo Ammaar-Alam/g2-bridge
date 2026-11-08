@@ -14,5 +14,5 @@ class MacFrameRateTests(unittest.TestCase):
             subprocess.run(['xcrun', 'swiftc', '-D', 'FRAME_RATE_TEST', '-parse-as-library',
                             str(root / 'goggles_bridge/mac_capture.swift'),
                             str(root / 'tests/mac_frame_rate.swift'), '-o', str(executable)],
-                           check=True, capture_output=True, timeout=120)
-            subprocess.run([str(executable)], check=True, capture_output=True, timeout=10)
+                           check=True, timeout=120)
+            subprocess.run([str(executable)], check=True, timeout=10)
