@@ -132,7 +132,22 @@ To measure capture-to-packet delay, FFmpeg carried AVFoundation presentation tim
 | libx264 `ultrafast`, `zerolatency` | 25.2 / 35.5 ms |
 | MPEG-2 encode of a 320x208 frame | 30.0–33.9 / 42.7–47.4 ms |
 
-The MPEG-2 encode costs almost nothing, so most of the remaining delay happens before encoding, in AVFoundation capture. GPU scaling with `scale_vt` used about a third of the CPU time of `swscale` bicubic scaling (1.1 s against 3.5 s over 5 s), with similar delay. Screen-to-lens latency on the Mac was not measured.
+The MPEG-2 encode costs almost nothing, so most of the remaining delay happens before encoding, in AVFoundation capture. GPU scaling with `scale_vt` used about a third of the CPU time of `swscale` bicubic scaling (1.1 s against 3.5 s over 5 s), with similar delay.
+
+### ScreenCaptureKit
+
+A Swift prototype captured with ScreenCaptureKit and encoded with VideoToolbox's low-latency rate control. Each frame carried the `displayTime` that ScreenCaptureKit reports, and the reader compared it with `mach_absolute_time` when the frame arrived in Python. With a 120 fps `testsrc2` window on screen, each path ran for about 8 seconds:
+
+| Capture | Display or capture time to packet, median / p95 |
+| --- | --- |
+| ScreenCaptureKit prototype | 7.2 / 10.7 ms |
+| AVFoundation through FFmpeg, `-flags +low_delay` | 24.7 / 32.9 ms |
+
+The prototype delivered about 104 new pictures per second, against the 79 that AVFoundation supplied in the earlier stream.
+
+The bridge's helper logs the same delay, measured when each encoded frame is written. Three 11-second runs with the test pattern sent 107–115 fps, 82–85 of them new pictures, with medians of 5.6–6.1 ms and 95th percentiles of 8.7–10.3 ms. `displayTime` sometimes led the encoder callback by up to 0.6 ms. In low-latency mode, VideoToolbox rejected `MaxFrameDelayCount` and `PrioritizeEncodingSpeedOverQuality` with `kVTPropertyNotSupportedErr`.
+
+On the goggles, the helper streamed the desktop for 48.6 seconds and 4,284 frames. Its five-second medians were 2.4–5.6 ms, with 95th percentiles of 3.9–9.9 ms. The tester said it felt much better than the AVFoundation path. The session then ended with `[Errno 5] Input/Output Error`, and the goggles left the USB bus. The cause wasn't established. Screen-to-lens latency on the Mac was not measured.
 
 ## Timing metadata and USB interruptions
 

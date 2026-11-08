@@ -9,7 +9,7 @@ The live A/B comparison favored the optimized mode, and host framing and send ti
 - How does the receiver buffer pictures? The stream has no B frames and signals no reordering. Its three reference/decoder-buffer pictures do not establish a three-frame presentation delay.
 - Does the receiver use the one-frame decoded picture buffer (DPB) offset in picture-timing supplemental enhancement information (SEI)? Removing SEI preserved decoded pixels offline but gave no clear subjective improvement. A USB interruption also occurred. The cause is unknown, and SEI removal was not adopted.
 - How many distinct frames reach the panels? Source, capture, encoder, and panel frame rates can differ. A 100 fps send counter measures only the sender.
-- Can ScreenCaptureKit raise the macOS capture rate above about 79 distinct frames per second, and cut the roughly 25 ms that AVFoundation adds before encoding? How far do the lenses trail a Mac display?
+- How far do the lenses trail a Mac display with the ScreenCaptureKit helper? Does the receiver queue pictures when the helper sends more than 100 fps, or because the low-latency stream signals a 16-frame decoded picture buffer?
 
 ## Quality and pacing
 
