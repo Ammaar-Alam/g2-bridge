@@ -1,81 +1,102 @@
 # Measure video delay
 
-Film the monitor and one goggle lens together to measure how far the goggles trail the monitor. At 240 fps, each camera frame spans about 4.17 ms. This measures the difference between the two displays, including their scanout and pixel response. It does not measure controller-to-photon latency.
+Film the monitor and one goggle lens in the same high-speed recording. The time between matching changes is the added monitor-to-lens delay.
 
-A 240 Hz monitor and a 240 fps camera have separate clocks. Measure the visible changes in the recording. Do not add or subtract a monitor refresh period from the result.
+## Measured delay
 
-## Start the pattern
+We measured **12.1 ms median added delay** across 20 black/white transitions. The test used native D3D11 capture, DJI Goggles 2 firmware 01.11.00.00, an RTX 5060 Laptop GPU, and a 240 Hz monitor, with no added GPU load. Output was 1920x1080 with a 100 fps encoder target, 20 Mbps limit, and NVENC High/`p4`.
 
-1. Start the bridge from the repository root:
+The result uses the 50% brightness crossing in a small patch on each display:
+
+| Transitions | Median | Mean | 95th percentile | Range |
+| ---: | ---: | ---: | ---: | --- |
+| 20 | 12.1 ms | 10.3 ms | 16.0 ms | 2.1-16.5 ms |
+
+The Windows desktop CLI uses Windows Graphics Capture. For its results, see [earlier desktop measurements](research/EXPERIMENTS.md#monitor-to-lens-delay).
+
+Matching the monitor flashes in the 30 fps export to logged source timestamps gave 240.03 stored frames per second of capture time.
+
+## Count matching transitions
+
+At 240 captured frames per second, one frame step spans about 4.17 ms. Treat the reference frame as frame zero, then count elapsed steps to the matching change in the lens:
+
+```text
+delay_ms = (goggles_frame - monitor_frame) * 1000 / capture_fps
+```
+
+In this sequence, the laptop is fully white at frame 1103. The lens is partly white at frame 1105 and fully white at frame 1106. Three steps give **12.5 ms**:
+
+![Seven consecutive camera frames show the laptop turning white before the lens. The laptop is fully white at frame 1103 and the lens at frame 1106.](images/latency-full-transition.png)
+
+### Choose one brightness criterion
+
+Use the same criterion for both displays: a completed change, or a specified point between the dark and bright levels. For automated measurement, sample a patch inside each square and use its local black and white levels. Track the patch if the camera moves.
+
+A completion count can differ from a midpoint measurement. In this sequence, the laptop looks fully white at frame 601 and the lens at frame 602, giving one step, or **4.17 ms**:
+
+![Five camera frames show a dim white laptop square at frame 600, full white at frame 601, and a white lens at frame 602.](images/latency-short-transition.png)
+
+The 50% crossings occur at estimated frames 599.60 and 601.50, giving **7.9 ms**. The benchmark uses this midpoint rule for every transition. Fractional frame numbers come from linear interpolation between adjacent brightness samples.
+
+The analysis averages grayscale values in a fixed 30x30-pixel monitor patch and a tracked 16x16-pixel lens patch. Local dark and bright levels come from median values 12-40 frames before and after each monitor transition. Each crossing must stay on the new side of the threshold for three frames.
+
+## Record a test
+
+The supplied desktop test pattern requires FFplay from FFmpeg. On macOS, use the Python interpreter from your virtual environment. To record a measurement, follow these steps:
+
+1. Start the desktop bridge from the repository root:
 
    ```powershell
    python scripts/stream_desktop.py
    ```
 
-2. In a second terminal, open the test pattern:
+2. In another terminal, start the pattern:
 
    ```powershell
    python scripts/latency_pattern.py
    ```
 
-   The command uses FFplay from the FFmpeg installation. If it isn't on your path, pass `--ffplay "FFPLAY_PATH"`, replacing `FFPLAY_PATH` with the path to `ffplay.exe`.
+   If FFplay isn't on your path, pass `--ffplay "FFPLAY_PATH"`. Replace `FFPLAY_PATH` with the executable's path.
 
-3. Place the pattern window on the display that the bridge captures. Confirm that its center square changes between black and white on both displays.
+3. Put the pattern on the captured display. Confirm that the square changes on both the monitor and the lens.
+4. Select **Slo-mo** at **240 fps** on the camera.
+5. Frame both squares at similar heights in the camera image to reduce rolling-shutter timing differences.
+6. Keep the camera and goggles steady. Lock focus and exposure so neither square is washed out.
+7. Record 20-30 seconds with stream settings and PC activity unchanged.
+8. Transfer the unmodified recording. Messaging apps can transcode videos; for example, [Discord compresses mobile uploads](https://support.discord.com/hc/en-us/articles/9665451164951-Video-Upload-Quality-Settings-on-Mobile-FAQ).
 
-The square changes every 0.65 seconds over a moving background. The corner counter is not needed. Press **Escape** in the pattern window to close it. The window also closes after 15 minutes. Stop the bridge separately with **Ctrl+C**.
+The supplied pattern changes every 0.65 seconds. The illustrated native-capture test used logged intervals of 0.65-1.35 seconds. The small counter isn't needed for manual counting. Press **Escape** to close the pattern and **Ctrl+C** to stop the bridge.
 
-## Record both displays
+## Verify the timing
 
-1. Select the rear camera's **Slo-mo** mode and confirm **240 fps** before recording. On iPhone, this setting is available under **Settings > Camera > Record Slo-mo**. See [Apple's recording settings](https://support.apple.com/guide/iphone/change-video-recording-settings-iphc1827d32f/ios).
-2. Frame the real monitor and one eyepiece in the same recording. Keep both center squares visible, with as little vertical separation as practical. Camera rolling shutter can add an offset when it samples them at different times.
-3. Hold the camera steady. Set focus and exposure so the square through the eyepiece stays distinguishable in both states. Its edges need not fill the lens view.
-4. Record 10–15 seconds after the framing is stable. Keep stream settings and other PC activity unchanged during the take.
-5. Transfer the unmodified camera file to the PC. On iPhone, use **Share > Export Unmodified Originals** to save it in Files. You can also download **Unmodified Originals** from iCloud Photos. See [Apple's original-file export instructions](https://support.apple.com/en-ie/111762).
-
-Messaging apps can convert video during upload. For example, [Discord compresses mobile video uploads](https://support.discord.com/hc/en-us/articles/9665451164951-Video-Upload-Quality-Settings-on-Mobile-FAQ). To preserve an original while transferring it as an attachment, put it in a ZIP archive first. Keep edited exports separate from the original.
-
-## Check the recording
-
-Check the stored frame rate before calculating a delay. Replace `RECORDING_PATH` with the file path:
+Inspect the file's stored frame rate before converting frame counts to milliseconds:
 
 ```powershell
 ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate,r_frame_rate,nb_frames,duration -of default=noprint_wrappers=1 "RECORDING_PATH"
 ```
 
-A 240 fps capture can be exported with a different playback rate. If the file reports 30 or 60 fps, establish whether it was retimed or had frames removed. Do not multiply its frame count by 4.17 ms without that information. For a normal 60 fps recording, each frame spans about 16.67 ms.
+Replace `RECORDING_PATH` with the video path. A slow-motion export can report 30 fps while preserving 240 captured frames per second. Check the mapping against the pattern's known cadence or logged transition times. Handle speed ramps separately.
 
-## Count matching transitions
-
-Open the recording in a viewer that can advance one frame at a time and show frame numbers. To use FFplay with a frame-number overlay, run:
-
-```powershell
-ffplay -noframedrop -vf "drawtext=fontfile='C\:/Windows/Fonts/consola.ttf':text='%{n}':x=20:y=20:fontsize=40:fontcolor=white:box=1:boxcolor=black" "RECORDING_PATH"
-```
-
-This command uses the Windows Consolas font. Adjust the font path if Windows is installed elsewhere. Press **P** to pause and **S** to advance one frame. Don't seek between the two frames in a measurement pair.
-
-Count from the same point near the center of each square. Use the same transition criterion for both displays, such as the first frame past halfway between the dark and bright levels.
-
-For each transition, record the monitor frame number and the frame number where the goggles show the matching change. For an original recording with capture rate `F`:
-
-```text
-delay_ms = (goggles_frame - monitor_frame) * 1000 / F
-```
-
-For example, 12 frames at 240 fps is 50 ms. Measure at least 10 transitions, including both directions, and report the median and range. Exclude sections where framing obscures the lens. Keep the individual measurements so others can check the result.
-
-For an export slowed to a constant, known speed, use playback timestamps instead:
+For constant-speed playback, calculate the delay from playback timestamps:
 
 ```text
 delay_ms = (goggles_playback_seconds - monitor_playback_seconds) * playback_speed * 1000
 ```
 
-At 10% speed, `playback_speed` is `0.1`. A 30 fps export can contain repeated frames even when the original capture was 240 fps. Use the export's playback timestamps for this calculation. Avoid the speed ramps at the start and end of an edited clip.
+For example, `playback_speed` is `0.125` at 1/8 speed and `0.1` at 10% speed.
 
-Camera exposure, rolling shutter, display scanout, and threshold choice affect the measurement. The 4.17 ms interval is sampling granularity, not a guarantee of absolute accuracy. Use actual frame timestamps when they are irregular, and resolve any slow-motion retiming before converting them to capture time.
+Use a viewer that advances one frame at a time. On Windows, this FFplay command adds frame numbers:
 
-## Report a result
+```powershell
+ffplay -noframedrop -vf "drawtext=fontfile='C\:/Windows/Fonts/consola.ttf':text='%{n}':x=20:y=20:fontsize=40:fontcolor=white:box=1:boxcolor=black" "RECORDING_PATH"
+```
 
-Include the goggles model and firmware, PC and GPU, reference monitor refresh rate, camera mode and frame rate, FFmpeg version, bridge commit, complete command, and bridge log filename. Record the transitions measured, any excluded section, and the median and range.
+Press **P** to pause and **S** to advance a frame. Adjust the font path if Windows is installed elsewhere.
 
-Label this result as monitor-to-goggles delay with a synthetic moving source. Compare settings using the same setup and source. A separate test under simulator GPU load is needed to describe performance during flight. Keep personal recordings and full logs local unless you have reviewed them for sharing.
+## Report the measurement
+
+Measure at least 20 clear transitions, including black-to-white and white-to-black changes. Save each frame pair and report the median, mean, range, and sample count. Include the hardware, capture path, stream command, camera settings, and any playback-speed correction.
+
+Share cropped frame sequences with the numerical data. Record excluded transitions and their reason, such as an obscured lens.
+
+At 240 fps, the samples are 4.17 ms apart. Exposure, rolling shutter, clipping, and the selected image region affect the crossing time. Interpolation estimates a midpoint between samples; it doesn't provide submillisecond physical accuracy. This test measures display-to-display delay, including scanout and pixel response.

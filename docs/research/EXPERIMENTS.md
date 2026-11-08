@@ -2,8 +2,6 @@
 
 Hardware tests used one stock DJI Goggles 2 with ZV900 identity and owner-reported firmware 01.11.00.00. All PC tests used the same USB-A-to-USB-C cable. The original iPhone Virtual Flight app also displayed video successfully.
 
-Timings below measure work on the PC. Screen-to-lens latency and the goggles' displayed frame rate were not measured.
-
 ## Transport tests
 
 The following tests varied the source address, packet format, and USB interface:
@@ -88,16 +86,21 @@ Encoder presets were also compared at idle. Medians for render-submit to packet 
 
 ## Monitor-to-lens delay
 
-Two phone recordings at 240 fps measured how far one goggle lens trails the 240 Hz reference monitor. Both used the test pattern from [Measure video delay](../LATENCY.md), the same goggles, cable, and PC, and the default stream settings: 1920x1080, 100 fps target, 20 Mbps, High profile, `p4`, low-latency framing, and 16 KiB USB writes. Both recordings reached the PC as 1/8-speed exports rather than original camera files. The pattern's 0.65-second cadence confirmed that playback scale in each file, so one stored frame is one 4.17 ms camera frame, but the exports leave the frame timing unverified.
+The camera measurements used DJI Goggles 2 firmware 01.11.00.00, an RTX 5060 Laptop GPU, and a 240 Hz monitor. Streams targeted 1920x1080 at 100 fps and 20 Mbps, with High/`p4` encoding and 16 KiB USB writes.
 
-| Recording | Bridge | GPU load during the take | Transitions | Median delay | Range |
+The following results use 50% brightness crossings in the recorded monitor and lens regions:
+
+| Recording | Capture path | GPU load | Transitions | Median delay | Range |
 | --- | --- | --- | ---: | ---: | --- |
-| November 7, first | `6eacb9e`, unchanged | Idle desktop | 18 | 13.3 ms | 6.7–26.7 ms |
-| November 7, second | Realtime GPU scheduling for the encoder | Offscreen shader holding the GPU near 95% | 12 | 14.6 ms | 12.5–20.8 ms |
+| November 7, first | Windows desktop, `6eacb9e` | No added load | 18 | 13.3 ms | 6.7-26.7 ms |
+| November 7, second | Windows desktop, realtime encoder GPU scheduling | Offscreen shader near 95% utilization | 12 | 14.6 ms | 12.5-20.8 ms |
+| November 7, native | D3D11 capture prototype | No added load | 20 | 12.1 ms | 2.1-16.5 ms |
 
-The second take kept the lens delay within about 1 ms of the idle result while the GPU was saturated. The unchanged bridge was not filmed under that load, so the table doesn't show how much worse the first configuration gets in that condition. The PC-side timings in the preceding section are the only measurement of that difference. Threshold choice moved the medians by at most 2 ms, and three nearby lens regions agreed within 4 ms.
+The first recording used a 10%-speed export; the second used a 1/8-speed export. Their fixed 0.65-second pattern established the playback scale. The native recording used irregular flashes. Matching them to the source timestamp log gave 240.03 stored frames per second of capture time.
 
-These values are lens delay relative to the monitor, including both displays' scanout and response. They are not controller-to-photon latency.
+The native result has a mean of 10.3 ms and a 95th percentile of 16.0 ms. The analysis tracked a small patch in the lens and included all 20 transitions. Nearby regions changed some individual delays, while most retained a median near 12 ms. The capture paths, patterns, and load conditions differ across these recordings, so the table is not a matched A/B comparison.
+
+For the counting method and cropped frames, see [Measure video delay](../LATENCY.md).
 
 ## Live A/B comparison
 
