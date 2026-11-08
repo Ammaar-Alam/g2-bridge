@@ -34,10 +34,21 @@ class BridgeSettings:
     low_latency: bool = True
     usb_write_size: int = 16384
     h264_profile: str = 'high'
+    # Latency experiments, off by default and NVENC only. See docs/research/EXPERIMENTS.md
+    min_refs: bool = False
+    strip_timing_sei: bool = False
+    # Rate-control buffer, in frames at the target bitrate. Larger values let keyframes keep more detail
+    vbv_frames: int = 2
 
     def __post_init__(self):
-        if type(self.low_latency) is not bool:
-            raise ValueError('low_latency must be a boolean')
+        for name in ('low_latency', 'min_refs', 'strip_timing_sei'):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f'{name} must be a boolean')
+        if type(self.vbv_frames) is not int or self.vbv_frames not in (2, 4, 8, 16):
+            raise ValueError(f'Unsupported vbv_frames: {self.vbv_frames}')
+        if ((self.min_refs or self.strip_timing_sei or self.vbv_frames != 2)
+                and self.capture not in ('gfxcapture', 'ddagrab')):
+            raise ValueError('Encoder experiments need NVENC capture on Windows')
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
@@ -74,12 +85,20 @@ def encoder_command(settings):
                     'hwdownload,format=bgra,scale=1920:1080:force_original_aspect_ratio=decrease:flags=fast_bilinear,'
                     'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=nv12']
     command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
-                '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
+                '-b:v', str(bitrate), '-maxrate', str(bitrate),
+                '-bufsize', str(bitrate*settings.vbv_frames//settings.fps),
                 '-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
                 '-profile:v', settings.h264_profile, '-level:v', '4.2' if settings.fps == 60 else '5.1',
                 '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
+    if settings.min_refs:
+        # NVENC's smallest setting: the SPS then declares 2 reference frames and a 2-picture DPB instead of 3
+        command += ['-refs', '1']
+    # 12 is filler; 6 is SEI, which here holds only buffering-period and picture-timing messages
+    removed = '|'.join((['6'] if settings.strip_timing_sei else []) + (['12'] if settings.low_latency else []))
+    if removed:
+        command += ['-bsf:v', f'filter_units=remove_types={removed}']
     if settings.low_latency:
-        command += ['-bsf:v', 'filter_units=remove_types=12', '-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
+        command += ['-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
     else:
         command += ['-f', 'h264', 'pipe:1']
     return command
@@ -196,7 +215,8 @@ class BridgeEngine:
                       resolution='1920x1080', preset=self.settings.preset,
                       keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
                       low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
-                      h264_profile=self.settings.h264_profile)
+                      h264_profile=self.settings.h264_profile, min_refs=self.settings.min_refs,
+                      strip_timing_sei=self.settings.strip_timing_sei, vbv_frames=self.settings.vbv_frames)
             try:
                 attempt = 0
                 while not self.stopping():

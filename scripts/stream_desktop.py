@@ -86,11 +86,21 @@ def main():
                         help='Release complete encoded frames immediately and remove H.264 filler data (default: on)')
     parser.add_argument('--usb-write-size', type=int, choices=USB_WRITE_SIZES, default=16384,
                         help='Maximum bytes per USB write (default: 16384)')
+    experiments = parser.add_argument_group('encoder experiments (Windows only, off by default; not yet measured on goggles)')
+    experiments.add_argument('--min-refs', action='store_true',
+                             help='Ask NVENC for one reference frame, so the stream declares a 2-picture decoder buffer instead of 3')
+    experiments.add_argument('--strip-timing-sei', action='store_true',
+                             help='Remove timing SEI, which asks the decoder to hold each picture one frame (10 ms at 100 fps)')
+    experiments.add_argument('--vbv-frames', type=int, choices=(2, 4, 8, 16), default=2,
+                             help='Rate-control buffer in frames (default: 2). Larger keeps keyframes sharper '
+                                  'but sends larger keyframes')
     parser.add_argument('--seconds', type=float, default=0, help='Duration in seconds, including reconnects (0 runs until stopped)')
     parser.add_argument('--no-reconnect', action='store_true', help='Exit on USB or heartbeat loss')
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='Path for a new JSON Lines log (default: a unique file in work/logs)')
     args = parser.parse_args()
+    if MAC and (args.min_refs or args.strip_timing_sei or args.vbv_frames != 2):
+        parser.error('--min-refs, --strip-timing-sei, and --vbv-frames need the Windows NVENC encoder')
     if args.stop_file and args.stop_file.exists():
         parser.error('--stop-file already exists; use a new path or remove the old stop marker')
     if args.python_deps:
@@ -135,7 +145,8 @@ def main():
         settings = BridgeSettings(args.dll, args.ffmpeg, fps=args.fps, bitrate_mbps=args.bitrate_mbps,
             capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
             show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
-            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile)
+            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile,
+            min_refs=args.min_refs, strip_timing_sei=args.strip_timing_sei, vbv_frames=args.vbv_frames)
         print('Checking screen capture...', flush=True)
         problem = check_encoder(settings)
         if problem:

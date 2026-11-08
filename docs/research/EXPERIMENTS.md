@@ -197,3 +197,43 @@ The tester reported inconsistent smoothness and quality, with no clear improveme
 Other interruptions occurred before this trial, including one high-speed-to-full-speed fallback. The slow descriptor had speed code 1 and 64-byte bulk packets. Reconnecting the same cable and port restored speed code 2 and 512-byte bulk packets. The bridge refuses the insufficient full-speed profile. Cable, controller, driver and device causes remain unresolved.
 
 A later B run lost the device after about 116 seconds, and the client exited. No DJI device was present afterward. It is unknown whether the goggles had been powered off.
+
+## Decoder buffer experiments
+
+Two opt-in switches test whether the receiver delays pictures because of what the stream declares. Both are off by default and apply only to the Windows NVENC paths. Their effect on the goggles has not been measured.
+
+| Switch | Default stream | With the switch |
+| --- | --- | --- |
+| `--min-refs` | SPS declares 3 reference frames and `max_dec_frame_buffering` 3 | NVENC `-refs 1`, its smallest value, declares 2 and 2. `-refs 0` gives the default 3 |
+| `--strip-timing-sei` | Every picture carries picture-timing SEI with a DPB output delay of 2 ticks, one frame at 60 or 100 fps | SEI NAL units, type 6, are removed. NVENC writes only buffering-period and picture-timing messages |
+
+Both declared values were read with FFmpeg `trace_headers` from 1920x1080 NVENC output encoded with the bridge's settings on an RTX 5060 Laptop GPU. Each modified stream decoded without errors in FFmpeg. The stream never signals reordering (`max_num_reorder_frames` 0), so a conforming decoder can output each picture immediately; the switches matter only if the receiver buffers by the declared size or honors the timing SEI.
+
+The earlier SEI trial in the previous section was judged by eye and interrupted by a USB fault. To measure each switch, record 20 or more transitions with and without it, as described in [Measure video delay](../LATENCY.md), and change nothing else between runs:
+
+```powershell
+python scripts/stream_desktop.py
+python scripts/stream_desktop.py --min-refs
+python scripts/stream_desktop.py --strip-timing-sei
+```
+
+The `starting` log event records both settings.
+
+## Keyframe pulse
+
+The rate-control buffer limits each keyframe. With the default two-frame buffer at 20 Mbps and 100 fps, a keyframe can use about 50 KB. Static text needs several times that to stay sharp, so NVENC quantizes the keyframe heavily, and the following P frames restore detail over about a quarter second. With the default three-second GOP, this repeats every three seconds.
+
+[`keyframe_pulse.py`](../../tools/research/keyframe_pulse.py) encodes deterministic 1920x1080 sources at 100 fps with the bridge's NVENC High/`p4` settings, varying only `-bufsize`, and compares each decoded frame with its source. SSIM is shown in decibels, `-10 log10(1 - SSIM)`, as the mean of the 20 frames before the keyframe at frame 300 and at that keyframe. Recovery counts frames until SSIM returns within 0.5 dB of the earlier mean. The run used an RTX 5060 Laptop GPU:
+
+| Source | Buffer | Keyframe | SSIM before / at keyframe | Recovery |
+| --- | --- | ---: | --- | ---: |
+| Static text | 2 frames (default) | 45,684 B | 38.9 / 12.0 dB | 27 frames |
+| Static text | 4 frames | 77,051 B | 39.1 / 16.1 dB | 21 frames |
+| Static text | 8 frames | 149,229 B | 38.2 / 23.9 dB | 17 frames |
+| Static text | 16 frames | 294,692 B | 39.6 / 34.4 dB | 7 frames |
+| `testsrc2` motion | 2 frames (default) | 29,682 B | 23.5 / 20.6 dB | 3 frames |
+| `testsrc2` motion | 4, 8 or 16 frames | 42,842 B | 23.5 / 24.7 dB | 0 frames |
+
+At the default size, the text keyframe shows visible block artifacts that clear over the next quarter second. The motion source shows a smaller dip because its P frames are already near the bitrate limit. A static fractal source behaved like the text, but its quality before the keyframe varied between runs, so it is left out of the table.
+
+`--vbv-frames 4`, `8`, or `16` raises `-bufsize` to that many frames at the target bitrate. The switch is off by default and NVENC only. A larger buffer also allows larger P frames at scene changes. At 30 to 40 MB/s of USB 2.0 bulk throughput, a 149 KB keyframe would take about 4 to 5 ms to send and a 295 KB keyframe about 8 to 10 ms. That throughput is an estimate, not a measurement on this link. Whether the receiver accepts these sizes, and whether the pulse or the added delay is more visible, has not been tested on the goggles.

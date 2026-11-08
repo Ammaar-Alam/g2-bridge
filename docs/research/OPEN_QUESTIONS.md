@@ -15,7 +15,7 @@ The live A/B comparison favored the optimized mode, and host framing and send ti
 
 The encoder and capture tests leave these issues unresolved:
 
-- A subtle pulse followed the keyframe interval from one to three seconds. The contribution of rate control and decoding is unknown.
+- A subtle pulse followed the keyframe interval from one to three seconds. Offline, the two-frame rate-control buffer limits keyframe size and blurs static detail for about a quarter second; see [Keyframe pulse](EXPERIMENTS.md#keyframe-pulse). Whether a larger buffer removes the pulse on the goggles is untested.
 - High/p4 improved offline reference metrics at 20 Mbps without signaling frame reordering. The goggles displayed it correctly, but receiver latency was not measured.
 - Intra refresh reduced a synthetic keyframe dip but created larger scene-change bursts. A useful replacement must preserve quality while bounding transmission delay.
 - The source display's aspect ratio differs from the goggles. The pinned `gfxcapture` implementation places fitted content at the top left. Scaling and placement need explicit control in any replacement capture path.
