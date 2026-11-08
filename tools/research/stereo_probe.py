@@ -16,7 +16,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from goggles_bridge.control import V1Stream
-from goggles_bridge.windows_usb import DEFAULT_DLL
+from goggles_bridge.usb_transport import DEFAULT_DLL
 
 # name: (size of each view, how the views are combined)
 LAYOUTS = {
@@ -35,8 +35,17 @@ def pattern(layout, fps):
             f'[b]drawbox=color=blue:t=96[r];[l][r]{stack},realtime[out0]')
 
 
-def probe_command(settings, layout):
-    """Reuse the bridge encoder settings with a synthetic stereo source."""
+def probe_command(settings, layout, stereo_sei=False):
+    """Encode a synthetic stereo source, optionally with explicit layout metadata."""
+    if stereo_sei:
+        packing = 4 if layout == 'ftb' else 3
+        return [str(settings.ffmpeg), '-hide_banner', '-nostdin', '-loglevel', 'info',
+                '-f', 'lavfi', '-i', pattern(layout, settings.fps), '-an',
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency', '-crf', '18',
+                '-profile:v', 'high', '-level:v', '4.2' if layout == 'sbs' else '5.1',
+                '-bf', '0', '-g', str(settings.fps),
+                '-x264-params', f'frame-packing={packing}:repeat-headers=1:aud=1',
+                '-bsf:v', 'filter_units=remove_types=12', '-flush_packets', '1', '-f', 'avi', 'pipe:1']
     from goggles_bridge.engine import encoder_command
     command = encoder_command(settings)
     command[command.index('-i')+1] = pattern(layout, settings.fps)
@@ -60,6 +69,8 @@ def inbound_summary(log_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('layout', choices=LAYOUTS)
+    parser.add_argument('--stereo-sei', action='store_true',
+                        help='Encode left/right layout metadata with libx264; diagnostic only')
     parser.add_argument('--seconds', type=float, default=60, help='Duration, including waiting for the goggles')
     parser.add_argument('--dll', type=Path, default=os.environ.get('DJI_USB_DLL') or DEFAULT_DLL)
     parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg'))
@@ -76,7 +87,7 @@ def main():
         sys.path.insert(0, str(args.python_deps.resolve()))
     from goggles_bridge.engine import BridgeEngine, BridgeSettings
     settings = BridgeSettings(args.dll, args.ffmpeg, fps=60)
-    command = probe_command(settings, args.layout)
+    command = probe_command(settings, args.layout, args.stereo_sei)
     log_path = args.log or Path(__file__).resolve().parents[2] / 'work' / 'logs' / (
         f'stereo-{args.layout}-{datetime.now():%Y%m%d-%H%M%S}.jsonl')
     print(f'Layout {args.layout}. Log: {log_path}\nOpen More > DJI Virtual Flight. Ctrl+C stops.', flush=True)
@@ -84,6 +95,7 @@ def main():
         if not row['event'].startswith('control_'):
             print(row['event'], row.get('message', ''), flush=True)
 
+    print('Encoder: libx264 with stereo metadata' if args.stereo_sei else 'Encoder: NVENC', flush=True)
     engine = BridgeEngine(settings, log_path, duration=args.seconds, on_event=report, stop_file=args.stop_file,
                           process_factory=lambda _, **options: subprocess.Popen(command, **options))
     try:

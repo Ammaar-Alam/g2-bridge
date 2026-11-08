@@ -1,6 +1,6 @@
 # Stereo and head tracking
 
-The bridge sends one 1920x1080 picture, and both lenses show it. PC VR needs two more things from the goggles: a different picture for each eye, and the head orientation. On stock Goggles 2 firmware, both panels show the same picture, and no way to read head orientation over USB has been found. This page records the evidence and the display test.
+The bridge sends one 1920x1080 picture, and both lenses show it. PC VR needs two more things from the goggles: a different picture for each eye, and the head orientation. On stock Goggles 2 firmware, both panels show the same picture, and no way to read head orientation over USB has been found. The tested layouts and stereo metadata both produced the same picture in each eye.
 
 ## Hardware
 
@@ -16,7 +16,7 @@ DJI's [specifications](https://www.dji.com/support/product/goggles-2) list, for 
 | Storage | Samsung eMMC `KLM8G1GETF` |
 | Displays | Each panel and lens sits in its own sliding carriage, with its own cable to the main board |
 
-Each eye therefore has a separate panel with its own link. The photos do not show whether the E3T has two independent display outputs or drives both panels from one image. In either case, the firmware decides what each panel shows. Goggles 2 firmware (`zv900`) is signed with a 3072-bit key and encrypted with a key that is not public ([dji-firmware-tools](https://github.com/o-gs/dji-firmware-tools/blob/master/dji_imah_fwsig.py)), so it cannot be modified without DJI's keys.
+Each eye therefore has a separate panel with its own link. The photos do not show whether the E3T has two independent display outputs or drives both panels from one image. In either case, the firmware decides what each panel shows. Goggles 2 firmware (`zv900`) is signed with a 3072-bit key and encrypted with a key that is not public ([dji-firmware-tools](https://github.com/o-gs/dji-firmware-tools/blob/master/dji_imah_fwsig.py)). No modified firmware was tested.
 
 The 51° field of view is about half that of typical PC VR headsets, so even a stereo picture would look like a window rather than surround the user.
 
@@ -39,13 +39,23 @@ On November 7, 2026, a ZV900 with firmware 01.11.00.00 showed the whole picture,
 | `fsbs` | 3840x1080, two 1920x1080 views | 55 s, 60 fps | Red and blue views side by side, fitted to one screen |
 | `ftb` | 1920x2160, two 1920x1080 views | 35 s, 60 fps | Red and blue views, both visible |
 
-The decoder accepts pictures larger than 1920x1080 at level 5.1 and fits the whole picture to the display. Both panels then show the same image. On this firmware, picture layout cannot give each eye its own view. Separate views would need a mode that the stock receiver does not expose.
+The decoder accepts pictures larger than 1920x1080 at level 5.1 and fits the whole picture to the display. Both panels then show the same image. On this firmware, picture layout cannot give each eye its own view. No separate-eye mode was found in these tests.
 
 To repeat a layout, open Virtual Flight and run:
 
 ```powershell
 python tools/research/stereo_probe.py fsbs --seconds 60
 ```
+
+An additional test sent a 1920x1080 side-by-side stream with H.264 frame-packing SEI, type 3. FFprobe identified all 120 offline frames as `left_right` after AVI parsing and AUD removal. The live run sent 2,692 frames over 45 seconds at about 60 fps. Both eyes still showed both views.
+
+To repeat the metadata test, use an FFmpeg build with libx264:
+
+```powershell
+python tools/research/stereo_probe.py sbs --stereo-sei --seconds 45
+```
+
+This test uses software encoding to emit the metadata. The desktop streaming settings are unchanged. The [H.264 specification](https://www.itu.int/rec/T-REC-H.264) defines frame-packing metadata; a receiver can ignore it.
 
 The goggles reject a new simulator session immediately after the previous one ends, with status `d6`. Leave and reopen Virtual Flight, or restart the goggles, between runs.
 
@@ -63,7 +73,7 @@ The goggles enumerate as a USB composite device, vendor `2ca3` and product `0020
 | MI06 | `ff/43/01` | `0x87` | Vendor channel |
 | MI07 | `ff/43/01` | `0x88` | Vendor channel |
 
-The mass-storage interface reports itself as a Linux `File-Stor Gadget` with no media attached, which shows that the goggles run Linux and present these interfaces through the Linux USB gadget framework. The network interface brings up an RNDIS link on which the goggles act as a DHCP server at `192.168.60.2`. A scan of common ports finds only FTP on port `21`, served by a minimal server that requires a login. The mass-storage and FTP paths transfer files for DJI Assistant 2. Neither carries live video or sensor data.
+The mass-storage interface reports itself as a Linux `File-Stor Gadget` with no media attached, which shows that the goggles run Linux and present these interfaces through the Linux USB gadget framework. The network interface brings up an RNDIS link on which the goggles act as a DHCP server at `192.168.60.2`. A scan of common ports finds only FTP on port `21`, served by a minimal server that requires a login. No sensor stream was identified on the mass-storage or FTP interfaces. [Diagnostic files were retrieved over MI04](DEVICE_DIAGNOSTICS.md).
 
 The bridge uses MI04. Five interfaces share the class `ff/43/01`, so the next section examines the other four, MI03, MI05, MI06, and MI07, for a sensor stream.
 
@@ -76,7 +86,7 @@ No source shows the goggles reporting orientation to a PC:
 - **Virtual Flight does not use it.** The goggles class in the Android app handles heartbeat, firmware version, simulator mode, video, and controller status pushes. The app's strings refer to a controller gimbal wheel but not to goggles orientation.
 - **No public command.** The public [DUML dissector](https://github.com/o-gs/dji-firmware-tools/tree/master/comm_dissector/wireshark) names command set 21 `Glass` but lists no commands for it. Its gimbal set has no head-tracking command. The goggles firmware is encrypted with an unpublished key, as noted in [related work](RELATED.md).
 
-A read-only [endpoint probe](../../tools/research/listen_endpoint.py) tests whether the four vendor channels other than video carry a sensor stream. Each of MI03, MI05, MI06, and MI07 shares the video channel's interface class, so each could in principle push data. The probe claims all four interfaces and reads their device-to-host endpoints without sending anything to the goggles. The channels stay silent in every state tested on firmware 01.11.00.00:
+A read-only [endpoint probe](../../tools/research/listen_endpoint.py) tests whether the four vendor channels other than video carry a sensor stream. Each of MI03, MI05, MI06, and MI07 shares the video channel's interface class, so each could in principle push data. The probe claims all four interfaces and reads their device-to-host endpoints without sending anything to the goggles. The earlier probe recorded no payload bytes in these conditions on firmware 01.11.00.00:
 
 | State | Bytes received |
 | --- | --- |
@@ -84,10 +94,10 @@ A read-only [endpoint probe](../../tools/research/listen_endpoint.py) tests whet
 | Streaming, goggles held still | 0 |
 | Streaming, goggles moving | 0 |
 
-On their own the goggles push nothing on these channels. They answer only when the host sends a request, and no request that returns orientation is known.
+These receive-only tests did not identify an orientation stream. They do not establish how an untested command or device mode behaves. In a later identity probe, OUT transfers on MI03, MI05, MI06, and MI07 timed out. MI04 answered after the request used the PC source address, type 10, ID 1.
 
-Head tracking likely sends gimbal and flight commands from the goggles to the aircraft over the radio link, which a USB host does not see. That is an inference. Finding a request that makes the goggles report orientation over USB would need firmware analysis or an unbounded command search. Unknown commands can change device state, so the bridge does not send them.
+Head tracking likely sends gimbal and flight commands from the goggles to the aircraft over the radio link, which a USB host does not see. That is an inference. No orientation query or subscription was recovered. Source-derived queries did expose the firmware manifest and diagnostic index over USB; neither is a live head-pose interface.
 
 ## SteamVR
 
-Stereoscopic SteamVR is not possible on stock firmware, because both eyes receive the same picture. A flat SteamVR view is possible in principle. An external tracker such as [OpenTrack](https://github.com/opentrack/opentrack) can supply the head pose, and drivers such as [OpenVR-OpenTrack](https://github.com/r57zone/OpenVR-OpenTrack) draw the headset view in a desktop window that the bridge can capture. This combination has not been tested.
+Stereoscopic SteamVR needs a separate-eye display mode and a pose source. Neither is implemented by the bridge. A flat SteamVR view is possible in principle. An external tracker such as [OpenTrack](https://github.com/opentrack/opentrack) can supply the head pose, and drivers such as [OpenVR-OpenTrack](https://github.com/r57zone/OpenVR-OpenTrack) draw the headset view in a desktop window that the bridge can capture. This combination has not been tested.

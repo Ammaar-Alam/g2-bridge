@@ -22,6 +22,18 @@ class StereoProbeTests(unittest.TestCase):
                 self.assertEqual(command[-3:], bridge[-3:])
                 self.assertEqual(len(command), len(bridge))
 
+    def test_stereo_metadata_matches_layout_and_keeps_sei(self):
+        settings = BridgeSettings(Path('dll'), Path('ffmpeg'), fps=60)
+        for layout, packing in (('sbs', 3), ('fsbs', 3), ('ftb', 4)):
+            with self.subTest(layout=layout):
+                command = stereo_probe.probe_command(settings, layout, stereo_sei=True)
+                self.assertEqual(command[command.index('-c:v')+1], 'libx264')
+                self.assertEqual(command[command.index('-x264-params')+1],
+                                 f'frame-packing={packing}:repeat-headers=1:aud=1')
+                self.assertEqual(command[command.index('-bsf:v')+1], 'filter_units=remove_types=12')
+                self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
+                self.assertNotIn('-rc', command)
+
     def test_inbound_summary_reassembles_split_reads(self):
         push = V1Packet(0x09, 0x43, 14, 0, 10, 1, 0, 0, 7, b'\x03').serialize()
         reply = V1Packet(0, 0, 28, 0, 10, 1, 1, 0, 1, bytes(7)).serialize()
