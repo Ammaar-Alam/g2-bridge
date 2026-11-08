@@ -249,6 +249,50 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.settings(h264_profile='unsupported')
 
+    def test_latency_experiments_are_off_by_default_and_only_add_their_options(self):
+        for capture in ('gfxcapture', 'ddagrab'):
+            for low_latency in (False, True):
+                with self.subTest(capture=capture, low_latency=low_latency):
+                    default = encoder_command(self.settings(capture=capture, low_latency=low_latency))
+                    self.assertNotIn('-refs', default)
+                    filters = [value for key, value in zip(default, default[1:]) if key == '-bsf:v']
+                    self.assertEqual(filters, ['filter_units=remove_types=12'] if low_latency else [])
+                    refs = encoder_command(self.settings(capture=capture, low_latency=low_latency, min_refs=True))
+                    at = refs.index('-refs')
+                    self.assertEqual(refs[at:at+2], ['-refs', '1'])
+                    self.assertEqual(refs[:at] + refs[at+2:], default)
+                    stripped = encoder_command(self.settings(capture=capture, low_latency=low_latency,
+                                                             strip_timing_sei=True))
+                    expected = 'filter_units=remove_types=6|12' if low_latency else 'filter_units=remove_types=6'
+                    self.assertEqual(stripped[stripped.index('-bsf:v')+1], expected)
+                    self.assertEqual(stripped.count('-bsf:v'), 1)
+                    self.assertEqual(stripped[-3:], default[-3:])
+        for capture in ('avfoundation', 'screencapturekit'):
+            for option in ('min_refs', 'strip_timing_sei'):
+                with self.subTest(capture=capture, option=option), self.assertRaises(ValueError):
+                    self.settings(capture=capture, **{option: True})
+        with self.assertRaises(ValueError):
+            self.settings(min_refs=1)
+
+    def test_vbv_frames_only_scales_the_rate_control_buffer(self):
+        for fps, bitrate in ((100, 20), (60, 24)):
+            default = encoder_command(self.settings(fps=fps, bitrate_mbps=bitrate))
+            self.assertEqual(default, encoder_command(self.settings(fps=fps, bitrate_mbps=bitrate, vbv_frames=2)))
+            for frames in (4, 8, 16):
+                with self.subTest(fps=fps, frames=frames):
+                    command = encoder_command(self.settings(fps=fps, bitrate_mbps=bitrate, vbv_frames=frames))
+                    at = command.index('-bufsize')
+                    self.assertEqual(command[at+1], str(bitrate*1_000_000*frames//fps))
+                    self.assertEqual(command[:at+1] + command[at+2:], default[:at+1] + default[at+2:])
+        command = encoder_command(self.settings(vbv_frames=16))
+        self.assertEqual(command[command.index('-bufsize')+1], '3200000')
+        for value in (0, 1, 3, 32, 2.0, '2'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.settings(vbv_frames=value)
+        for capture in ('avfoundation', 'screencapturekit'):
+            with self.subTest(capture=capture), self.assertRaises(ValueError):
+                self.settings(capture=capture, vbv_frames=4)
+
     def test_encoder_check_runs_one_frame_and_explains_missing_features(self):
         calls = []
         def run(stderr, code=1):
