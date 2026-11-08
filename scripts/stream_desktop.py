@@ -12,9 +12,11 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from goggles_bridge import mac_capture
 from goggles_bridge.usb_transport import DEFAULT_DLL, USB_WRITE_SIZES
 
 MAC = sys.platform == 'darwin'
+MAC_CAPTURE = 'screencapturekit' if MAC and mac_capture.supported() else 'avfoundation'
 FFMPEG_INSTALL = 'brew install ffmpeg' if MAC else 'winget install Gyan.FFmpeg'
 
 # winget adds this folder to PATH but terminals opened before the install miss it
@@ -25,10 +27,22 @@ SETUP_HINTS = {
 }
 
 
+def ask(question):
+    try:
+        return input(f'{question} [y/N] ').strip().lower() in ('y', 'yes')
+    except EOFError:
+        return False
+
+
 def install_mac_dependencies(parser, args):
-    """Offer to install FFmpeg and libusb with Homebrew when either is missing."""
+    """Offer to install the developer tools, FFmpeg, and libusb when the chosen capture needs them."""
+    if args.capture == 'screencapturekit' and subprocess.run(['xcode-select', '-p'], capture_output=True).returncode:
+        if not ask("Apple's command-line developer tools are needed to build the capture helper. Install them?"):
+            parser.error('Run "xcode-select --install", then try again')
+        subprocess.run(['xcode-select', '--install'])
+        parser.error('Finish installing the command-line developer tools, then run this again')
     import usb.backend.libusb1
-    missing = [name for name, absent in (('ffmpeg', args.ffmpeg is None),
+    missing = [name for name, absent in (('ffmpeg', args.capture == 'avfoundation' and args.ffmpeg is None),
                                          ('libusb', usb.backend.libusb1.get_backend() is None)) if absent]
     if not missing:
         return
@@ -37,11 +51,7 @@ def install_mac_dependencies(parser, args):
                                          if Path(p).is_file()), None)
     if brew is None:
         parser.error(f'{names} not found. Install Homebrew from https://brew.sh, then run "{command}"')
-    try:
-        answer = input(f'{names} not found. Install with "{command}"? [y/N] ')
-    except EOFError:
-        answer = ''
-    if answer.strip().lower() not in ('y', 'yes'):
+    if not ask(f'{names} not found. Install with "{command}"?'):
         parser.error(f'Run "{command}", then try again')
     if subprocess.run([brew, 'install', *missing]).returncode != 0:
         parser.error(f'"{command}" failed')
@@ -61,10 +71,11 @@ def main():
     parser.add_argument('--fps', type=int, choices=(60, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
     parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
-    parser.add_argument('--capture', choices=('avfoundation',) if MAC else ('gfxcapture', 'ddagrab'),
-                        default='avfoundation' if MAC else 'gfxcapture',
-                        help='Windows Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling')
-    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate for gfxcapture or avfoundation, in fps')
+    parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),
+                        default=MAC_CAPTURE if MAC else 'gfxcapture',
+                        help='Windows: Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling. '
+                             'macOS: ScreenCaptureKit on 12.3 and later, or AVFoundation through FFmpeg')
+    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate, in fps')
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
     parser.add_argument('--preset', choices=('p1', 'p4'), default='p4', help='NVENC preset (Windows only)')
@@ -92,7 +103,14 @@ def main():
         parser.error('PyUSB 1.3.1 is required. Run "python -m pip install -r requirements.txt"')
     if MAC:
         install_mac_dependencies(parser, args)
-    for name in ('ffmpeg',) if MAC else ('dll', 'ffmpeg'):
+    if args.capture == 'screencapturekit':
+        if not mac_capture.helper_path().is_file():
+            print('Building the screen capture helper...', flush=True)
+        try:
+            mac_capture.build()
+        except RuntimeError as exc:
+            parser.error(str(exc))
+    for name in ('dll', 'ffmpeg') if not MAC else ('ffmpeg',) if args.capture == 'avfoundation' else ():
         path = getattr(args, name)
         if path is None or not path.is_file():
             parser.error(SETUP_HINTS[name] if path in (None, DEFAULT_DLL) else f'--{name} file not found: {path}')
@@ -118,7 +136,7 @@ def main():
             capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
             show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
             low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile)
-        print('Checking FFmpeg...', flush=True)
+        print('Checking screen capture...', flush=True)
         problem = check_encoder(settings)
         if problem:
             print(problem, file=sys.stderr)

@@ -9,8 +9,8 @@ from scripts import stream_desktop
 
 
 class MacSetupTests(unittest.TestCase):
-    def run_setup(self, answer, *, ffmpeg=None, libusb=None):
-        args = argparse.Namespace(ffmpeg=ffmpeg)
+    def run_setup(self, answer, *, ffmpeg=None, libusb=None, capture='avfoundation'):
+        args = argparse.Namespace(ffmpeg=ffmpeg, capture=capture)
         which = lambda name, path=None: {'brew': '/opt/homebrew/bin/brew', 'ffmpeg': '/opt/homebrew/bin/ffmpeg'}[name]
         with patch('usb.backend.libusb1.get_backend', return_value=libusb), \
                 patch.object(stream_desktop.shutil, 'which', side_effect=which), \
@@ -34,6 +34,11 @@ class MacSetupTests(unittest.TestCase):
     def test_present_tools_are_left_alone(self):
         _, run, prompt = self.run_setup('y', ffmpeg=Path('/usr/bin/ffmpeg'), libusb=object())
         run.assert_not_called()
+        prompt.assert_not_called()
+
+    def test_screencapturekit_needs_developer_tools_but_not_ffmpeg(self):
+        _, run, prompt = self.run_setup('y', capture='screencapturekit', libusb=object())
+        run.assert_called_once_with(['xcode-select', '-p'], capture_output=True)
         prompt.assert_not_called()
 
 

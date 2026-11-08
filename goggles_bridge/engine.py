@@ -13,6 +13,7 @@ import time
 from .annexb import AccessUnitStream, strip_aud
 from .avi import AviPacketStream
 from .control import V1Stream
+from .mac_capture import helper_path
 from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
 from .usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
@@ -40,7 +41,7 @@ class BridgeSettings:
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
-                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation')), ('preset', ('p1', 'p4')),
+                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4')),
                               ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
@@ -52,6 +53,12 @@ class BridgeSettings:
 
 def encoder_command(settings):
     bitrate = settings.bitrate_mbps * 1_000_000
+    if settings.capture == 'screencapturekit':
+        command = [str(helper_path()), '--display', str(settings.display_index), '--fps', str(settings.fps),
+                   '--capture-fps', str(settings.capture_fps), '--bitrate', str(bitrate),
+                   '--keyframe-seconds', str(settings.keyframe_seconds), '--profile', settings.h264_profile,
+                   '--format', 'avi' if settings.low_latency else 'h264']
+        return command + ([] if settings.show_cursor else ['--hide-cursor'])
     command = [str(Path(settings.ffmpeg).resolve()), '-hide_banner', '-nostdin', '-loglevel', 'info']
     if settings.capture == 'avfoundation':
         return command + _mac_encoder_args(settings, bitrate)
@@ -101,16 +108,21 @@ def _mac_encoder_args(settings, bitrate):
 
 
 def check_encoder(settings, run=subprocess.run):
-    """Encode one captured frame and return a setup problem, or None if FFmpeg can stream."""
-    command = encoder_command(settings)[:-3] + ['-frames:v', '1', '-f', 'null', '-']
+    """Encode one captured frame and return a setup problem, or None if the encoder can stream."""
+    if settings.capture == 'screencapturekit':
+        command = encoder_command(settings) + ['--frames', '1']
+    else:
+        command = encoder_command(settings)[:-3] + ['-frames:v', '1', '-f', 'null', '-']
     try:
         result = run(command, capture_output=True, text=True, errors='replace', timeout=30,
                      creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     except subprocess.TimeoutExpired:
-        return 'FFmpeg did not capture a frame within 30 seconds'
+        return 'No frame was captured within 30 seconds'
     if result.returncode == 0:
         return None
     details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
+    if settings.capture == 'screencapturekit':
+        return f'Screen capture test failed.\n  {details}'
     if settings.capture == 'avfoundation':
         if 'Filter not found' in result.stderr or 'Encoder not found' in result.stderr:
             return 'This FFmpeg build lacks VideoToolbox support. Update it with "brew upgrade ffmpeg"'

@@ -9,6 +9,7 @@ import unittest
 
 from goggles_bridge.control import V1Stream
 from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command, prioritize_gpu
+from goggles_bridge.mac_capture import helper_path, supported
 from goggles_bridge.session import SessionError
 from goggles_bridge.usb_transport import DeviceNotFoundError, UsbTransportError
 from avi_fixture import stream as avi_stream
@@ -218,6 +219,17 @@ class EngineTests(unittest.TestCase):
         fail = lambda stderr: lambda command, **_: subprocess.CompletedProcess(command, 1, '', stderr)
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
         self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
+
+    def test_screencapturekit_helper_gets_stream_settings(self):
+        command = encoder_command(BridgeSettings(None, None, capture='screencapturekit', display_index=1,
+                                                 show_cursor=False, low_latency=False))
+        self.assertEqual(Path(command[0]), helper_path())
+        for key, value in (('--display', '1'), ('--fps', '100'), ('--capture-fps', '240'), ('--bitrate', '20000000'),
+                           ('--keyframe-seconds', '3'), ('--profile', 'high'), ('--format', 'h264')):
+            self.assertEqual(command[command.index(key)+1], value)
+        self.assertEqual(command[-1], '--hide-cursor')
+        for version, expected in (('11.7.10', False), ('12.2', False), ('12.3', True), ('12.3.1', True), ('27.0', True)):
+            self.assertIs(supported(version), expected, version)
 
     def test_low_latency_only_changes_local_framing_and_padding(self):
         command = encoder_command(self.settings(low_latency=True))
