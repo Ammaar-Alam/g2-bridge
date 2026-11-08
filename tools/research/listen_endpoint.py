@@ -101,7 +101,7 @@ def main():
     print(f'Listening (read-only, writing nothing) on {labels} for {args.seconds:.0f}s.')
     print('Move and rotate the goggles the whole time. Ctrl+C to stop early.\n')
 
-    stats = {e: {'packets': 0, 'bytes': 0, 'first': None, 'last': None} for _, e in channels}
+    stats = {e: {'packets': 0, 'bytes': 0, 'first': None, 'last': None, 'errors': 0} for _, e in channels}
     end = time.monotonic() + args.seconds
     try:
         while time.monotonic() < end:
@@ -113,7 +113,9 @@ def main():
                 except core.USBError as exc:
                     if isinstance(exc, core.USBTimeoutError) or getattr(exc, 'backend_error_code', None) == -116:
                         continue
-                    print(f'MI{interface:02d} 0x{endpoint:02x}: USBError {exc}')
+                    stats[endpoint]['errors'] += 1
+                    if stats[endpoint]['errors'] == 1:
+                        print(f'MI{interface:02d} 0x{endpoint:02x}: read error ({exc})')
                     continue
                 if not data:
                     continue
@@ -132,13 +134,30 @@ def main():
             util.dispose_resources(node)
 
     print('\n--- summary ---')
+    incomplete = False
     for interface, endpoint in channels:
         s = stats[endpoint]
-        line = f'MI{interface:02d} 0x{endpoint:02x}: {s["packets"]} packets, {s["bytes"]} bytes'
+        prefix = f'MI{interface:02d} 0x{endpoint:02x}:'
+        if interface not in claimed:
+            print(f'{prefix} NOT TESTED (interface unavailable)')
+            incomplete = True
+            continue
+        if s['packets'] == 0 and s['errors']:
+            print(f'{prefix} INCOMPLETE ({s["errors"]} read errors, no data; silence not established)')
+            incomplete = True
+            continue
+        line = f'{prefix} {s["packets"]} packets, {s["bytes"]} bytes'
+        if s['errors']:
+            line += f', {s["errors"]} read errors'
+            incomplete = True
         if s['first'] is not None:
             changed = 'changed' if s['first'] != s['last'] else 'identical'
             line += f' | first={s["first"][:24].hex()} last={s["last"][:24].hex()} ({changed})'
         print(line)
+    # A failed or missing observation must not read as measured silence.
+    if incomplete:
+        print('\nIncomplete: at least one requested channel was not fully observed.')
+        return 2
     return 0
 
 
