@@ -201,6 +201,27 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(command[command.index('-level:v')+1], '4.2')
         self.assertIn('force_original_aspect_ratio=decrease', command[command.index('-vf')+1])
 
+    def test_frame_rates_reach_every_capture_backend(self):
+        for fps in (60, 75, 90, 100):
+            for capture in ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit'):
+                with self.subTest(fps=fps, capture=capture):
+                    command = encoder_command(self.settings(fps=fps, capture=capture))
+                    if capture == 'screencapturekit':
+                        self.assertEqual(command[command.index('--fps')+1], str(fps))
+                        continue
+                    if capture == 'ddagrab':
+                        self.assertIn(f'framerate={fps}:', command[command.index('-i')+1])
+                    else:
+                        self.assertEqual(command[command.index('-r')+1], str(fps))
+                    for key, value in (('-g', str(fps*3)), ('-bufsize', str(40_000_000//fps)),
+                                       ('-level:v', '4.2' if fps == 60 else '5.1'), ('-bf', '0')):
+                        self.assertEqual(command[command.index(key)+1], value)
+        for fps in (0, 65, 120):
+            with self.assertRaises(ValueError):
+                self.settings(fps=fps)
+        with self.assertRaises(ValueError):
+            self.settings(fps=90, capture_fps=75)
+
     def test_mac_capture_keeps_stream_contract_and_adds_delimiters(self):
         for low_latency, tail in ((True, ['-f', 'avi', 'pipe:1']), (False, ['-f', 'h264', 'pipe:1'])):
             with self.subTest(low_latency=low_latency):

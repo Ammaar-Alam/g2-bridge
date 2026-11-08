@@ -2,6 +2,40 @@
 
 Hardware tests used one stock DJI Goggles 2 with ZV900 identity and owner-reported firmware 01.11.00.00. All PC tests used the same USB-A-to-USB-C cable. The original iPhone Virtual Flight app also displayed video successfully.
 
+## Frame-rate targets
+
+The bridge accepts 60, 75, 90, and 100 fps encoder targets. These settings do not
+select a panel refresh mode. DJI lists [1920x1080 per screen and up to 100 Hz](https://www.dji.com/support/product/goggles-2)
+for Goggles 2. Distinct frames displayed in Virtual Flight still need optical measurement.
+
+On Windows, four-second synthetic encodes at each target decoded to 240, 300,
+360, and 400 frames respectively. All were 1920x1080 High profile with no B
+frames. Their SPS timing declared the requested rate, and the bridge's packetizer
+preserved every encoded access unit.
+
+Two live desktop-capture runs per rate used a CRC-protected timestamp strip,
+300 frames per run, and excluded the first 40 frames. Results on an RTX 5060
+Laptop GPU with FFmpeg `0893feba65` were:
+
+| Target | Encoded packets/s, run 1 / run 2 | Distinct source timestamps per 260 samples |
+| ---: | --- | --- |
+| 60 | 60.00 / 60.00 | 260 / 260 |
+| 75 | 74.98 / 74.96 | 260 / 260 |
+| 90 | 89.94 / 89.89 | 259 / 260 |
+| 100 | 100.09 / 100.09 | 259 / 260 |
+
+These are idle host measurements, without USB or a game workload. They do not
+establish panel cadence or optical latency. Lower rates increase the interval
+between images and the bit budget per image at a fixed bitrate.
+
+ScreenCaptureKit previously encoded every complete or idle callback despite
+setting `ExpectedFrameRate`. Apple documents that this property is an
+[encoder hint, not a rate control](https://developer.apple.com/documentation/videotoolbox/kvtcompressionpropertykey_expectedframerate).
+The helper now accepts the first raw frame in each target-rate time slot and
+skips further callbacks in that slot. It adds no waiting queue and never drops
+an encoded reference picture. This limits excess submissions; it cannot create
+fresh images when the display or simulator runs below the target rate.
+
 ## Transport tests
 
 The following tests varied the source address, packet format, and USB interface:

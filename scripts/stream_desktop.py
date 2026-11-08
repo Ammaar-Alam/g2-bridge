@@ -68,7 +68,7 @@ def main():
                         or shutil.which('ffmpeg', path=str(WINGET_LINKS)),
                         help='FFmpeg executable with NVENC or VideoToolbox and the chosen capture (default: GOGGLES_FFMPEG or PATH)')
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
-    parser.add_argument('--fps', type=int, choices=(60, 100), default=100,
+    parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
     parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
     parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),

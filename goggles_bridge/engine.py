@@ -40,7 +40,7 @@ class BridgeSettings:
             raise ValueError('low_latency must be a boolean')
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
-        for name, choices in (('fps', (60, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
+        for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
                               ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4')),
                               ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:

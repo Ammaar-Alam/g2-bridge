@@ -38,6 +38,7 @@ func parseOptions() -> Options {
         }
     }
     if [options.display, options.fps, options.captureFps, options.bitrate, options.keyframeSeconds, options.frames].contains(where: { $0 < 0 })
+        || options.fps == 0
         || !["high", "baseline"].contains(options.profile) || !["avi", "h264"].contains(options.format) {
         fail("Invalid options: \(CommandLine.arguments.dropFirst().joined(separator: " "))")
     }
@@ -94,11 +95,23 @@ func annexB(_ sample: CMSampleBuffer) -> Data {
     return unit
 }
 
+struct FrameRateLimiter {
+    var lastSlot: Int64?
+
+    mutating func accepts(_ time: CMTime, fps: Int) -> Bool {
+        let slot = CMTimeConvertScale(time, timescale: CMTimeScale(fps), method: .roundTowardZero).value
+        guard lastSlot != slot else { return false }
+        lastSlot = slot
+        return true
+    }
+}
+
 final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     let options: Options
     let output = FileHandle.standardOutput
     var session: VTCompressionSession?
     var last: CVPixelBuffer?
+    var frameRateLimiter = FrameRateLimiter()
     var sent = 0, fresh = 0, delays: [Double] = []
     var reportAt = DispatchTime.now().uptimeNanoseconds + 5_000_000_000
     var timebase = mach_timebase_info()
@@ -148,6 +161,8 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     func encode(_ displayTime: UInt64?) {
         guard let session, let image = last else { return }
         let now = CMClockGetTime(CMClockGetHostTimeClock())
+        // discard excess raw frames without waiting or dropping encoded reference pictures
+        guard frameRateLimiter.accepts(now, fps: options.fps) else { return }
         VTCompressionSessionEncodeFrame(session, imageBuffer: image, presentationTimeStamp: now, duration: .invalid,
                                         frameProperties: nil, infoFlagsOut: nil) { [self] status, _, sample in
             guard status == noErr, let sample else { fail("Encoding failed: \(status)") }
@@ -183,6 +198,7 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 }
 
+#if !FRAME_RATE_TEST
 let options = parseOptions()
 var running: (Capture, SCStream)?
 SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { content, error in
@@ -220,3 +236,4 @@ SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) 
     running = (capture, stream)
 }
 dispatchMain()
+#endif
