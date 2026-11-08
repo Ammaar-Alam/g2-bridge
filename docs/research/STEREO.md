@@ -49,6 +49,24 @@ python tools/research/stereo_probe.py fsbs --seconds 60
 
 The goggles reject a new simulator session immediately after the previous one ends, with status `d6`. Leave and reopen Virtual Flight, or restart the goggles, between runs.
 
+## USB interfaces
+
+The goggles enumerate as a USB composite device, vendor `2ca3` and product `0020`, with eight interfaces. A read-only descriptor dump returns the following layout:
+
+| Interface | Class | Device-to-host endpoint | Function |
+| --- | --- | --- | --- |
+| MI00, MI01 | `e0/01/03`, `0a/00/00` | `0x82`, `0x81` | RNDIS network |
+| MI02 | `08/06/50` | `0x83` | USB mass storage |
+| MI03 | `ff/43/01` | `0x84` | Vendor channel |
+| MI04 | `ff/43/01` | `0x85` | Video and control |
+| MI05 | `ff/43/01` | `0x86` | Vendor channel |
+| MI06 | `ff/43/01` | `0x87` | Vendor channel |
+| MI07 | `ff/43/01` | `0x88` | Vendor channel |
+
+The mass-storage interface reports itself as a Linux `File-Stor Gadget` with no media attached, which shows that the goggles run Linux and present these interfaces through the Linux USB gadget framework. The network interface brings up an RNDIS link on which the goggles act as a DHCP server at `192.168.60.2`. A scan of common ports finds only FTP on port `21`, served by a minimal server that requires a login. The mass-storage and FTP paths transfer files for DJI Assistant 2. Neither carries live video or sensor data.
+
+The bridge uses MI04. Five interfaces share the class `ff/43/01`, so the next section examines the other four, MI03, MI05, MI06, and MI07, for a sensor stream.
+
 ## Head orientation over USB
 
 No source shows the goggles reporting orientation to a PC:
@@ -57,6 +75,16 @@ No source shows the goggles reporting orientation to a PC:
 - **No menu option.** In Virtual Flight mode, the goggles menu shows no head-tracking option.
 - **Virtual Flight does not use it.** The goggles class in the Android app handles heartbeat, firmware version, simulator mode, video, and controller status pushes. The app's strings refer to a controller gimbal wheel but not to goggles orientation.
 - **No public command.** The public [DUML dissector](https://github.com/o-gs/dji-firmware-tools/tree/master/comm_dissector/wireshark) names command set 21 `Glass` but lists no commands for it. Its gimbal set has no head-tracking command. The goggles firmware is encrypted with an unpublished key, as noted in [related work](RELATED.md).
+
+A read-only [endpoint probe](../../tools/research/listen_endpoint.py) tests whether the four vendor channels other than video carry a sensor stream. Each of MI03, MI05, MI06, and MI07 shares the video channel's interface class, so each could in principle push data. The probe claims all four interfaces and reads their device-to-host endpoints without sending anything to the goggles. The channels stay silent in every state tested on firmware 01.11.00.00:
+
+| State | Bytes received |
+| --- | --- |
+| Idle, at the handshake screen | 0 |
+| Streaming, goggles held still | 0 |
+| Streaming, goggles moving | 0 |
+
+On their own the goggles push nothing on these channels. They answer only when the host sends a request, and no request that returns orientation is known.
 
 Head tracking likely sends gimbal and flight commands from the goggles to the aircraft over the radio link, which a USB host does not see. That is an inference. Finding a request that makes the goggles report orientation over USB would need firmware analysis or an unbounded command search. Unknown commands can change device state, so the bridge does not send them.
 
