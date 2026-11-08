@@ -1,3 +1,5 @@
+<!-- Title: type(scope): description. See CONTRIBUTING.md for types and examples. -->
+
 ## Changes
 
 <!-- Describe the problem and what this change does. -->
