@@ -9,9 +9,7 @@ The bridge detects the model when it connects:
 | DJI Goggles 2 | `E3T ZV900` | 01.11.00.00 |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 
-Measured latency on Windows is about 13-15 ms behind a 240 Hz laptop monitor at 1080p100 (RTX 5060 Laptop GPU, filmed at 240 fps with the GPU idle and with it saturated). For the method and both results, see [Measure video delay](docs/LATENCY.md) and the [experiments](docs/research/EXPERIMENTS.md#monitor-to-lens-delay).
-
-On macOS 12.3 and later, each frame is encoded about 5 ms after it appears on screen. Lens latency on a Mac isn't measured. For details, see the [macOS results](docs/research/EXPERIMENTS.md#macos).
+We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
 
 ## Requirements
 
