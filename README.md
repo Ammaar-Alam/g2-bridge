@@ -73,13 +73,18 @@ Use these options to adjust the stream:
 
 | Option | Values |
 | --- | --- |
-| `--fps` | `60`, `100` |
+| `--fps` | `60`, `75`, `90`, `100` |
 | `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
 | `--capture` | Windows: `gfxcapture` or `ddagrab`. macOS: `screencapturekit` or `avfoundation` |
 
 Run `python scripts/stream_desktop.py --help` for all options.
+
+For example, use `python scripts/stream_desktop.py --fps 90` to target 90 fps.
+These values set the stream rate, not the goggles' panel refresh rate. Lower
+rates provide more bits per frame at the same bitrate, but increase the time
+between frames. The 100 fps target has the shortest frame interval.
 
 ## Run tests
 
