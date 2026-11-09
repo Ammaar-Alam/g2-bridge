@@ -78,7 +78,7 @@ Unless stated otherwise, tests used 1920x1080, a 100 fps target, 20 Mbps constan
 
 Each comparison decoded 600 frames. The motion source was `testsrc2` with a gray rectangle. The desktop source was a compressed 300-frame capture repeated twice, with a scene discontinuity at frame 300. Its images are not published.
 
-Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images. The historical table below averages each frame's PSNR in decibels. This differs from whole-sequence PSNR, which averages pixel error before converting it to decibels. Use whole-sequence PSNR and per-frame error when comparing periodic quality dips.
+Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images. This table averages each frame's PSNR in decibels. Whole-sequence PSNR instead averages squared pixel error before converting it to decibels. To compare periodic quality dips, use whole-sequence PSNR and per-frame error:
 
 | Mode | Motion SSIM / mean per-frame PSNR | Desktop SSIM / mean per-frame PSNR | Finding |
 | --- | --- | --- | --- |
