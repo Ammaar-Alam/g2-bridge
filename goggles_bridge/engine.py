@@ -69,7 +69,12 @@ def encoder_command(settings):
         source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
                   ':width=1920:height=1080:resize_mode=scale_aspect:scale_mode=bicubic'
                   f':capture_cursor={int(settings.show_cursor)}')
-        command += ['-f', 'lavfi', '-i', source, '-r', str(settings.fps), '-fps_mode', 'cfr']
+        # Compact capture gaps so CFR does not replay stale pictures to catch up
+        pacing = (f"select='isnan(prev_selected_pts)+gt(floor((pts+0.5)*TB*{settings.fps}),"
+                  f"floor((prev_selected_pts+0.5)*TB*{settings.fps}))',"
+                  f'setpts=N/({settings.fps}*TB):strip_fps=1')
+        command += ['-f', 'lavfi', '-i', source, '-vf', pacing,
+                    '-r', str(settings.fps), '-fps_mode', 'cfr']
     else:
         source = (f'ddagrab=output_idx={settings.display_index}:framerate={settings.fps}'
                   f':draw_mouse={int(settings.show_cursor)}')

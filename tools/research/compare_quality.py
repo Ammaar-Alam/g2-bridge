@@ -35,7 +35,7 @@ def comparison_command(ffmpeg, preset, fps=100):
                               bitrate_mbps=20 if preset == 'previous' else 32)
     command = encoder_command(settings)
     if preset == 'previous':
-        for flag in ('-multipass', '-intra-refresh', '-single-slice-intra-refresh'):
+        for flag in ('-vf', '-multipass', '-intra-refresh', '-single-slice-intra-refresh'):
             at = command.index(flag)
             del command[at:at+2]
     return command

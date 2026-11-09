@@ -97,11 +97,62 @@ frame reconstruction, encoder shutdown, and the actual logged configuration.
 The final defaults additionally passed 600-frame bridge and decoding checks
 at each of 60, 75, 90, and 100 fps, including SPS timing and clean shutdown.
 
+## Recovery after capture stalls
+
+Graphics Capture can skip timestamps while its consumer is blocked. FFmpeg's
+constant-frame-rate conversion fills that gap with copies of older pictures.
+The Windows Graphics Capture path now selects at most one raw frame per target
+time slot and assigns consecutive encoder timestamps. It adds no frame buffer
+and does not discard encoded H.264 reference pictures.
+
+The selection allows half an input timestamp tick for rounding. `setpts`
+also clears the previous frame-duration metadata, which would otherwise cause
+an initial duplicate for a source slower than the encoder target. See the
+[FFmpeg select and setpts reference](https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect).
+The encoder still declares the requested rate; actual delivery can be lower
+when capture is slower or interrupted.
+
+A deterministic check covers 72 cases: four target rates, three source rates,
+and gaps of 0, 20, or 200 ms, before and after the change. For a source matching
+the target rate, a 200 ms gap previously generated 12, 15, 18, or 20 duplicate
+frames at 60, 75, 90, or 100 fps. The new path generates none and preserves every
+source frame when the source rate does not exceed the target. At steady rates,
+all 4,800 encoded motion and text pictures match the previous quality defaults
+byte for byte.
+
+Direct-window Graphics Capture tests used an owned D3D11 moving texture and
+CRC-protected timestamps. Each run encoded 900 frames with a 100-frame warmup
+and blocked the encoded-output reader for 200 ms after picture 350. Recovery
+means the first of five consecutive valid pictures under 20 ms old after the
+reader resumes. Two runs per configuration used an old/new/new/old order:
+
+| Target | Previous recovery | New recovery |
+| --- | --- | --- |
+| 60 fps | 17.3-18.4 ms | 12.6-15.1 ms |
+| 75 fps | 22.7-24.6 ms | 12.3-12.7 ms |
+| 90 fps | 27.5-28.1 ms | 13.1-13.7 ms |
+| 100 fps | 34.2-35.4 ms | 13.5-16.4 ms |
+
+At 100 fps, the next 100 pictures contained 92-93 distinct timestamps before
+the change and 100 after it. Normal-delay ranges overlapped; this is a recovery
+improvement, not a demonstrated reduction in steady latency. A separate 50 ms
+stall comparison showed no consistent improvement. These are direct-window
+host measurements, not the monitor-capture or optical measurements above.
+
+Reproduce the frame-ID checks without screen capture, a GPU, or USB:
+
+```powershell
+python tools/research/check_frame_pacing.py --output work/frame-pacing.json
+```
+
+Use `--ffmpeg` to select the executable. The new results file records the
+commands, binary hash, frame counts, and duplicate counts for every case.
+
 ## Reproduce the quality comparison
 
 The [comparison tool](../../tools/research/compare_quality.py) uses the actual
 bridge encoder command for the new defaults and reconstructs the previous
-p4/20 Mbps command by removing gradual refresh and multipass encoding.
+p4/20 Mbps command by removing the pacing filter, gradual refresh, and multipass encoding.
 It never opens USB or captures
 the desktop. FFmpeg needs NVENC support; the text source needs Windows Consolas.
 

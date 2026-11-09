@@ -194,7 +194,8 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings())
         source = command[command.index('-i')+1]
         self.assertIn('scale_aspect', source)
-        self.assertNotIn('-vf', command)
+        self.assertNotIn('hwdownload', command[command.index('-vf')+1])
+        self.assertIn('strip_fps=1', command[command.index('-vf')+1])
         for key, value in (('-r','100'), ('-level:v','5.1'), ('-bf','0'), ('-aud','1'), ('-bufsize','400000')):
             self.assertEqual(command[command.index(key)+1], value)
         command = encoder_command(self.settings(fps=60, capture='ddagrab'))
