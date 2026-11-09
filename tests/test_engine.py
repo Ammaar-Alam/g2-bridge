@@ -8,27 +8,31 @@ import threading
 import unittest
 
 from goggles_bridge.control import V1Stream
-from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder, encoder_command, prioritize_gpu
+from goggles_bridge.engine import (BridgeEngine, BridgeSettings, MAX_FRAME_BYTES, MAX_VBV_BITS, check_encoder,
+                                   encoder_command, prioritize_gpu)
 from goggles_bridge.mac_capture import helper_path, supported
 from goggles_bridge.session import SessionError
 from goggles_bridge.usb_transport import DeviceNotFoundError, UsbTransportError
 from avi_fixture import stream as avi_stream
 
 
+AUD = b'\0\0\0\1\x09\xf0'
+
+
 class EncoderOutput:
-    def __init__(self, stopped, eof=False, framed=False):
+    def __init__(self, stopped, eof=False, framed=False, packets=(AUD + b'\0\0\0\1\x65test-picture',)):
         self.stopped = stopped
         self.first = True
         self.eof = eof
         self.framed = framed
+        self.packets = list(packets)
 
     def read(self, _size):
         if self.eof:
             return b''
         if self.first:
             self.first = False
-            packet = b'\0\0\0\1\x09\xf0\0\0\0\1\x65test-picture'
-            return avi_stream([packet]) if self.framed else packet*3
+            return avi_stream(self.packets) if self.framed else b''.join(self.packets)*3
         self.stopped.wait(2)
         return b''
 
@@ -39,9 +43,9 @@ class EncoderOutput:
 class FakeEncoder:
     pid = 123
 
-    def __init__(self, eof=False, framed=False):
+    def __init__(self, eof=False, framed=False, **output):
         self.stopped = threading.Event()
-        self.stdout = EncoderOutput(self.stopped, eof, framed)
+        self.stdout = EncoderOutput(self.stopped, eof, framed, **output)
         self.terminated = False
 
     def poll(self):
@@ -213,7 +217,8 @@ class EngineTests(unittest.TestCase):
                         self.assertIn(f'framerate={fps}:', command[command.index('-i')+1])
                     else:
                         self.assertEqual(command[command.index('-r')+1], str(fps))
-                    for key, value in (('-g', str(fps*3)), ('-bufsize', str(40_000_000//fps)),
+                    bufsize = 40_000_000//fps if capture == 'avfoundation' else min(40_000_000//fps, MAX_VBV_BITS)
+                    for key, value in (('-g', str(fps*3)), ('-bufsize', str(bufsize)),
                                        ('-level:v', '4.2' if fps == 60 else '5.1'), ('-bf', '0')):
                         self.assertEqual(command[command.index(key)+1], value)
         for fps in (0, 65, 120):
@@ -269,6 +274,50 @@ class EngineTests(unittest.TestCase):
                 self.assertEqual(candidate, baseline)
         with self.assertRaises(ValueError):
             self.settings(h264_profile='unsupported')
+
+    def test_frame_limit_caps_the_buffer_and_bitrate(self):
+        default = encoder_command(self.settings())
+        self.assertEqual(default[default.index('-bufsize')+1], '400000')
+        # Two frames at 60 fps would exceed the goggles' frame limit
+        for capture in ('gfxcapture', 'ddagrab'):
+            with self.subTest(capture=capture):
+                command = encoder_command(self.settings(capture=capture, fps=60))
+                self.assertEqual(command[command.index('-bufsize')+1], str(MAX_VBV_BITS))
+        with self.assertRaisesRegex(ValueError, 'At 60 fps, use at most 24 Mbps'):
+            self.settings(fps=60, bitrate_mbps=30)
+        with self.assertRaisesRegex(ValueError, 'At 90 fps, use at most 30 Mbps'):
+            self.settings(fps=90, bitrate_mbps=40)
+        self.settings(fps=100, bitrate_mbps=40)
+        for capture in ('avfoundation', 'screencapturekit'):
+            with self.subTest(capture=capture), self.assertRaisesRegex(ValueError, 'macOS'):
+                self.settings(capture=capture, bitrate_mbps=30)
+
+    def test_adaptive_quantization_is_opt_in_and_only_adds_its_options(self):
+        default = encoder_command(self.settings())
+        self.assertNotIn('-spatial-aq', default)
+        command = encoder_command(self.settings(adaptive_quant=True))
+        at = command.index('-spatial-aq')
+        self.assertEqual(command[at:at+4], ['-spatial-aq', '1', '-temporal-aq', '1'])
+        self.assertEqual(command[:at] + command[at+4:], default)
+        for bad in (dict(adaptive_quant=1), dict(adaptive_quant=True, capture='avfoundation')):
+            with self.subTest(**bad), self.assertRaises(ValueError):
+                self.settings(**bad)
+
+    def test_oversize_frame_is_skipped_until_a_keyframe_fits(self):
+        idr, inter = AUD + b'\0\0\0\1\x65', AUD + b'\0\0\0\1\x41'
+        packets = [idr + bytes(MAX_FRAME_BYTES), inter + b'lost', idr + b'next']
+        # The guard covers only the verified NVENC cap, so macOS frames are sent unchanged
+        for capture in ('gfxcapture', 'screencapturekit'):
+            with self.subTest(capture=capture):
+                stop = threading.Event()
+                usb = FakeUsb(stop)
+                events, _ = self.run_case(lambda _: usb, stop, settings=self.settings(capture=capture),
+                                          encoder_factory=lambda: FakeEncoder(framed=True, packets=packets))
+                self.assertEqual(b'next' in usb.video[0].payload, capture == 'gfxcapture')
+                self.assertFalse(any(b'lost' in packet.payload for packet in usb.video))
+                dropped = [e for e in events if e['event'] == 'oversize_frame']
+                self.assertEqual(len(dropped), capture == 'gfxcapture')
+                self.assertTrue(all(e['limit'] == MAX_FRAME_BYTES for e in dropped))
 
     def test_encoder_check_runs_one_frame_and_explains_missing_features(self):
         calls = []

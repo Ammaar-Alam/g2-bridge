@@ -13,6 +13,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from goggles_bridge import mac_capture
+from goggles_bridge.engine import BITRATES_MBPS
 from goggles_bridge.usb_transport import DEFAULT_DLL, USB_WRITE_SIZES
 
 MAC = sys.platform == 'darwin'
@@ -70,7 +71,9 @@ def main():
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
-    parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
+    parser.add_argument('--bitrate-mbps', type=int, choices=BITRATES_MBPS, default=20)
+    parser.add_argument('--aq', action='store_true',
+                        help='Turn on NVENC adaptive quantization (Windows only)')
     parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),
                         default=MAC_CAPTURE if MAC else 'gfxcapture',
                         help='Windows: Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling. '
@@ -125,7 +128,11 @@ def main():
         elif event == 'streaming':
             print(f'Streaming 1920x1080 at target {args.fps} fps, {args.bitrate_mbps} Mbps. Ctrl+C stops.', flush=True)
         elif event == 'stats':
-            print(f"Sent {row['fps']:.1f} fps | queue p95 {row['queue_ms_p95']:.1f} ms | send p95 {row['send_ms_p95']:.1f} ms", flush=True)
+            print(f"Sent {row['fps']:.1f} fps | queue p95 {row['queue_ms_p95']:.1f} ms | send p95 {row['send_ms_p95']:.1f} ms"
+                  f" | largest frame {row['frame_bytes_max']/1000:.0f} KB", flush=True)
+        elif event == 'oversize_frame':
+            print(f"Skipped a {row['bytes']/1000:.0f} KB frame, over the {row['limit']/1000:.0f} KB limit. "
+                  'Video resumes at the next keyframe. If this repeats, lower --bitrate-mbps.', flush=True)
         elif event == 'ready':
             print(f"Found {row['model']} ({row['identity']})", flush=True)
         elif event in ('connected', 'stopped'):
@@ -135,7 +142,8 @@ def main():
         settings = BridgeSettings(args.dll, args.ffmpeg, fps=args.fps, bitrate_mbps=args.bitrate_mbps,
             capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
             show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
-            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile)
+            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile,
+            adaptive_quant=args.aq)
         print('Checking screen capture...', flush=True)
         problem = check_encoder(settings)
         if problem:
