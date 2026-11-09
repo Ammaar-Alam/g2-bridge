@@ -96,12 +96,31 @@ func annexB(_ sample: CMSampleBuffer) -> Data {
 }
 
 struct FrameRateLimiter {
-    var lastSlot: Int64?
+    var origin: CMTime?
+    var nextFrame: Int64 = 0
+    var lastAccepted: CMTime?
 
     mutating func accepts(_ time: CMTime, fps: Int) -> Bool {
-        let slot = CMTimeConvertScale(time, timescale: CMTimeScale(fps), method: .roundTowardZero).value
-        guard lastSlot != slot else { return false }
-        lastSlot = slot
+        guard time.isNumeric, fps > 0, fps <= Int(Int32.max) else { return false }
+        if let lastAccepted {
+            guard time.epoch == lastAccepted.epoch, CMTimeCompare(time, lastAccepted) > 0 else { return false }
+        }
+        if let origin {
+            // Compare elapsed time with exact frame intervals, avoiding accumulated
+            // rounding when the host clock's timescale is not divisible by fps.
+            let elapsed = CMTimeSubtract(time, origin)
+            guard elapsed.isNumeric,
+                  CMTimeCompare(elapsed, CMTime(value: nextFrame, timescale: CMTimeScale(fps))) >= 0 else { return false }
+            nextFrame += 1
+            // Keep at most one frame of jitter credit; a gap cannot build a backlog.
+            if CMTimeCompare(elapsed, CMTime(value: nextFrame, timescale: CMTimeScale(fps))) > 0 {
+                self.origin = time
+                nextFrame = 0
+            }
+        } else {
+            origin = time
+        }
+        lastAccepted = time
         return true
     }
 }
