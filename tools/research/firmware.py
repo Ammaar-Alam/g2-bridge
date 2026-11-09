@@ -8,7 +8,7 @@ firmware version and module versions. No firmware image is transferred.
 from dataclasses import dataclass, field
 import re
 import struct
-from .control import V1Packet
+from goggles_bridge.control import V1Packet
 
 MANIFEST_RECEIVER = (28, 5)
 CHUNK_REQUEST = 1000

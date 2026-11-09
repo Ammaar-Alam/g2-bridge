@@ -3,7 +3,7 @@ import unittest
 from dataclasses import replace
 
 from goggles_bridge.control import V1Packet
-from goggles_bridge.firmware import (ManifestReader, manifest_request, parse_chunk, parse_manifest,
+from tools.research.firmware import (ManifestReader, manifest_request, parse_chunk, parse_manifest,
                                      IMAH_HEADER, IMAH_SIGNATURE)
 
 XML = ('<?xml version="1.0" encoding="utf-8"?>\n<dji><device id="zv900"><firmware formal="01.14.0000">'

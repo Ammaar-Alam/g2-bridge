@@ -25,9 +25,9 @@ The container has a 224-byte header, a 384-byte signature field, and 2,592 paylo
 
 The manifest names the E3T image `zv900_2805_v10.00.81.54_20241224.pro.fw.sig`. Reading this manifest does not download that image.
 
-On firmware 01.14.00.00 the container was again 3,200 bytes, returned in 13 replies, with SHA-256 `85747ef29795ff4bc8017003d7c3ca57fb810252036a7284b0312d146b7904af`. Its XML names firmware `01.14.0000`, released October 19, 2026. CPLD is unchanged at `34.08.30.02`. `ZV900_E3T` is `10.00.81.97`, image `zv900_2805_v10.00.81.97_20260811.pro.fw.sig`.
+On firmware 01.14.00.00, the container was again 3,200 bytes, returned in 13 replies, with SHA-256 `85747ef29795ff4bc8017003d7c3ca57fb810252036a7284b0312d146b7904af`. Its XML names firmware `01.14.0000`, released October 19, 2026. CPLD is unchanged at `34.08.30.02`. `ZV900_E3T` is `10.00.81.97`, image `zv900_2805_v10.00.81.97_20260811.pro.fw.sig`.
 
-[`goggles_bridge/firmware.py`](../../goggles_bridge/firmware.py) implements this read, and the [goggles probe](../../tools/research/probe_goggles.py) runs it after identity unless `--no-firmware` is given.
+[`firmware.py`](../../tools/research/firmware.py) implements this read, and the [goggles probe](../../tools/research/probe_goggles.py) runs it after identity unless `--no-firmware` is given.
 
 ## Read the diagnostic index
 

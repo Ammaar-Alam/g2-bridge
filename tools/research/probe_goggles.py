@@ -35,7 +35,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from goggles_bridge.control import V1Packet, V1Stream
-from goggles_bridge.firmware import ManifestReader
+from tools.research.firmware import ManifestReader
 from goggles_bridge.pc_video import PcVideoPacketizer
 from goggles_bridge.session import ControlSession, SessionError, MODELS
 from goggles_bridge.usb_transport import DEFAULT_DLL, _select_control_device

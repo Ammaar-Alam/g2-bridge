@@ -200,32 +200,32 @@ A later B run lost the device after about 116 seconds, and the client exited. No
 
 ## Firmware 01.14
 
-On November 8, 2026, the same Windows setup was tested with a Goggles 2 updated to firmware 01.14.00.00. The identity reply was `E3T ZV900 AC Aug 11 2026|07:21:27`. The firmware manifest named `01.14.0000`, with `ZV900_E3T` module `10.00.81.97`.
+On November 8, 2026, a tester checked a Goggles 2 on firmware 01.14.00.00 from Windows 11, with an RTX 3080 and FFmpeg 9.0.2. The identity reply was `E3T ZV900 AC Aug 11 2026|07:21:27`. The firmware manifest named `01.14.0000`, with `ZV900_E3T` module `10.00.81.97`.
 
 | Test | Result |
 | --- | --- |
 | Descriptors | MI04 `ff/43/01`, `0x04/512` and `0x85/512`, matching the tested profile |
 | Heartbeat, identity, and simulator mode in Virtual Flight | Accepted. Request and reply bytes were identical to the 01.11 capture in [`pc-control-session.json`](evidence/pc-control-session.json), apart from the identity date |
-| Probe test picture | 451 pictures at 30 fps over 15 s. The owner saw the test pattern |
-| Desktop stream, default settings | Connected on the first attempt and sent 100 fps for 20 s and 25 s, with every heartbeat answered. The owner saw the desktop |
+| Probe test picture | 451 pictures at 30 fps over 15 seconds. The tester saw the test pattern |
+| Desktop stream, default settings | Connected on the first attempt and sent 100 fps for 20 and 25 seconds, with every heartbeat answered. The tester saw the desktop |
 
-Before Virtual Flight was opened, heartbeat and identity were answered, but simulator mode got no reply from `28/0`. A route scan then found identity answered with `00` only by `28/1`, `e0` from `28/0` and `28/2`–`28/5`, and no reply from `28/6` or `28/7`. Simulator mode got `e0` from `28/1`, `28/2`, and `28/4`. This matches the earlier [Goggles 3 result](GOGGLES3.md#results), whose menu had no Virtual Flight entry. Opening Virtual Flight was the only change needed, so 01.14 did not change the PC protocol. Integra on 01.14 and monitor-to-lens delay on 01.14 were not tested.
+Before Virtual Flight was opened, heartbeat and identity were answered, but simulator mode got no reply from `28/0`. A route scan then found identity answered with `00` only by `28/1`, `e0` from `28/0` and `28/2` to `28/5`, and no reply from `28/6` or `28/7`. Simulator mode got `e0` from `28/1`, `28/2`, and `28/4`. This matches the [Goggles 3 result](GOGGLES3.md#results), whose menu had no Virtual Flight entry. Opening Virtual Flight was the only change needed, so 01.14 didn't change the PC protocol. Integra on 01.14 and monitor-to-lens delay on 01.14 weren't tested.
 
 ## Frame size limit and bitrate
 
-On November 8, 2026, a Goggles 2 on firmware 01.14.00.00 streamed a full-screen zooming fractal, which holds the encoder at its target bitrate. Each run lasted 12 seconds with a colored border so the owner's recording identified it. Settings use the bridge's names; the frame sizes come from the encoder's output in the offline runs below.
+On November 8, 2026, the same tester streamed a full-screen zooming fractal to a Goggles 2 on firmware 01.14.00.00. This source holds the encoder at its target bitrate. Each run lasted 12 seconds and had a colored border, so that the tester's recording identified it. Keyframe sizes come from offline encodes with the same settings.
 
 | Run | Settings | Keyframe size | Lenses |
 | --- | --- | --- | --- |
 | 1 | 20 Mbps, 2-frame VBV | 41 KB | Displayed |
 | 2 | 20 Mbps, 8-frame VBV, AQ | 67 KB, then 53 KB | Appeared after a delay, consistent with the first keyframe dropped and the second displayed |
-| 3 | 30 Mbps, 2-frame VBV | about 65 KB | Appeared, then froze |
+| 3 | 30 Mbps, 2-frame VBV | About 65 KB | Appeared, then froze |
 | 4 | 40 Mbps, 2-frame VBV | 79 KB | Black |
 | 5 | 40 Mbps, 8-frame VBV, AQ | 96 to 103 KB | Black |
 
-After runs 4 and 5, the goggles stayed black and refused to leave Virtual Flight, reporting that a mobile phone was still connected. Unplugging USB did not help; a power cycle did. The owner had seen the same state occasionally before these changes.
+After runs 4 and 5, the goggles stayed black and refused to leave Virtual Flight, reporting that a mobile phone was still connected. Unplugging USB didn't help, but a power cycle did. The tester had occasionally seen the same state with the unmodified bridge.
 
-The bridge then capped the VBV at 448,000 bits (56 KB) and rejected frames over 65,536 bytes before sending. The same four kinds of run were repeated after a power cycle:
+For the following runs, the bridge capped the encoder buffer at 448,000 bits (56 KB) and skipped frames over 65,536 bytes. The same four kinds of run were repeated after a power cycle:
 
 | Run | Settings | Largest frame sent | Lenses |
 | --- | --- | --- | --- |
@@ -234,7 +234,7 @@ The bridge then capped the VBV at 448,000 bits (56 KB) and rejected frames over 
 | 3 | 30 Mbps | 47 KB | Displayed |
 | 4 | 40 Mbps, AQ | 49 KB | Displayed |
 
-A 30-second 40 Mbps stream of the same source sent 2,962 frames at a steady 100 fps with no frames skipped. The bridge logs the time from a frame leaving the encoder to its USB write returning. Over the 12-second runs it rose only slightly with bitrate once frames were capped; the uncapped runs were slow because of their oversize keyframes:
+A 30-second 40 Mbps stream of the same source sent 2,962 frames at a steady 100 fps, with no frames skipped. The bridge logs the time from a frame leaving the encoder to its USB write returning. Over the 12-second runs, this time rose only slightly with bitrate once frames were capped. The uncapped runs were slower because of their oversize keyframes:
 
 | Setting | USB send time per frame, p95 | Largest frame |
 | --- | --- | --- |
@@ -243,20 +243,8 @@ A 30-second 40 Mbps stream of the same source sent 2,962 frames at a steady 100 
 | 40 Mbps, AQ, capped | 2.0 ms | 49 KB |
 | 40 Mbps, uncapped | 5.2 to 5.9 ms | 79 to 103 KB |
 
-Encoding time does not change with bitrate. The goggles' receive and decode time for a larger frame, and monitor-to-lens delay at 40 Mbps, were not measured. The receiver's exact limit lies between 49 KB, which displayed, and 67 KB, which did not. At 100 fps and CBR, 50 Mbps makes every frame 62.5 KB, so the bridge rejects it, and at 60 fps it allows at most 24 Mbps.
+The goggles' receive and decode time for a larger frame, and monitor-to-lens delay at 40 Mbps, weren't measured. The receiver's exact limit lies between 49 KB, which displayed, and about 65 KB, which froze.
 
-[`encoder_quality.py`](../../tools/research/encoder_quality.py) scores the bridge's own encoder command offline against two synthetic 600-frame sources: `testsrc2` with a gray block, and a zooming Mandelbrot set for fine detail. With the VBV cap in place, the detail scene scored:
+The bridge in this repository caps the encoder buffer at 56 KB, skips any frame over 56 KB, and then skips frames until the next keyframe that fits, because later frames reference the skipped one. In CBR, every frame averages the bitrate divided by the frame rate. The bridge refuses settings whose average frame is larger than 50 KB, which is the 40 Mbps at 100 fps case that displayed. It allows at most 24 Mbps at 60 fps, and 30 Mbps at 75 or 90 fps.
 
-| Settings | SSIM | PSNR | Keyframe SSIM | Largest frame |
-| --- | --- | --- | --- | --- |
-| 20 Mbps, p4 | 0.9705 | 34.39 dB | 0.973 | 41 KB |
-| 20 Mbps, p7 | 0.9706 | 34.38 dB | 0.973 | 41 KB |
-| 20 Mbps, AQ | 0.9764 | 34.85 dB | 0.973 | 42 KB |
-| 24 Mbps | 0.9751 | 35.23 dB | 0.975 | 47 KB |
-| 30 Mbps | 0.9794 | 36.16 dB | 0.975 | 47 KB |
-| 40 Mbps | 0.9829 | 37.08 dB | 0.975 | 51 KB |
-| 40 Mbps, AQ | 0.9858 | 37.39 dB | 0.974 | 51 KB |
-
-Bitrate is the main lever, adaptive quantization adds a smaller gain at no encode cost, and `p7` adds nothing measurable while encoding 40% slower (160 against 246 fps on an RTX 3080). Without the cap, an 8-frame VBV raised the keyframe score at 20 Mbps from 0.973 to 0.985 but produced the 67 KB keyframe above; with the cap, the buffer makes little difference at 20 Mbps. Adaptive quantization became the default. These scores measure fidelity to the source, not perceived quality on the goggles.
-
-The owner's 144 Hz monitor also explained unsteady motion: the 100 fps constant-frame-rate output of a 144 Hz desktop repeated 300 frames and dropped 473 in 29 seconds. The monitor had no 100 Hz mode. In games, a 100 fps cap with variable refresh rate gives the capture one new frame per output frame.
+In the tester's offline comparison on a zooming Mandelbrot source, adaptive quantization raised SSIM at 20 Mbps from 0.9705 to 0.9764. NVENC preset `p7` scored the same as `p4` and encoded 40% slower. These scores measure fidelity to the source, not quality or delay on the goggles. The effect of adaptive quantization on monitor-to-lens delay is untested, so `--aq` is off by default.

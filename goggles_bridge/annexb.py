@@ -24,6 +24,11 @@ def strip_aud(data):
     return data[match.start():]
 
 
+def is_idr(data):
+    """Return whether an access unit contains an IDR picture (NAL type 5)."""
+    return any(data[m.end()] & 0x1f == 5 for m in _START.finditer(data) if m.end() < len(data))
+
+
 class AccessUnitStream:
     def __init__(self, max_frame_bytes=2 * 1024 * 1024):
         if type(max_frame_bytes) is not int or max_frame_bytes < 16:
