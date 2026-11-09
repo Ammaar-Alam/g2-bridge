@@ -142,13 +142,65 @@ only the encoder and sends 200 pictures through one simulated USB session.
 All 200 pictures decode at 1080p and match the expected reference pictures byte for byte.
 This test does not measure goggles recovery or optical delay.
 
+## Capture timestamp jitter
+
+Fixed time slots can discard valid frames when capture runs near the target
+rate. In a 600-frame reproduction, alternating timestamp offsets of +0.5 and
+-0.5 ms reduced output to 301 distinct frames. This occurred at each target
+rate: 60, 75, 90, and 100 fps. The source contained 600 distinct frames and
+matched the target rate on average.
+
+The selector instead tracks the next eligible capture timestamp, allowing
+one frame of timing credit. It advances that timestamp by one target interval
+after each selection and resets it to the current timestamp after a gap.
+Credit cannot accumulate during a stall. Faster sources can emit one extra
+startup frame; subsequent selection stays within the target rate plus one
+frame of burst allowance. The filter adds no wait or frame queue.
+
+The [frame-ID check](../../tools/research/check_frame_pacing.py) covers 252 cases:
+four targets, seven source rates, three jitter phases, and gaps of 0, 20, or
+200 ms. It includes sources 0.1 fps above and below each target. All source
+frames survive when the source rate is at or below the target in these cases.
+Faster sources remain rate-limited, IDs stay ordered and unique, and the first
+frame after each gap passes immediately. These checks exercise the actual
+FFmpeg filter; they do not measure headset delivery or optical latency.
+
+Two controlled 1080p sources also pass through NVENC, the AVI reader, the
+bridge engine, DUML serialization, and simulated USB. Each run supplies 600
+numbered NV12 frames at 100 fps. One source contains a gradient and moving
+rectangle; the other contains a seeded moving fine texture. Both carry a
+frame ID protected by a checksum, which is verified after decoding.
+
+With alternating timestamp offsets of +/-0.5 ms, both sources deliver 301
+pictures with the fixed-slot selector and all 600 with the corrected selector.
+The corrected streams match the regular-timestamp reference byte for byte.
+All 8,404 pictures across 16 runs decode, the largest picture is 45,716 bytes,
+and no encoder restarts occur.
+
+Timing starts when each input frame is submitted and ends at the simulated
+USB write. The comparison uses only frame IDs delivered by both versions,
+excluding the first 100 source frames. Two runs per configuration alternate
+in A-B-B-A order:
+
+| Source with timestamp jitter | Fixed-slot median | Corrected median | Fixed-slot p95 | Corrected p95 |
+| --- | --- | --- | --- | --- |
+| Gradient and moving rectangle | 3.602-3.648 ms | 3.465-3.486 ms | 4.062-4.063 ms | 3.930-3.942 ms |
+| Moving fine texture | 4.126-4.151 ms | 3.949-3.978 ms | 4.641-4.786 ms | 4.466-4.501 ms |
+
+Without timestamp jitter, both versions deliver all frames, timing ranges
+overlap, and the encoded streams are identical. The result establishes
+recovered frames in this controlled case. It does not establish a general
+latency reduction: these runs exclude Windows capture, physical USB, and the
+goggles. Capture can also repeat an unchanged image, so encoded packet counts
+alone do not establish the rate of distinct source images.
+
 ## Recovery after capture stalls
 
 Graphics Capture can skip timestamps while its consumer is blocked. FFmpeg's
 constant-frame-rate conversion fills that gap with copies of older pictures.
-The Windows Graphics Capture path selects at most one raw frame per target
-time slot and assigns consecutive encoder timestamps. It adds no frame buffer
-and does not discard encoded H.264 reference pictures.
+The Windows Graphics Capture path limits raw frames to the target rate with
+bounded timing credit and assigns consecutive encoder timestamps. It adds no
+frame buffer and does not discard encoded H.264 reference pictures.
 
 The selection allows half an input timestamp tick for rounding. The `setpts` filter
 also clears the previous frame-duration metadata, which would otherwise cause
@@ -157,11 +209,11 @@ an initial duplicate for a source slower than the encoder target. For details, s
 The encoder declares the requested rate. Actual delivery can be lower
 when capture is slower or interrupted.
 
-A deterministic check covers 72 cases: four target rates, three source rates,
+The original stall-fix check covered 72 cases: four target rates, three source rates,
 and gaps of 0, 20, or 200 ms, before and after the change. For a source matching
 the target rate, a 200 ms gap previously generated 12, 15, 18, or 20 duplicate
 frames at 60, 75, 90, or 100 fps. The filter generates none and preserves every
-source frame when the source rate does not exceed the target. An isolated
+source frame at the tested regular source rates. An isolated
 pacing-filter comparison preserved all 4,800 encoded motion and text pictures
 byte for byte, with the encoder settings held fixed.
 

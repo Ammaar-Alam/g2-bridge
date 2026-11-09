@@ -132,9 +132,11 @@ def encoder_command(settings, frames=0):
             source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
                       f':width={WIDTH}:height={HEIGHT}:resize_mode=scale_aspect:scale_mode=bicubic'
                       f':capture_cursor={int(settings.show_cursor)}')
-            # Compact capture gaps so CFR does not replay stale pictures to catch up
-            pacing = (f"select='isnan(prev_selected_pts)+gt(floor((pts+0.5)*TB*{settings.fps}),"
-                      f"floor((prev_selected_pts+0.5)*TB*{settings.fps}))',"
+            # ld(0) holds the next eligible timestamp with at most one frame of jitter credit
+            pacing = ("select='if(isnan(prev_selected_pts),st(0,pts*TB);1,"
+                      "if(gte((pts+0.5)*TB,ld(0)),"
+                      f"st(0,max(ld(0)+1/{settings.fps},pts*TB));1,0))',"
+                      # Compact capture gaps so CFR does not replay stale pictures to catch up
                       f'setpts=N/({settings.fps}*TB):strip_fps=1')
             command += ['-f', 'lavfi', '-i', source, '-vf', pacing,
                         '-r', str(settings.fps), '-fps_mode', 'cfr']
