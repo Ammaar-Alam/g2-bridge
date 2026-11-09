@@ -70,6 +70,9 @@ measured candidate byte for byte.
 
 ## Host timing
 
+These runs measured the encoder changes before the capture-pacing change
+described in the next section.
+
 Two runs per configuration captured an owned D3D11 window with a moving seeded texture
 and a CRC-protected render-submit timestamp. Each run contained 1,800 frames;
 the first 100 were excluded. The loaded condition added an offscreen graphics
