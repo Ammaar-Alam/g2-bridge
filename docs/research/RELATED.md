@@ -16,6 +16,8 @@ The following sources were inspected on November 6, 2026. Each entry identifies 
 | [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim), [WTFOS](https://github.com/fpv-wtf/wtfos) | Receiver work for older FPV Goggles V1/V2 |
 | [Goggles 3 engineering-unit work](https://github.com/ggurov/dji-goggles3-display-unit) | Display work on rooted Goggles 3 engineering units |
 | [Cosmostreamer post](https://www.facebook.com/reel/2184285668786152) | Commercial goggles video-out developer: video input works with the Virtual Flight goggles, Goggles 2 and Integra; other models require modified firmware, expected soon |
+| [third-eye](https://github.com/wllm-rbnt/third-eye) | Goggles 3 video out on a Raspberry Pi acting as the Android accessory; documents the AOA handshake, LogicLink tunnel and DUML registration the goggles expect from a phone |
+| [YStreamer](https://github.com/YLabs-FPV/YStreamer) | Free Raspberry Pi 4 video-out for Goggles 2, Integra, Goggles 3 and N3 as an `18d1:2d00` FunctionFS gadget, plus experimental FPV Goggles V1/V2 video out; GPL-3.0, Rust |
 | [dji-firmware-tools ZV900 tests](https://github.com/o-gs/dji-firmware-tools/blob/master/tests/test_dji_imah_fwsig_rebin1.py) | ZV900 firmware tests refer to the unavailable `UFIE-9999-99` key |
 | [GogglePlayer](https://goggleplayer.app/) | DLNA video input. The vendor-reported delay exceeds the simulator latency target |
 | [Cosmostreamer](https://cosmostreamer.com/products/djigoggles2/), [DigiView](https://github.com/fpv-wtf/fpv_viewer_android), [YStreamer](https://ystreamer.yarosfpv.com/en/docs/) | Video-output projects with transport details |
