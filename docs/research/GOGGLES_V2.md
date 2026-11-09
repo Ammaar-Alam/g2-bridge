@@ -159,7 +159,7 @@ Stock firmware offers no PC-side video input, so the bridge stops here. These ar
 
 **Route 2, modified firmware.** [WTFOS](https://github.com/fpv-wtf/wtfos) roots V1 and V2, and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) already receives a PC stream on rooted goggles over USB bulk or RNDIS, at a reported 7 to 14 ms. For most people this is the practical answer today.
 
-The developer of a commercial video-out product for DJI goggles has also stated that models other than Goggles 2 and Integra need modified firmware for video input, which matches these findings.
+The developer of Cosmostreamer, a commercial video-out product for DJI goggles, [stated in November 2026](https://www.facebook.com/reel/2184285668786152) that video input to models other than Goggles 2 and Integra needs modified firmware, after getting H.264 and AirPlay streams onto Goggles 2 and Integra. That matches these findings.
 
 ## Report
 
