@@ -149,7 +149,7 @@ Logs of every run are in the owner's `work/probe/`; they contain the identity li
 
 ## Picking this up
 
-Stock firmware offers no PC-side video input, so the bridge stops here. These are the starting points for anyone continuing.
+Stock firmware offers no PC-side video input, so the bridge stops here. For simulator flying on a V1 or V2 today, route 2 is the practical choice: no extra hardware, and dji-moonlight-shim's reported 7 to 14 ms is comparable to this bridge on Goggles 2. Route 1 needs a second device in the accessory role, which a PC cannot take; as a byte relay it would add only a few milliseconds, but it is a box, a cable and a network more than the PC path. These are the starting points for anyone continuing.
 
 **Do not repeat.** On firmware 01.07.0000, in O3, FPV and Air Unit modes: V1 and V2 video frames over the COM port to 14/1, 28/1 and 14/0, from the PC's and the app's sender address, at 30 and 5 fps; bulk interface 3 with the DJI DLL, libusb-1.0 and libusb-win32 before and after simulator mode; the RNDIS service ports; DUML type 14 as a control route. None displayed a picture or accepted V2 frames.
 
