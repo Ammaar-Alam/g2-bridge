@@ -154,7 +154,7 @@ The selector instead tracks the next eligible capture timestamp, allowing
 one frame of timing credit. It advances that timestamp by one target interval
 after each selection and resets it to the current timestamp after a gap.
 Credit cannot accumulate during a stall. Faster sources can emit one extra
-startup frame; subsequent selection stays within the target rate plus one
+startup frame. Subsequent selection stays within the target rate plus one
 frame of burst allowance. The filter adds no wait or frame queue.
 
 The [frame-ID check](../../tools/research/check_frame_pacing.py) covers 252 cases:
@@ -163,15 +163,15 @@ four targets, seven source rates, three jitter phases, and gaps of 0, 20, or
 frames survive when the source rate is at or below the target in these cases.
 Faster sources remain rate-limited, IDs stay ordered and unique, and the first
 frame after each gap passes immediately. These checks exercise the actual
-FFmpeg filter; they do not measure headset delivery or optical latency.
+FFmpeg filter. They do not measure headset delivery or optical latency.
 
 Two controlled 1080p sources also pass through NVENC, the AVI reader, the
 bridge engine, DUML serialization, and simulated USB. Each run supplies 600
 numbered NV12 frames at 100 fps. One source contains a gradient and moving
-rectangle; the other contains a seeded moving fine texture. Both carry a
+rectangle. The other contains a seeded moving fine texture. Both carry a
 frame ID protected by a checksum, which is verified after decoding.
 
-With alternating timestamp offsets of +/-0.5 ms, both sources deliver 301
+With alternating timestamp offsets of ±0.5 ms, both sources deliver 301
 pictures with the fixed-slot selector and all 600 with the corrected selector.
 The corrected streams match the regular-timestamp reference byte for byte.
 All 8,404 pictures across 16 runs decode, the largest picture is 45,716 bytes,
