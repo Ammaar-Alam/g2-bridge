@@ -8,6 +8,9 @@ The bridge detects the model when it connects:
 | --- | --- | --- |
 | DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.14.00.00 |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
+| DJI FPV Goggles V2 | not yet known | untested; see [the V2 notes](docs/research/GOGGLES_V2.md) |
+
+Goggles 3 and the FPV Goggles V1 have profiles too, all untested. For rooted FPV Goggles V1 and V2, [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) is an existing alternative.
 
 We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
 

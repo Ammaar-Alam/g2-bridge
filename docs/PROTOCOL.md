@@ -40,7 +40,7 @@ The tested identity contains `E3T ZV900 AC`. Heartbeats continue every 500 ms. A
 
 ## Video packets
 
-Video uses command `0b/53` in raw DUML V1, with no acknowledgement requested, from source type 10, ID 1 to destination type 28, ID 1. The 1,023-byte V1 limit leaves **978 encoded bytes** after 13 bytes of framing and checksums and 32 bytes of metadata. Control and video share a 16-bit sequence allocator that skips outstanding control requests.
+Video uses command `0b/53` in raw DUML V1, with no acknowledgement requested, from source type 10, ID 1 to destination type 28, ID 1. That destination and the 1920x1080 picture size come from the goggles' profile in `goggles_bridge/models.py`; the untested FPV Goggles V2 profile sends 1440x810 to type 14, ID 1, following the Virtual Flight app's second device profile (see [the V2 notes](research/GOGGLES_V2.md)). The 1,023-byte V1 limit leaves **978 encoded bytes** after 13 bytes of framing and checksums and 32 bytes of metadata. Control and video share a 16-bit sequence allocator that skips outstanding control requests.
 
 The video payload starts with this little-endian structure, followed by the encoded chunk:
 

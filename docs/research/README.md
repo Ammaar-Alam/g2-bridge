@@ -13,6 +13,7 @@ The following pages describe the protocol and how to reproduce the analysis:
 | [PC protocol](../PROTOCOL.md) | USB interface, handshake, and V1 video packets |
 | [Mobile protocol](MOBILE_PROTOCOL.md) | Android call chain, V1/V2 layouts, LogicLink, and timestamps |
 | [Artifacts](ARTIFACTS.md) | Download sources, versions, hashes, and analysis tools |
+| [FPV Goggles V2](GOGGLES_V2.md) | What is known about the older V2 and V1, and the steps to probe them |
 | [Native analysis](NATIVE_ANALYSIS.md) | ARM addresses, Windows relative virtual addresses, and USB driver functions |
 | [Experiments](EXPERIMENTS.md) | Transport tests, host timings, and encoder quality measurements |
 | [Reproduction](REPRODUCE.md) | Emulation, Ghidra scripts, packet fixtures, and benchmarks |
