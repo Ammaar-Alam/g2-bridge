@@ -3,8 +3,8 @@
 Windows uses DJI's x64 driver 5.0.0.7. The backend checks the DLL hash before
 using its device structure layout. Installing the driver places
 libusb0_device.dll in System32. macOS binds no driver to the vendor interface,
-so libusb-1.0 claims it directly. Linux also uses libusb-1.0; a udev rule
-(scripts/linux/60-dji-goggles.rules) grants the user access to the device.
+so libusb-1.0 claims it directly. Linux also uses libusb-1.0, and the udev
+rule in scripts/linux/60-dji-goggles.rules gives the user access to the device.
 """
 import ctypes as C
 import hashlib
@@ -26,7 +26,7 @@ class DeviceNotFoundError(UsbTransportError):
 
 
 class LinkSpeedError(UsbTransportError):
-    """The USB link speed is unsupported: too slow for video, or SuperSpeed and untested."""
+    """The USB link is full-speed (12 Mbps), which is too slow for video."""
 
 
 LINUX_UDEV_HINT = ('Install the udev rule: sudo cp scripts/linux/60-dji-goggles.rules /etc/udev/rules.d/ '
@@ -34,12 +34,7 @@ LINUX_UDEV_HINT = ('Install the udev rule: sudo cp scripts/linux/60-dji-goggles.
                    'also join the plugdev group')
 
 
-def _select_control_device(devices, *, allow_superspeed=False):
-    """Return the one device whose MI04 matches the tested control interface.
-
-    Goggles 2 links at high speed (512-byte bulk packets). A SuperSpeed link
-    (1024-byte packets) has not been tested and is accepted only on request.
-    """
+def _select_control_device(devices):
     candidates = []
     for device in devices:
         for config in device:
@@ -52,7 +47,7 @@ def _select_control_device(devices, *, allow_superspeed=False):
                 if (len(endpoints) == 2
                         and {(e.bEndpointAddress, e.bmAttributes) for e in endpoints} == {(4, 2), (0x85, 2)}
                         and len({e.wMaxPacketSize for e in endpoints}) == 1
-                        and endpoints[0].wMaxPacketSize in (64, 512, 1024)):
+                        and endpoints[0].wMaxPacketSize in (64, 512)):
                     candidates.append((device, endpoints[0].wMaxPacketSize))
     if not candidates:
         raise DeviceNotFoundError('Waiting for powered goggles in Virtual Flight mode')
@@ -62,9 +57,6 @@ def _select_control_device(devices, *, allow_superspeed=False):
     if packet_size == 64:
         raise LinkSpeedError('USB link is full-speed (12 Mbps), too slow for this stream. '
                              'Reconnect the data cable; try another port or cable if it recurs.')
-    if packet_size == 1024 and not allow_superspeed:
-        raise LinkSpeedError('USB link is SuperSpeed (1024-byte packets), which is untested. '
-                             'Use a USB 2.0 port or cable, or allow SuperSpeed explicitly for diagnostics.')
     return device
 
 
@@ -122,7 +114,7 @@ def get_backend(dll_path=None):
 
 
 class ControlUsb:
-    def __init__(self, dll_path=None, *, write_size=2048, allow_superspeed=False):
+    def __init__(self, dll_path=None, *, write_size=2048):
         if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {write_size}')
         self.write_size = write_size
@@ -133,7 +125,7 @@ class ControlUsb:
         self.util = usb.util
         try:
             devices = usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3, idProduct=0x0020)
-            self.device = _select_control_device(devices, allow_superspeed=allow_superspeed)
+            self.device = _select_control_device(devices)
         except usb.core.USBError as exc:
             raise UsbTransportError(str(exc)) from exc
         self.closed = False

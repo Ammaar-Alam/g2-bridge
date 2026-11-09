@@ -18,7 +18,7 @@ Two follow-up checks run after identity, without the regular simulator step:
 - Forced video (--force-video): send the test picture without a simulator
   acknowledgement. Video packets request no acknowledgement either.
 
-Close DJI Assistant and any other bridge before running it.
+Before you run the probe, close DJI Assistant and any other bridge.
 """
 import argparse
 from datetime import datetime
@@ -34,9 +34,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from goggles_bridge.control import V1Packet, V1Stream
 from goggles_bridge.pc_video import PcVideoPacketizer
-from goggles_bridge.session import ControlSession, SessionError, MODELS, EXPERIMENTAL_MODELS
+from goggles_bridge.session import ControlSession, SessionError, MODELS
 from goggles_bridge.usb_transport import DEFAULT_DLL, _select_control_device
 
+# Identity codes that haven't displayed video through the PC route.
+# ZV902 is Goggles 3, as named by github.com/ggurov/dji-goggles3-display-unit
+EXPERIMENTAL_MODELS = {'ZV902': 'DJI Goggles 3'}
 TEST_FRAME = ROOT / 'docs/research/evidence/synthetic-frame.h264'
 TEST_FRAME_SHA256 = '8b2e9ea7d0189631306e1659227abd94034ea96148f26ec8d2855962992d6735'
 TEST_VIDEO_FPS = 30
@@ -103,7 +106,7 @@ class Log:
         self.stream.close()
 
 
-def probe_descriptors(log, backend, allow_superspeed):
+def probe_descriptors(log, backend):
     import usb.core
     parse_configuration = _descriptor_parser()
     devices = list(usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3))
@@ -120,7 +123,7 @@ def probe_descriptors(log, backend, allow_superspeed):
         except (OSError, ValueError, usb.core.USBError) as exc:
             row['configuration_error'] = str(exc)
         try:
-            _select_control_device([device], allow_superspeed=allow_superspeed)
+            _select_control_device([device])
             row['control_interface'] = 'matches the tested MI04 profile'
         except Exception as exc:
             row['control_interface'] = f'{type(exc).__name__}: {exc}'
@@ -191,7 +194,7 @@ def probe_session(log, args):
     previous = None
     next_frame = None
     started = time.monotonic()
-    with ControlUsb(args.dll, allow_superspeed=args.allow_superspeed) as usb:
+    with ControlUsb(args.dll) as usb:
         log('claimed', interface=4)
 
         def send(packet):
@@ -267,7 +270,6 @@ def main():
     parser.add_argument('--test-video', action='store_true', help='Step 4: send the test picture after simulator mode')
     parser.add_argument('--scan', action='store_true', help='Send identity and simulator requests to 28/0-28/7')
     parser.add_argument('--force-video', action='store_true', help='Send the test picture without simulator mode')
-    parser.add_argument('--allow-superspeed', action='store_true', help='Claim MI04 on an untested SuperSpeed link')
     parser.add_argument('--seconds', type=float, default=15, help='Session length in seconds, from 5 to 300')
     args = parser.parse_args()
     if args.test_video and not args.simulator:
@@ -284,7 +286,7 @@ def main():
     exit_code = 1
     try:
         log('starting', platform=sys.platform, args={k: str(v) for k, v in vars(args).items()})
-        devices = probe_descriptors(log, get_backend(args.dll), args.allow_superspeed)
+        devices = probe_descriptors(log, get_backend(args.dll))
         if devices and args.descriptors_only:
             exit_code = 0
         elif devices:

@@ -1,7 +1,9 @@
 from dataclasses import replace
 import unittest
 from goggles_bridge.control import V1Packet
-from goggles_bridge.session import ControlSession, SessionError, MODELS, EXPERIMENTAL_MODELS
+from goggles_bridge.session import ControlSession, SessionError, MODELS
+
+WITH_GOGGLES3 = {**MODELS, 'ZV902': 'DJI Goggles 3'}
 
 
 def answer(request, payload=b'\0'):
@@ -32,8 +34,8 @@ class SessionTests(unittest.TestCase):
         self.assertEqual((mode.command_set, mode.command_id), (11, 26))
         self.assertEqual(session.model, 'DJI Goggles Integra')
 
-    def test_goggles3_needs_experimental_models(self):
-        session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS})
+    def test_untested_model_is_accepted_only_when_passed(self):
+        session = ControlSession(models=WITH_GOGGLES3)
         request, = session.poll(0)
         info, = session.receive(answer(request), .01)
         mode, = session.receive(answer(info, b'\0E3T ZV902 AC'), .02)
@@ -41,7 +43,7 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(session.model, 'DJI Goggles 3')
 
     def test_identify_only_skips_simulator_and_keeps_heartbeat(self):
-        session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS}, enter_simulator=False)
+        session = ControlSession(models=WITH_GOGGLES3, enter_simulator=False)
         request, = session.poll(0)
         info, = session.receive(answer(request), .01)
         self.assertEqual(session.receive(answer(info, b'\0E3T ZV902'), .02), [])

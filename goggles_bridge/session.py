@@ -1,9 +1,9 @@
 """Manage the goggles control handshake independently of byte transport.
 
 The ready state requires a matching simulator-mode success reply. Source
-addresses default to the PC USB route. With enter_simulator=False the session
-stops in the identified state after the identity reply and keeps heartbeats
-running, which lets diagnostics read an untested model's identity without
+addresses default to the PC USB route. With enter_simulator=False, the session
+stops in the identified state after the identity reply and keeps sending
+heartbeats. Diagnostics use this to read an untested model's identity without
 changing its display mode.
 """
 from dataclasses import dataclass, replace
@@ -12,9 +12,6 @@ from .control import heartbeat, device_info, sim_mode
 
 # Identity codes that have displayed video through the PC route
 MODELS = {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'}
-# Identity codes from other sources that have not displayed video through the PC route.
-# ZV902 is Goggles 3, as named by github.com/ggurov/dji-goggles3-display-unit.
-EXPERIMENTAL_MODELS = {'ZV902': 'DJI Goggles 3'}
 
 
 class SessionError(RuntimeError):
