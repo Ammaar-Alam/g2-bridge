@@ -1,6 +1,6 @@
 import random
 import unittest
-from goggles_bridge.protocol import crc16
+from goggles_bridge.duml import crc16
 
 
 def bitwise_crc(data):

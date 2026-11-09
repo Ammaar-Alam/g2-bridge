@@ -1,13 +1,11 @@
-import importlib.util
 import json
 from pathlib import Path
 import struct
 import unittest
 
+from tools.research import read_usb_descriptors as usb
+
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('usb_descriptors', ROOT/'scripts/read_usb_descriptors.py')
-usb = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(usb)
 
 
 class DescriptorTests(unittest.TestCase):

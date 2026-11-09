@@ -1,6 +1,7 @@
 import contextlib
 import io
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -11,7 +12,7 @@ from scripts import latency_pattern
 class LatencyPatternTests(unittest.TestCase):
     def test_missing_player_and_invalid_duration_do_not_start_a_process(self):
         for args in ([], ['--seconds', '0'], ['--seconds', '-1']):
-            with self.subTest(args=args), patch.object(latency_pattern.shutil, 'which', return_value=None), \
+            with self.subTest(args=args), patch.object(shutil, 'which', return_value=None), \
                     patch.object(latency_pattern.subprocess, 'run') as run, \
                     contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as result:
@@ -37,7 +38,7 @@ class LatencyPatternTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             player = Path(directory) / 'ffplay.exe'
             player.touch()
-            with patch.object(latency_pattern.shutil, 'which', side_effect=[None, str(player)]) as which, \
+            with patch.object(shutil, 'which', side_effect=[None, str(player)]) as which, \
                     patch.object(latency_pattern.subprocess, 'run') as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 run.return_value.returncode = 0

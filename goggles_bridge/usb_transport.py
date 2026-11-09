@@ -15,6 +15,8 @@ import sys
 VERIFIED_DLL_SHA256 = 'd2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743'
 USB_WRITE_SIZES = (2048, 16384)
 DEFAULT_DLL = Path(os.environ.get('SystemRoot', r'C:\Windows'), 'System32', 'libusb0_device.dll')
+VENDOR_ID, PRODUCT_ID = 0x2CA3, 0x0020
+INTERFACE, OUT_ENDPOINT, IN_ENDPOINT = 4, 0x04, 0x85
 
 
 class UsbTransportError(RuntimeError):
@@ -34,18 +36,30 @@ LINUX_UDEV_HINT = ('Install the udev rule: sudo cp scripts/linux/60-dji-goggles.
                    'also join the plugdev group')
 
 
-def _select_control_device(devices):
+def find_dll(path=None):
+    """Return the given driver DLL path, else DJI_USB_DLL, else the copy the DJI driver installs."""
+    return Path(path or os.environ.get('DJI_USB_DLL') or DEFAULT_DLL)
+
+
+def is_timeout(exc):
+    import usb.core
+    # libusb0 on Windows reports read timeouts as error -116
+    return isinstance(exc, usb.core.USBTimeoutError) or getattr(exc, 'backend_error_code', None) == -116
+
+
+def select_control_device(devices):
     candidates = []
     for device in devices:
         for config in device:
             for interface in config:
-                if (interface.bInterfaceNumber != 4 or interface.bAlternateSetting != 0
+                if (interface.bInterfaceNumber != INTERFACE or interface.bAlternateSetting != 0
                         or (interface.bInterfaceClass, interface.bInterfaceSubClass,
                             interface.bInterfaceProtocol) != (255, 67, 1)):
                     continue
                 endpoints = list(interface)
                 if (len(endpoints) == 2
-                        and {(e.bEndpointAddress, e.bmAttributes) for e in endpoints} == {(4, 2), (0x85, 2)}
+                        and {(e.bEndpointAddress, e.bmAttributes) for e in endpoints}
+                        == {(OUT_ENDPOINT, 2), (IN_ENDPOINT, 2)}
                         and len({e.wMaxPacketSize for e in endpoints}) == 1
                         and endpoints[0].wMaxPacketSize in (64, 512)):
                     candidates.append((device, endpoints[0].wMaxPacketSize))
@@ -63,7 +77,7 @@ def _select_control_device(devices):
 def _windows_backend(dll_path):
     if C.sizeof(C.c_void_p) != 8:
         raise RuntimeError('This verified backend requires 64-bit Windows Python')
-    dll = Path(dll_path).resolve(strict=True)
+    dll = find_dll(dll_path).resolve(strict=True)
     if hashlib.sha256(dll.read_bytes()).hexdigest() != VERIFIED_DLL_SHA256:
         raise ValueError(f'Unsupported DJI USB DLL at {dll}. Install DJI driver 5.0.0.7 from DJI Assistant 2')
     import usb.backend.libusb0 as libusb
@@ -124,15 +138,15 @@ class ControlUsb:
         self.core = usb.core
         self.util = usb.util
         try:
-            devices = usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3, idProduct=0x0020)
-            self.device = _select_control_device(devices)
+            devices = usb.core.find(find_all=True, backend=backend, idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+            self.device = select_control_device(devices)
         except usb.core.USBError as exc:
             raise UsbTransportError(str(exc)) from exc
         self.closed = False
         try:
-            if sys.platform.startswith('linux') and self.device.is_kernel_driver_active(4):
-                self.device.detach_kernel_driver(4)
-            self.util.claim_interface(self.device, 4)
+            if sys.platform.startswith('linux') and self.device.is_kernel_driver_active(INTERFACE):
+                self.device.detach_kernel_driver(INTERFACE)
+            self.util.claim_interface(self.device, INTERFACE)
         except usb.core.USBError as exc:
             self.util.dispose_resources(self.device)
             self.closed = True
@@ -144,9 +158,9 @@ class ControlUsb:
         if self.closed:
             raise RuntimeError('USB transport is closed')
         try:
-            return bytes(self.device.read(0x85, 4096, timeout=timeout_ms))
+            return bytes(self.device.read(IN_ENDPOINT, 4096, timeout=timeout_ms))
         except self.core.USBError as exc:
-            if isinstance(exc, self.core.USBTimeoutError) or exc.backend_error_code == -116:
+            if is_timeout(exc):
                 return b''
             raise UsbTransportError(str(exc)) from exc
 
@@ -157,7 +171,7 @@ class ControlUsb:
         for offset in range(0, len(data), self.write_size):
             chunk = data[offset:offset+self.write_size]
             try:
-                written = self.device.write(4, chunk, timeout=500)
+                written = self.device.write(OUT_ENDPOINT, chunk, timeout=500)
             except self.core.USBError as exc:
                 raise UsbTransportError(str(exc)) from exc
             if written != len(chunk):

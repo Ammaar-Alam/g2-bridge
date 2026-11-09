@@ -1,10 +1,11 @@
 """Show a repeating patch for filming monitor-to-goggles delay."""
 import argparse
-import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from goggles_bridge.engine import find_program
 
 PATTERN = (
     'testsrc2=size=1280x720:rate=120,'
@@ -20,8 +21,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.seconds < 1:
         parser.error('--seconds must be positive')
-    links = Path(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WinGet', 'Links')
-    player = args.ffplay or shutil.which('ffplay') or shutil.which('ffplay', path=str(links))
+    player = args.ffplay or find_program('ffplay')
     if player is None or not Path(player).is_file():
         parser.error('FFplay not found. Install an FFmpeg build that includes ffplay, or pass --ffplay with its path')
     command = [str(player), '-hide_banner', '-loglevel', 'warning', '-window_title',

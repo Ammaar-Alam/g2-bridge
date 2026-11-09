@@ -1,6 +1,5 @@
 """Read complete H.264 packets from FFmpeg's nonseekable, single-stream AVI."""
 import struct
-from .protocol import _bytes
 
 
 class AviPacketStream:
@@ -55,7 +54,7 @@ class AviPacketStream:
             raise ValueError('Missing or duplicate AVI stream headers')
 
     def feed(self, data):
-        self.buffer.extend(_bytes(data))
+        self.buffer.extend(data)
         packets = []
         while True:
             if self.phase == 'riff':

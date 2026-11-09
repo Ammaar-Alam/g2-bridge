@@ -1,28 +1,14 @@
 """Record native SendVideo output at the emulated session boundary."""
 import hashlib
-import json
-from pathlib import Path
 import struct
-import sys
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
+from unicorn import UC_HOOK_CODE
 from unicorn.arm_const import *
-from research_common import EXPECTED, load_binary_args, write_report
+from research_common import EXIT, EXPECTED, load_binary_args, load_elf, write_report
 
-START, END, EXIT = 0x049f0128, 0x049f0128 + 1276, 0x30000000
+START, END = 0x049f0128, 0x049f0128 + 1276
 
 def run(binary, payload, milliseconds):
-    uc = Uc(UC_ARCH_ARM, UC_MODE_ARM)
-    phoff = struct.unpack_from('<I', binary, 28)[0]
-    size, count = struct.unpack_from('<HH', binary, 42)
-    segments = [struct.unpack_from('<8I', binary, phoff+i*size) for i in range(count)]
-    last = max(p[2]+p[5] for p in segments if p[0] == 1)
-    uc.mem_map(0, (last+4095)&~4095)
-    for p in segments:
-        if p[0] == 1:
-            uc.mem_write(p[2], binary[p[1]:p[1]+p[4]])
-    uc.mem_map(0x10000000, 0x1000000)
-    uc.mem_map(0x20000000, 0x10000)
-    uc.mem_map(EXIT, 0x1000)
+    uc = load_elf(binary)
     heap = 0x10100000
     packets = []
     u32 = lambda at: struct.unpack('<I', uc.mem_read(at,4))[0]

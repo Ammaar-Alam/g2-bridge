@@ -4,7 +4,6 @@ Input must include an AUD before each picture. The splitter removes the AUD
 and preserves all other NAL units, including codec configuration for keyframes.
 """
 import re
-from .protocol import _bytes
 
 _AUD = re.compile(rb'\x00\x00(?:\x00)?\x01\x09')
 _START = re.compile(rb'\x00\x00(?:\x00)?\x01')
@@ -12,7 +11,7 @@ _START = re.compile(rb'\x00\x00(?:\x00)?\x01')
 
 def strip_aud(data):
     """Remove the delimiter from exactly one already-framed access unit."""
-    data = _bytes(data)
+    data = bytes(data)
     aud = _AUD.match(data)
     if not aud:
         raise ValueError('Encoder output must begin each access unit with an AUD')
@@ -36,11 +35,8 @@ class AccessUnitStream:
         self.limit = max_frame_bytes
         self.buffer = bytearray()
 
-    def _without_aud(self, data):
-        return strip_aud(data)
-
     def feed(self, data):
-        self.buffer.extend(_bytes(data))
+        self.buffer.extend(data)
         boundaries = [match.start() for match in _AUD.finditer(self.buffer)]
         frames = []
         if boundaries and boundaries[0] != 0:
@@ -48,7 +44,7 @@ class AccessUnitStream:
         for start, end in zip(boundaries, boundaries[1:]):
             if end - start > self.limit:
                 raise ValueError('H.264 access unit exceeds configured bound')
-            frames.append(self._without_aud(self.buffer[start:end]))
+            frames.append(strip_aud(self.buffer[start:end]))
         if len(boundaries) > 1:
             del self.buffer[:boundaries[-1]]
         if len(self.buffer) > self.limit:
@@ -58,6 +54,6 @@ class AccessUnitStream:
     def finish(self):
         if not self.buffer:
             return []
-        result = self._without_aud(self.buffer)
+        result = strip_aud(self.buffer)
         self.buffer.clear()
         return [result]

@@ -23,22 +23,23 @@ Two follow-up checks run after identity, without the regular simulator step:
 Before you run the probe, close DJI Assistant and any other bridge.
 """
 import argparse
+from dataclasses import replace
 from datetime import datetime
 import glob
 import hashlib
-import importlib.util
-import json
 from pathlib import Path
 import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from goggles_bridge.control import V1Packet, V1Stream
-from tools.research.firmware import ManifestReader
+from goggles_bridge.control import V1Stream, device_info, sim_mode
+from goggles_bridge.engine import EventLog
 from goggles_bridge.pc_video import PcVideoPacketizer
 from goggles_bridge.session import ControlSession, SessionError, MODELS
-from goggles_bridge.usb_transport import DEFAULT_DLL, _select_control_device
+from goggles_bridge.usb_transport import ControlUsb, VENDOR_ID, get_backend, select_control_device
+from tools.research.firmware import ManifestReader
+from tools.research.read_usb_descriptors import parse_configuration
 
 # Identity codes that haven't displayed video through the PC route.
 # ZV902 is Goggles 3, as named by github.com/ggurov/dji-goggles3-display-unit
@@ -50,13 +51,6 @@ SCAN_WAIT = .6
 SCAN_SKIP_SIMULATOR = {3, 5}  # CPLD and upgrade modules
 # libusb speed codes
 SPEEDS = {1: 'low', 2: 'full', 3: 'high', 4: 'super', 5: 'super-plus'}
-
-
-def _descriptor_parser():
-    spec = importlib.util.spec_from_file_location('usb_descriptors', ROOT / 'scripts/read_usb_descriptors.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.parse_configuration
 
 
 def sysfs_configuration(descriptors):
@@ -93,31 +87,14 @@ def describe_packet(packet):
                 sequence=packet.sequence, response=packet.is_response, payload=packet.payload.hex())
 
 
-class Log:
-    def __init__(self, path):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.stream = path.open('x', encoding='utf-8')
-        self.started = time.monotonic()
-
-    def __call__(self, event, **fields):
-        row = dict(seconds=round(time.monotonic()-self.started, 6), event=event, **fields)
-        self.stream.write(json.dumps(row) + '\n')
-        self.stream.flush()
-        return row
-
-    def close(self):
-        self.stream.close()
-
-
 def probe_descriptors(log, backend):
     import usb.core
-    parse_configuration = _descriptor_parser()
-    devices = list(usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3))
+    devices = list(usb.core.find(find_all=True, backend=backend, idVendor=VENDOR_ID))
     print(f'Step 1: found {len(devices)} DJI USB device(s)')
     if not devices:
         print('  Power the goggles, connect a USB data cable, and check that DJI Assistant is closed')
     for device in devices:
-        row = dict(vendor_id='2ca3', product_id=f'{device.idProduct:04x}', bcd_usb=f'{device.bcdUSB:04x}',
+        row = dict(vendor_id=f'{VENDOR_ID:04x}', product_id=f'{device.idProduct:04x}', bcd_usb=f'{device.bcdUSB:04x}',
                    speed=SPEEDS.get(getattr(device, 'speed', None)), bus=device.bus, address=device.address)
         try:
             raw, source = read_configuration(device)
@@ -126,7 +103,7 @@ def probe_descriptors(log, backend):
         except (OSError, ValueError, usb.core.USBError) as exc:
             row['configuration_error'] = str(exc)
         try:
-            _select_control_device([device])
+            select_control_device([device])
             row['control_interface'] = 'matches the tested MI04 profile'
         except Exception as exc:
             row['control_interface'] = f'{type(exc).__name__}: {exc}'
@@ -177,9 +154,8 @@ class RouteScan:
             if not self.queue:
                 return
         request, receiver_id = self.queue.pop(0)
-        command, payload = ((0, 0xff), b'\0') if request == 'identity' else ((0x0b, 0x1a), bytes.fromhex('01010000'))
         sequence = next_sequence()
-        send(V1Packet(*command, 10, 1, 0x1c, receiver_id, 0, 2, sequence, payload))
+        send(replace((device_info if request == 'identity' else sim_mode)(sequence), receiver_id=receiver_id))
         self.current = dict(request=request, receiver_id=receiver_id, sequence=sequence, sent_at=now, replies=[])
 
 
@@ -198,8 +174,7 @@ def report_firmware(log, reader):
 
 
 def probe_session(log, args):
-    from goggles_bridge.usb_transport import ControlUsb
-    session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS}, enter_simulator=args.simulator)
+    session =ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS}, enter_simulator=args.simulator)
     target = 'ready' if args.simulator else 'identified'
     decoder = V1Stream()
     packetizer = PcVideoPacketizer()
@@ -266,7 +241,7 @@ def probe_session(log, args):
                           'simulator mode; watch the lenses', flush=True)
                     next_frame = time.monotonic()
                 if next_frame is not None and time.monotonic() >= next_frame:
-                    wire = b''.join(p.serialize() for p in packetizer.packetize(frame, session.reserve_sequence))
+                    wire = b''.join(packetizer.packetize(frame, session.reserve_sequence))
                     usb.write(wire)
                     result['frames_sent'] += 1
                     if result['frames_sent'] % TEST_VIDEO_FPS == 1:
@@ -283,14 +258,11 @@ def probe_session(log, args):
     return result
 
 
-def frame_flag(args):
-    return args.test_video or args.force_video
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--output', type=Path, help='New JSON Lines log path (default: work/probe/<time>.jsonl)')
-    parser.add_argument('--dll', type=Path, default=DEFAULT_DLL, help='Windows only: verified DJI x64 libusb0_device.dll')
+    parser.add_argument('--dll', type=Path, help='Windows only: verified DJI x64 libusb0_device.dll '
+                        '(default: DJI_USB_DLL or the installed driver copy)')
     parser.add_argument('--descriptors-only', action='store_true', help='Stop after step 1')
     parser.add_argument('--simulator', action='store_true', help='Step 3: send simulator mode 0b/1a after identity')
     parser.add_argument('--test-video', action='store_true', help='Step 4: send the test picture after simulator mode')
@@ -308,8 +280,7 @@ def main():
     output = args.output or ROOT / 'work' / 'probe' / f'{datetime.now():%Y%m%d-%H%M%S}.jsonl'
     if output.exists():
         parser.error(f'Output already exists: {output}')
-    from goggles_bridge.usb_transport import get_backend
-    log = Log(output)
+    log = EventLog(output)
     exit_code = 1
     try:
         log('starting', platform=sys.platform, args={k: str(v) for k, v in vars(args).items()})
@@ -320,7 +291,7 @@ def main():
             result = probe_session(log, args)
             log('result', **result)
             print(f"Result: state={result['state']} identity={result['identity']!r}"
-                  + (f" frames_sent={result['frames_sent']}" if frame_flag(args) else ''))
+                  + (f" frames_sent={result['frames_sent']}" if args.test_video or args.force_video else ''))
             exit_code = 0 if result['reached'] else 1
     except Exception as exc:
         log('error', message=f'{type(exc).__name__}: {exc}')

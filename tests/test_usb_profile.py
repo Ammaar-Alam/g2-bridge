@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from goggles_bridge.usb_transport import _select_control_device, DeviceNotFoundError, LinkSpeedError
+from goggles_bridge.usb_transport import select_control_device, DeviceNotFoundError, LinkSpeedError
 
 
 class Interface:
@@ -26,19 +26,19 @@ class UsbProfileTests(unittest.TestCase):
 
     def test_observed_high_speed_is_selected(self):
         device = self.device('high_speed')
-        self.assertIs(_select_control_device([device]), device)
+        self.assertIs(select_control_device([device]), device)
 
     def test_observed_full_speed_is_explained_and_never_claimed(self):
         with self.assertRaisesRegex(LinkSpeedError, '12 Mbps'):
-            _select_control_device([self.device('full_speed')])
+            select_control_device([self.device('full_speed')])
 
     def test_two_devices_are_ambiguous_even_if_one_is_slow(self):
         with self.assertRaisesRegex(RuntimeError, 'found 2'):
-            _select_control_device([self.device('high_speed'), self.device('full_speed')])
+            select_control_device([self.device('high_speed'), self.device('full_speed')])
 
     def test_other_interface_and_absence_are_not_selected(self):
         device = self.device('high_speed')
         device[0] = [i for i in device[0] if i.bInterfaceNumber != 4]
         for devices in ([], [device]):
             with self.assertRaises(DeviceNotFoundError):
-                _select_control_device(devices)
+                select_control_device(devices)

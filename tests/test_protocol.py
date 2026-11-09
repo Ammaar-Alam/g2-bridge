@@ -5,9 +5,9 @@ import struct
 import unittest
 from unittest.mock import patch
 
+from goggles_bridge.duml import crc8, crc16
 from goggles_bridge.protocol import (
-    Address, MAX_VIDEO_CHUNK, PROFILES, V2Packet, VideoPacketizer,
-    crc8, crc16, unwrap_logiclink, wrap_logiclink,
+    Address, MAX_VIDEO_CHUNK, PROFILES, V2Packet, VideoPacketizer, unwrap_logiclink, wrap_logiclink,
 )
 
 FIXTURES = Path(__file__).parent / 'fixtures'
@@ -65,7 +65,7 @@ class ProtocolTests(unittest.TestCase):
 
     def test_clock_sampled_per_fragment_and_signed_timestamp_wrap(self):
         encoder = VideoPacketizer('pigeon')
-        with patch('goggles_bridge.protocol.time.time_ns', side_effect=[0x7FFFFFFF*1_000_000, 0x80000000*1_000_000]):
+        with patch('goggles_bridge.duml.time.time_ns', side_effect=[0x7FFFFFFF*1_000_000, 0x80000000*1_000_000]):
             packets = encoder.packetize(b'x'*(MAX_VIDEO_CHUNK+1))
         timestamps = [struct.unpack_from('<q',V2Packet.parse(p).payload,8)[0] for p in packets]
         self.assertEqual(timestamps,[0x7FFFFFFF,-0x80000000])

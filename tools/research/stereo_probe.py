@@ -10,13 +10,12 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from goggles_bridge.control import V1Stream
-from goggles_bridge.usb_transport import DEFAULT_DLL
+from goggles_bridge.engine import BridgeEngine, BridgeSettings, encoder_command, find_program
 
 # name: (size of each view, how the views are combined)
 LAYOUTS = {
@@ -46,7 +45,6 @@ def probe_command(settings, layout, stereo_sei=False):
                 '-bf', '0', '-g', str(settings.fps),
                 '-x264-params', f'frame-packing={packing}:repeat-headers=1:aud=1',
                 '-bsf:v', 'filter_units=remove_types=12', '-flush_packets', '1', '-f', 'avi', 'pipe:1']
-    from goggles_bridge.engine import encoder_command
     command = encoder_command(settings)
     command[command.index('-i')+1] = pattern(layout, settings.fps)
     # 3840x1080 and 1920x2160 at 60 fps need level 5.1
@@ -72,20 +70,18 @@ def main():
     parser.add_argument('--stereo-sei', action='store_true',
                         help='Encode left/right layout metadata with libx264; diagnostic only')
     parser.add_argument('--seconds', type=float, default=60, help='Duration, including waiting for the goggles')
-    parser.add_argument('--dll', type=Path, default=os.environ.get('DJI_USB_DLL') or DEFAULT_DLL)
-    parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg'))
+    parser.add_argument('--dll', type=Path, help='Windows only (default: DJI_USB_DLL or the installed driver copy)')
+    parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or find_program('ffmpeg'))
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='New JSON Lines log (default: work/logs/stereo-LAYOUT-TIME.jsonl)')
     args = parser.parse_args()
     if not 0 < args.seconds <= 600:
         parser.error('--seconds must be between 0 and 600')
-    for name in ('dll', 'ffmpeg'):
-        if getattr(args, name) is None or not getattr(args, name).is_file():
-            parser.error(f'--{name} file not found')
+    if args.ffmpeg is None or not args.ffmpeg.is_file():
+        parser.error('--ffmpeg file not found')
     if args.python_deps:
         sys.path.insert(0, str(args.python_deps.resolve()))
-    from goggles_bridge.engine import BridgeEngine, BridgeSettings
     settings = BridgeSettings(args.dll, args.ffmpeg, fps=60)
     command = probe_command(settings, args.layout, args.stereo_sei)
     log_path = args.log or Path(__file__).resolve().parents[2] / 'work' / 'logs' / (

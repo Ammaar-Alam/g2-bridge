@@ -1,10 +1,13 @@
 """Capture the desktop and stream H.264 over the Goggles 2 PC USB route."""
-from dataclasses import dataclass
+from contextlib import closing
+from dataclasses import asdict, dataclass
 from functools import partial
 from pathlib import Path
 import json
 import math
+import os
 import queue
+import shutil
 import subprocess
 import sys
 import threading
@@ -18,14 +21,24 @@ from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
 from .usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
 
-
-BITRATES_MBPS = (8, 10, 12, 16, 20, 24, 30, 32, 40)
+# the frame size the goggles display
+WIDTH, HEIGHT = 1920, 1080
+NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+# winget adds this folder to PATH, but terminals opened before the install miss it
+WINGET_LINKS = Path(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WinGet', 'Links')
+CHOICES = dict(fps=(60, 75, 90, 100), bitrate_mbps=(8, 10, 12, 16, 20, 24, 30, 32, 40),
+               capture=('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit'), preset=('p1', 'p4'),
+               keyframe_seconds=(1, 3), h264_profile=('baseline', 'high'), usb_write_size=USB_WRITE_SIZES)
 # Goggles 2 displayed frames up to 49 KB, but keyframes of about 65 KB froze it or left it
 # black until a power cycle. The encoder buffer is capped at this size, and larger frames aren't sent
 MAX_FRAME_BYTES = 56_000
 MAX_VBV_BITS = MAX_FRAME_BYTES * 8
 # Largest tested average frame, 40 Mbps at 100 fps
 MAX_AVERAGE_FRAME_BYTES = 50_000
+
+
+def find_program(name):
+    return shutil.which(name) or shutil.which(name, path=str(WINGET_LINKS))
 
 
 @dataclass(frozen=True)
@@ -46,32 +59,36 @@ class BridgeSettings:
     # NVENC spatial and temporal adaptive quantization, off until its goggles latency is measured
     adaptive_quant: bool = False
 
+    @property
+    def nvenc(self):
+        """Windows captures encode with NVENC, the only encoder whose frame-size cap is verified on goggles."""
+        return self.capture in ('gfxcapture', 'ddagrab')
+
     def __post_init__(self):
-        if type(self.fps) is not int or self.fps not in (60, 75, 90, 100):
-            raise ValueError(f'Unsupported fps: {self.fps}')
+        def check(name):
+            value, choices = getattr(self, name), CHOICES[name]
+            if type(value) is not type(choices[0]) or value not in choices:
+                raise ValueError(f'Unsupported {name}: {value}')
+
+        # the default bitrate depends on fps
+        check('fps')
         if self.bitrate_mbps is None:
             object.__setattr__(self, 'bitrate_mbps',
-                               20 if self.capture in ('avfoundation', 'screencapturekit')
-                               else min(32, self.fps*8*MAX_AVERAGE_FRAME_BYTES//1_000_000))
+                               min(32, self.fps*8*MAX_AVERAGE_FRAME_BYTES//1_000_000) if self.nvenc else 20)
         for name in ('low_latency', 'adaptive_quant'):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f'{name} must be a boolean')
-        if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
-            raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
-        for name, choices in (('bitrate_mbps', BITRATES_MBPS),
-                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4')),
-                              ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
-            if getattr(self, name) not in choices:
-                raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
-        if self.adaptive_quant and self.capture not in ('gfxcapture', 'ddagrab'):
+        for name in CHOICES:
+            check(name)
+        if self.adaptive_quant and not self.nvenc:
             raise ValueError('Adaptive quantization needs the Windows NVENC encoder')
         # shortcut: only the NVENC buffer cap is verified on goggles, so macOS keeps the earlier
         # 24 Mbps ceiling and its frames are never skipped; lift both once a Mac cap is verified
-        if self.capture not in ('gfxcapture', 'ddagrab') and self.bitrate_mbps > 24:
+        if not self.nvenc and self.bitrate_mbps > 24:
             raise ValueError('macOS capture supports at most 24 Mbps')
         # The buffer cap bounds keyframes, but in CBR every frame averages bitrate/fps
         if self.bitrate_mbps * 1_000_000 // (8 * self.fps) > MAX_AVERAGE_FRAME_BYTES:
-            limit = max(b for b in BITRATES_MBPS if b * 1_000_000 // (8 * self.fps) <= MAX_AVERAGE_FRAME_BYTES)
+            limit = max(b for b in CHOICES['bitrate_mbps'] if b * 1_000_000 // (8 * self.fps) <= MAX_AVERAGE_FRAME_BYTES)
             raise ValueError(f'At {self.fps} fps, use at most {limit} Mbps. '
                              f'{self.bitrate_mbps} Mbps makes frames too large for the goggles')
         if type(self.capture_fps) is not int or not self.fps <= self.capture_fps <= 1000:
@@ -80,81 +97,73 @@ class BridgeSettings:
             raise ValueError('Display index must be a nonnegative integer')
 
 
-def encoder_command(settings):
+def encoder_command(settings, frames=0):
+    """Return the capture and encoder command; with frames, encode that many pictures and discard them."""
     bitrate = settings.bitrate_mbps * 1_000_000
     if settings.capture == 'screencapturekit':
         command = [str(helper_path()), '--display', str(settings.display_index), '--fps', str(settings.fps),
                    '--capture-fps', str(settings.capture_fps), '--bitrate', str(bitrate),
                    '--keyframe-seconds', str(settings.keyframe_seconds), '--profile', settings.h264_profile,
                    '--format', 'avi' if settings.low_latency else 'h264']
-        return command + ([] if settings.show_cursor else ['--hide-cursor'])
+        return (command + ([] if settings.show_cursor else ['--hide-cursor'])
+                + (['--frames', str(frames)] if frames else []))
+    # More NVENC bitrate must not enlarge the previous 20 Mbps buffer budget
+    vbv = min(min(bitrate, 20_000_000)*2//settings.fps, MAX_VBV_BITS) if settings.nvenc else bitrate*2//settings.fps
+    rate = ['-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(vbv), '-bf', '0',
+            '-g', str(settings.fps*settings.keyframe_seconds), '-level:v', '4.2' if settings.fps == 60 else '5.1',
+            '-flush_packets', '1']
     command = [str(Path(settings.ffmpeg).resolve()), '-hide_banner', '-nostdin', '-loglevel', 'info']
     if settings.capture == 'avfoundation':
-        return command + _mac_encoder_args(settings, bitrate)
-    if settings.capture == 'gfxcapture':
-        source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
-                  ':width=1920:height=1080:resize_mode=scale_aspect:scale_mode=bicubic'
-                  f':capture_cursor={int(settings.show_cursor)}')
-        # Compact capture gaps so CFR does not replay stale pictures to catch up
-        pacing = (f"select='isnan(prev_selected_pts)+gt(floor((pts+0.5)*TB*{settings.fps}),"
-                  f"floor((prev_selected_pts+0.5)*TB*{settings.fps}))',"
-                  f'setpts=N/({settings.fps}*TB):strip_fps=1')
-        command += ['-f', 'lavfi', '-i', source, '-vf', pacing,
-                    '-r', str(settings.fps), '-fps_mode', 'cfr']
+        # Scale Retina captures on the GPU, then pad to the frame the goggles expect
+        wide = 'gte(iw/ih,16/9)'
+        command += ['-init_hw_device', 'videotoolbox=vt', '-filter_hw_device', 'vt',
+                    '-f', 'avfoundation', '-capture_cursor', str(int(settings.show_cursor)),
+                    '-framerate', str(settings.capture_fps), '-pixel_format', 'nv12',
+                    '-i', f'Capture screen {settings.display_index}:none', '-r', str(settings.fps), '-fps_mode', 'cfr',
+                    '-vf', f"hwupload,scale_vt=w='if({wide},{WIDTH},-2)':h='if({wide},-2,{HEIGHT})',hwdownload,"
+                           f'format=nv12,pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2',
+                    # low_delay enables low-latency rate control, which rejects plain baseline
+                    '-an', '-c:v', 'h264_videotoolbox', '-realtime', '1', '-prio_speed', '1', '-flags', '+low_delay',
+                    '-profile:v', 'constrained_baseline' if settings.h264_profile == 'baseline' else 'high', *rate,
+                    # VideoToolbox writes no AUDs, which both frame readers need
+                    '-bsf:v', 'h264_metadata=aud=insert']
     else:
-        source = (f'ddagrab=output_idx={settings.display_index}:framerate={settings.fps}'
-                  f':draw_mouse={int(settings.show_cursor)}')
-        command += ['-f', 'lavfi', '-i', source, '-vf',
-                    'hwdownload,format=bgra,scale=1920:1080:force_original_aspect_ratio=decrease:flags=fast_bilinear,'
-                    'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=nv12']
-    # More bitrate must not enlarge the previous 20 Mbps buffer budget
-    command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
-                '-b:v', str(bitrate), '-maxrate', str(bitrate),
-                '-bufsize', str(min(min(bitrate, 20_000_000)*2//settings.fps, MAX_VBV_BITS))]
-    if settings.adaptive_quant:
-        command += ['-spatial-aq', '1', '-temporal-aq', '1']
-    command += ['-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
-                '-profile:v', settings.h264_profile, '-level:v', '4.2' if settings.fps == 60 else '5.1',
-                '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
-    command += ['-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
+        if settings.capture == 'gfxcapture':
+            source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
+                      f':width={WIDTH}:height={HEIGHT}:resize_mode=scale_aspect:scale_mode=bicubic'
+                      f':capture_cursor={int(settings.show_cursor)}')
+            # Compact capture gaps so CFR does not replay stale pictures to catch up
+            pacing = (f"select='isnan(prev_selected_pts)+gt(floor((pts+0.5)*TB*{settings.fps}),"
+                      f"floor((prev_selected_pts+0.5)*TB*{settings.fps}))',"
+                      f'setpts=N/({settings.fps}*TB):strip_fps=1')
+            command += ['-f', 'lavfi', '-i', source, '-vf', pacing,
+                        '-r', str(settings.fps), '-fps_mode', 'cfr']
+        else:
+            source = (f'ddagrab=output_idx={settings.display_index}:framerate={settings.fps}'
+                      f':draw_mouse={int(settings.show_cursor)}')
+            command += ['-f', 'lavfi', '-i', source, '-vf',
+                        f'hwdownload,format=bgra,scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease:'
+                        f'flags=fast_bilinear,pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2,format=nv12']
+        command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
+                    '-zerolatency', '1', '-delay', '0', '-profile:v', settings.h264_profile, *rate,
+                    '-aud', '1', '-forced-idr', '1',
+                    '-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
+        if settings.adaptive_quant:
+            command += ['-spatial-aq', '1', '-temporal-aq', '1']
+        if settings.low_latency:
+            command += ['-bsf:v', 'filter_units=remove_types=12']
     if settings.low_latency:
-        command += ['-bsf:v', 'filter_units=remove_types=12', '-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
-    else:
-        command += ['-f', 'h264', 'pipe:1']
-    return command
-
-
-def _mac_encoder_args(settings, bitrate):
-    # Scale Retina captures on the GPU, then pad to the 1920x1080 the goggles expect
-    wide = 'gte(iw/ih,16/9)'
-    args = ['-init_hw_device', 'videotoolbox=vt', '-filter_hw_device', 'vt',
-            '-f', 'avfoundation', '-capture_cursor', str(int(settings.show_cursor)),
-            '-framerate', str(settings.capture_fps), '-pixel_format', 'nv12',
-            '-i', f'Capture screen {settings.display_index}:none', '-r', str(settings.fps), '-fps_mode', 'cfr',
-            '-vf', f"hwupload,scale_vt=w='if({wide},1920,-2)':h='if({wide},-2,1080)',hwdownload,format=nv12,"
-                   'pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
-            # low_delay enables low-latency rate control, which rejects plain baseline
-            '-an', '-c:v', 'h264_videotoolbox', '-realtime', '1', '-prio_speed', '1', '-flags', '+low_delay',
-            '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
-            '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
-            '-profile:v', 'constrained_baseline' if settings.h264_profile == 'baseline' else 'high',
-            '-level:v', '4.2' if settings.fps == 60 else '5.1', '-flush_packets', '1',
-            # VideoToolbox writes no AUDs, which both frame readers need
-            '-bsf:v', 'h264_metadata=aud=insert']
-    if settings.low_latency:
-        return args + ['-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
-    return args + ['-f', 'h264', 'pipe:1']
+        command += ['-thread_queue_size', '1']
+    if frames:
+        return command + ['-frames:v', str(frames), '-f', 'null', '-']
+    return command + ['-f', 'avi' if settings.low_latency else 'h264', 'pipe:1']
 
 
 def check_encoder(settings, run=subprocess.run):
     """Encode one captured frame and return a setup problem, or None if the encoder can stream."""
-    if settings.capture == 'screencapturekit':
-        command = encoder_command(settings) + ['--frames', '1']
-    else:
-        command = encoder_command(settings)[:-3] + ['-frames:v', '1', '-f', 'null', '-']
+    command = encoder_command(settings, frames=1)
     try:
-        result = run(command, capture_output=True, text=True, errors='replace', timeout=30,
-                     creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        result = run(command, capture_output=True, text=True, errors='replace', timeout=30, creationflags=NO_WINDOW)
     except subprocess.TimeoutExpired:
         return 'No frame was captured within 30 seconds'
     if result.returncode == 0:
@@ -192,6 +201,23 @@ def prioritize_gpu(process):
     return set_class(int(handle), 5) == 0  # D3DKMT_SCHEDULINGPRIORITYCLASS_REALTIME
 
 
+class EventLog:
+    """Write timestamped JSON Lines rows to a new file."""
+    def __init__(self, path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.stream = path.open('x', encoding='utf-8')
+        self.started = time.perf_counter()
+
+    def __call__(self, event, **fields):
+        row = dict(seconds=round(time.perf_counter()-self.started, 6), event=event, **fields)
+        self.stream.write(json.dumps(row)+'\n')
+        self.stream.flush()
+        return row
+
+    def close(self):
+        self.stream.close()
+
+
 class BridgeEngine:
     """Manage the encoder and USB session, reconnecting after link loss."""
     def __init__(self, settings, log_path, *, on_event=None, stop_event=None,
@@ -212,32 +238,21 @@ class BridgeEngine:
         self.transport_factory = (partial(ControlUsb, write_size=settings.usb_write_size)
                                   if transport_factory is None else transport_factory)
         self.process_factory = process_factory
-        self.started = None
         self.log = None
         self.waiting = None
 
     def stopping(self):
         return (self.stop_event.is_set() or (self.stop_file is not None and self.stop_file.exists())
-                or (self.duration > 0 and time.perf_counter()-self.started >= self.duration))
+                or (self.duration > 0 and time.perf_counter()-self.log.started >= self.duration))
 
     def emit(self, event, **fields):
-        row = dict(seconds=round(time.perf_counter()-self.started, 6), event=event, **fields)
-        self.log.write(json.dumps(row)+'\n')
-        self.log.flush()
-        self.on_event(row)
+        self.on_event(self.log(event, **fields))
 
     def run(self):
-        self.started = time.perf_counter()
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.log_path.open('x', encoding='utf-8') as self.log:
-            self.emit('starting', fps=self.settings.fps, bitrate_mbps=self.settings.bitrate_mbps,
-                      capture=self.settings.capture, capture_fps=self.settings.capture_fps,
-                      resolution='1920x1080', preset=self.settings.preset,
-                      keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
-                      low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
-                      h264_profile=self.settings.h264_profile, adaptive_quant=self.settings.adaptive_quant,
-                      intra_refresh=self.settings.capture in ('gfxcapture', 'ddagrab'),
-                      multipass='qres' if self.settings.capture in ('gfxcapture', 'ddagrab') else 'disabled')
+        with closing(EventLog(self.log_path)) as self.log:
+            settings = {name: value for name, value in asdict(self.settings).items() if name not in ('dll', 'ffmpeg')}
+            self.emit('starting', resolution=f'{WIDTH}x{HEIGHT}', intra_refresh=self.settings.nvenc,
+                      multipass='qres' if self.settings.nvenc else 'disabled', **settings)
             try:
                 attempt = 0
                 while not self.stopping():
@@ -276,7 +291,6 @@ class BridgeEngine:
         threads = []
         frame_count = byte_count = previous_frames = oversize_count = largest_frame = 0
         resync = False
-        guarded = self.settings.capture in ('gfxcapture', 'ddagrab')
         queue_times, send_times = [], []
         last_frame = last_progress = time.perf_counter()
         encoder_path = self.log_path.with_name(f'{self.log_path.stem}.encoder-{attempt}.log')
@@ -337,8 +351,7 @@ class BridgeEngine:
                 nonlocal process, encoder_thread, encoder_first_frame, last_frame
                 encoder_stop.clear()
                 process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
-                    stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0,
-                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                    stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0, creationflags=NO_WINDOW)
                 last_frame = time.perf_counter()
                 encoder_first_frame = True
                 encoder_thread = threading.Thread(target=read_encoder, args=(process,), daemon=True)
@@ -377,7 +390,7 @@ class BridgeEngine:
                                 raise RuntimeError(f'No video from display. See {encoder_path}')
                             continue
                         last_frame = time.perf_counter()
-                        oversize = guarded and len(frame) > MAX_FRAME_BYTES
+                        oversize = self.settings.nvenc and len(frame) > MAX_FRAME_BYTES
                         if oversize:
                             oversize_count += 1
                             self.emit('oversize_frame', bytes=len(frame), limit=MAX_FRAME_BYTES)
@@ -400,8 +413,7 @@ class BridgeEngine:
                         resync = False
                         largest_frame = max(largest_frame, len(frame))
                         queue_times.append((last_frame-completed_at)*1000)
-                        wire = b''.join(packet.serialize() for packet in
-                                        packetizer.packetize(frame, session.reserve_sequence))
+                        wire = b''.join(packetizer.packetize(frame, session.reserve_sequence))
                         usb.write(wire)
                         send_times.append((time.perf_counter()-last_frame)*1000)
                         byte_count += len(wire)
