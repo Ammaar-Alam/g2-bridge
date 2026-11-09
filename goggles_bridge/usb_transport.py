@@ -1,16 +1,20 @@
 """Access the goggles' PC USB interface on Windows, macOS, or Linux.
 
-Windows uses DJI's x64 driver 5.0.0.7. The backend checks the DLL hash before
+Windows uses DJI's x64 driver 5.0.0.7, which binds the bulk interface of Goggles 2
+(product 0020) and FPV Goggles V2 (product 001f). The backend checks the DLL hash before
 using its device structure layout. Installing the driver places
 libusb0_device.dll in System32. macOS binds no driver to the vendor interface,
 so libusb-1.0 claims it directly. Linux also uses libusb-1.0, and the udev
 rule in scripts/linux/60-dji-goggles.rules gives the user access to the device.
 """
 import ctypes as C
+from dataclasses import dataclass
 import hashlib
 import os
 from pathlib import Path
 import sys
+
+from .models import PRODUCT_IDS
 
 VERIFIED_DLL_SHA256 = 'd2c16bd7c7fb2344408259fd083c8fdbeda3b096b8c9d07e48848e99fc2c3743'
 USB_WRITE_SIZES = (2048, 16384)
@@ -34,30 +38,58 @@ LINUX_UDEV_HINT = ('Install the udev rule: sudo cp scripts/linux/60-dji-goggles.
                    'also join the plugdev group')
 
 
-def _select_control_device(devices):
+@dataclass(frozen=True)
+class ControlLink:
+    """The USB interface and endpoints the bridge talks DUML over."""
+    product_id: int
+    interface: int
+    endpoint_out: int
+    endpoint_in: int
+    packet_size: int
+
+
+def select_control_link(devices, *, interface=4, product_ids=PRODUCT_IDS):
+    """Return (device, ControlLink) for the one device with a DJI bulk control interface.
+
+    The control interface is vendor class ff/43/01 with one bulk OUT and one bulk IN
+    endpoint. It is interface 4 on Goggles 2 (product 0020), and DJI's own bulk driver
+    binds interface 4 on the FPV Goggles V2 (product 001f) as well; the endpoint
+    addresses are read from the descriptor rather than assumed. Goggles 2 links at high
+    speed (512-byte bulk packets); a full-speed link is refused as too slow.
+    """
     candidates = []
     for device in devices:
+        product = getattr(device, 'idProduct', 0x0020)
+        if product_ids is not None and product not in product_ids:
+            continue
         for config in device:
-            for interface in config:
-                if (interface.bInterfaceNumber != 4 or interface.bAlternateSetting != 0
-                        or (interface.bInterfaceClass, interface.bInterfaceSubClass,
-                            interface.bInterfaceProtocol) != (255, 67, 1)):
+            for candidate in config:
+                if (candidate.bInterfaceNumber != interface or candidate.bAlternateSetting != 0
+                        or (candidate.bInterfaceClass, candidate.bInterfaceSubClass,
+                            candidate.bInterfaceProtocol) != (255, 67, 1)):
                     continue
-                endpoints = list(interface)
-                if (len(endpoints) == 2
-                        and {(e.bEndpointAddress, e.bmAttributes) for e in endpoints} == {(4, 2), (0x85, 2)}
-                        and len({e.wMaxPacketSize for e in endpoints}) == 1
-                        and endpoints[0].wMaxPacketSize in (64, 512)):
-                    candidates.append((device, endpoints[0].wMaxPacketSize))
+                endpoints = list(candidate)
+                outs = [e for e in endpoints if e.bmAttributes & 3 == 2 and not e.bEndpointAddress & 0x80]
+                ins = [e for e in endpoints if e.bmAttributes & 3 == 2 and e.bEndpointAddress & 0x80]
+                if (len(endpoints) == 2 and len(outs) == 1 and len(ins) == 1
+                        and outs[0].wMaxPacketSize == ins[0].wMaxPacketSize
+                        and outs[0].wMaxPacketSize in (64, 512)):
+                    candidates.append((device, ControlLink(product, interface, outs[0].bEndpointAddress,
+                                                           ins[0].bEndpointAddress, outs[0].wMaxPacketSize)))
     if not candidates:
         raise DeviceNotFoundError('Waiting for powered goggles in Virtual Flight mode')
     if len(candidates) != 1:
         raise RuntimeError(f'Expected one DJI control interface; found {len(candidates)}')
-    device, packet_size = candidates[0]
-    if packet_size == 64:
+    device, link = candidates[0]
+    if link.packet_size == 64:
         raise LinkSpeedError('USB link is full-speed (12 Mbps), too slow for this stream. '
                              'Reconnect the data cable; try another port or cable if it recurs.')
-    return device
+    return device, link
+
+
+def _select_control_device(devices):
+    """Return the one device whose interface 4 matches the control interface."""
+    return select_control_link(devices)[0]
 
 
 def _windows_backend(dll_path):
@@ -114,9 +146,11 @@ def get_backend(dll_path=None):
 
 
 class ControlUsb:
-    def __init__(self, dll_path=None, *, write_size=2048):
+    def __init__(self, dll_path=None, *, write_size=2048, interface=4, product_ids=PRODUCT_IDS):
         if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {write_size}')
+        if type(interface) is not int or not 0 <= interface < 32:
+            raise ValueError('interface must be a USB interface number from 0 to 31')
         self.write_size = write_size
         backend = get_backend(dll_path)
         import usb.core
@@ -124,15 +158,15 @@ class ControlUsb:
         self.core = usb.core
         self.util = usb.util
         try:
-            devices = usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3, idProduct=0x0020)
-            self.device = _select_control_device(devices)
+            devices = usb.core.find(find_all=True, backend=backend, idVendor=0x2ca3)
+            self.device, self.link = select_control_link(devices, interface=interface, product_ids=product_ids)
         except usb.core.USBError as exc:
             raise UsbTransportError(str(exc)) from exc
         self.closed = False
         try:
-            if sys.platform.startswith('linux') and self.device.is_kernel_driver_active(4):
-                self.device.detach_kernel_driver(4)
-            self.util.claim_interface(self.device, 4)
+            if sys.platform.startswith('linux') and self.device.is_kernel_driver_active(self.link.interface):
+                self.device.detach_kernel_driver(self.link.interface)
+            self.util.claim_interface(self.device, self.link.interface)
         except usb.core.USBError as exc:
             self.util.dispose_resources(self.device)
             self.closed = True
@@ -144,7 +178,7 @@ class ControlUsb:
         if self.closed:
             raise RuntimeError('USB transport is closed')
         try:
-            return bytes(self.device.read(0x85, 4096, timeout=timeout_ms))
+            return bytes(self.device.read(self.link.endpoint_in, 4096, timeout=timeout_ms))
         except self.core.USBError as exc:
             if isinstance(exc, self.core.USBTimeoutError) or exc.backend_error_code == -116:
                 return b''
@@ -157,7 +191,7 @@ class ControlUsb:
         for offset in range(0, len(data), self.write_size):
             chunk = data[offset:offset+self.write_size]
             try:
-                written = self.device.write(4, chunk, timeout=500)
+                written = self.device.write(self.link.endpoint_out, chunk, timeout=500)
             except self.core.USBError as exc:
                 raise UsbTransportError(str(exc)) from exc
             if written != len(chunk):
@@ -166,6 +200,10 @@ class ControlUsb:
     def close(self):
         if not self.closed:
             try:
+                try:
+                    self.util.release_interface(self.device, self.link.interface)
+                except self.core.USBError:
+                    pass
                 self.util.dispose_resources(self.device)
             finally:
                 self.closed = True

@@ -25,6 +25,7 @@ class UsbWriteTests(unittest.TestCase):
             return len(data)-(1 if fail == 'short' else 0)
         usb = ControlUsb.__new__(ControlUsb)
         usb.device = SimpleNamespace(write=write)
+        usb.link = SimpleNamespace(interface=4, endpoint_out=4, endpoint_in=0x85, packet_size=512, product_id=0x20)
         usb.core = SimpleNamespace(USBError=DriverError)
         usb.closed = False
         usb.write_size = write_size

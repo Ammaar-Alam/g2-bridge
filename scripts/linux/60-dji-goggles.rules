@@ -1,6 +1,8 @@
-# Give users libusb access to the DJI goggles PC USB interface (VID 2ca3, PID 0020).
+# Give users libusb access to the DJI goggles PC USB interface (VID 2ca3; PID 0020 for
+# Goggles 2, Integra and Goggles 3, PID 001f for FPV Goggles V2).
 # uaccess covers a local desktop session; the plugdev group also covers SSH sessions.
 # On distributions without plugdev, create the group or change GROUP to one you belong to.
 # Install: sudo cp scripts/linux/60-dji-goggles.rules /etc/udev/rules.d/
 #          sudo udevadm control --reload && sudo udevadm trigger
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2ca3", ATTR{idProduct}=="0020", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2ca3", ATTR{idProduct}=="001f", MODE="0660", GROUP="plugdev", TAG+="uaccess"

@@ -5,13 +5,20 @@ addresses default to the PC USB route. With enter_simulator=False, the session
 stops in the identified state after the identity reply and keeps sending
 heartbeats. Diagnostics use this to read an untested model's identity without
 changing its display mode.
+
+Destinations default to the Goggles 2 routes: heartbeat and simulator mode
+to 28/0, identity to 28/1. Another control_type sends the same requests to
+that DUML device type, for goggles whose modules answer elsewhere.
 """
 from dataclasses import dataclass, replace
 from .control import heartbeat, device_info, sim_mode
+from . import models as goggles_models
 
 
 # Identity codes that have displayed video through the PC route
-MODELS = {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'}
+MODELS = {code: model.name for model in goggles_models.TESTED for code in model.codes}
+# Identity codes from other sources that have not displayed video through the PC route
+EXPERIMENTAL_MODELS = {code: model.name for model in goggles_models.EXPERIMENTAL for code in model.codes}
 SIMULATOR_SILENT = ('The goggles answered but ignored simulator mode. '
                     'Open More > DJI Virtual Flight on the goggles')
 
@@ -32,17 +39,26 @@ class Pending:
 
 
 class ControlSession:
-    def __init__(self, *, source_type=10, source_id=1, sequence=0, models=MODELS, enter_simulator=True):
+    def __init__(self, *, source_type=10, source_id=1, sequence=0, models=MODELS, enter_simulator=True,
+                 assume_model=None, control_type=28):
         # Validate addresses and sequence using the actual serializer.
         replace(heartbeat(sequence), sender_type=source_type, sender_id=source_id).serialize()
+        if assume_model is not None and assume_model not in goggles_models.BY_NAME:
+            raise ValueError(f'Unknown model {assume_model!r}. Known: {", ".join(goggles_models.BY_NAME)}')
+        if type(control_type) is not int or not 0 <= control_type < 32:
+            raise ValueError('control_type must be a DUML device type from 0 to 31')
         self.models = dict(models)
         self.enter_simulator = enter_simulator
+        self.assume_model = assume_model
+        self.control = (control_type, 0)
+        self.identity_destination = (control_type, 1)
         self.source_type = source_type
         self.source_id = source_id
         self.sequence = sequence
         self.state = 'new'
         self.identity = None
         self.model = None
+        self.profile = None
         self.pending = {}
         self.started_at = None
         self.last_heartbeat_ack = None
@@ -59,9 +75,10 @@ class ControlSession:
                 return sequence
         raise SessionError('Sequence space exhausted')
 
-    def _new(self, factory, now):
+    def _new(self, factory, now, destination):
         sequence = self.reserve_sequence()
-        packet = replace(factory(sequence), sender_type=self.source_type, sender_id=self.source_id)
+        packet = replace(factory(sequence), sender_type=self.source_type, sender_id=self.source_id,
+                         receiver_type=destination[0], receiver_id=destination[1])
         self.pending[sequence] = Pending(packet, now)
         return packet
 
@@ -100,7 +117,7 @@ class ControlSession:
                 item.sent_at = now
                 outgoing.append(item.packet)
         if now >= self.next_heartbeat:
-            outgoing.append(self._new(heartbeat, now))
+            outgoing.append(self._new(heartbeat, now, self.control))
             self.next_heartbeat = now + .5
         return outgoing
 
@@ -125,18 +142,27 @@ class ControlSession:
             self.last_heartbeat_ack = now
             if self.state == 'heartbeat':
                 self.state = 'identity'
-                return [self._new(device_info, now)]
+                return [self._new(device_info, now, self.identity_destination)]
         elif command == (0, 255) and self.state == 'identity':
             self.identity = reply.payload[1:].rstrip(b'\0').decode('ascii', errors='replace')
-            self.model = next((name for code, name in self.models.items()
-                               if self.identity.upper().startswith(f'E3T {code}')), None)
-            if self.model is None:
-                self._fail(f'Unsupported goggles ({self.identity}). Supported: {", ".join(self.models.values())}')
+            self._identify()
             if not self.enter_simulator:
                 self.state = 'identified'
                 return []
             self.state = 'simulator'
-            return [self._new(sim_mode, now)]
+            return [self._new(sim_mode, now, self.control)]
         elif command == (11, 26) and self.state == 'simulator':
             self.state = 'ready'
         return []
+
+    def _identify(self):
+        """Choose the model from the identity reply, or from assume_model when nothing matches."""
+        known = [goggles_models.BY_NAME[name] for name in dict.fromkeys(self.models.values())
+                 if name in goggles_models.BY_NAME]
+        matched = goggles_models.match_identity(self.identity, known)
+        if matched is None and self.assume_model is not None:
+            matched = goggles_models.BY_NAME[self.assume_model]
+        if matched is None:
+            self._fail(f'Unsupported goggles ({self.identity}). Supported: {", ".join(self.models.values())}')
+        self.model = matched.name
+        self.profile = matched

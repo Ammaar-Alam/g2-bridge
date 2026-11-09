@@ -16,14 +16,17 @@ import tkinter as tk
 from tkinter import ttk
 
 from . import __version__
-from .app_config import (APP_NAME, CAPTURES, QUALITY_PRESETS, AppSettings, data_dir, default_dll, find_ffmpeg,
-                         max_bitrate, pacing_advice, setup_problems)
+from .app_config import (APP_NAME, CAPTURES, EXPERIMENTAL, QUALITY_PRESETS, AppSettings, data_dir, default_dll,
+                         find_ffmpeg, max_bitrate, pacing_advice, setup_problems)
 from .displays import list_displays
 from .engine import BITRATES_MBPS, PRESETS, VBV_FRAMES, BridgeEngine, check_encoder
 from .session import SIMULATOR_SILENT
 
 CONNECT_HINT = 'Connect the goggles by USB, power them on, and open More > DJI Virtual Flight.'
 COLORS = dict(idle='#555555', busy='#a15c00', good='#1a7f37', bad='#b42318')
+AUTO_MODEL = 'Detect from the goggles'
+UNTESTED = ' (untested)'
+GOGGLES_CHOICES = [AUTO_MODEL] + [model.name + UNTESTED for model in EXPERIMENTAL]
 
 
 class BridgeApp:
@@ -116,13 +119,15 @@ class BridgeApp:
         self.encoder_preset = ttk.Combobox(self.advanced, state='readonly', width=24, values=PRESETS)
         self.vbv = ttk.Combobox(self.advanced, state='readonly', width=24, values=VBV_FRAMES)
         self.capture = ttk.Combobox(self.advanced, state='readonly', width=24, values=CAPTURES)
+        self.goggles = ttk.Combobox(self.advanced, state='readonly', width=24, values=GOGGLES_CHOICES)
         for row, (label, widget) in enumerate((('Bitrate', self.bitrate), ('Encoder preset', self.encoder_preset),
-                                               ('Buffer (frames)', self.vbv), ('Capture', self.capture))):
+                                               ('Buffer (frames)', self.vbv), ('Capture', self.capture),
+                                               ('Goggles', self.goggles))):
             ttk.Label(self.advanced, text=label).grid(row=row, column=0, sticky='w', pady=2)
             widget.grid(row=row, column=1, sticky='w', pady=2, padx=(10, 0))
             widget.bind('<<ComboboxSelected>>', lambda _e: self._changed())
         ttk.Checkbutton(self.advanced, text='Adaptive quantization (sharper detail)', variable=self.aq,
-                        command=self._changed).grid(row=4, column=0, columnspan=2, sticky='w', pady=(4, 0))
+                        command=self._changed).grid(row=5, column=0, columnspan=2, sticky='w', pady=(4, 0))
         self.advanced_row = frame.grid_size()[1]
 
         buttons = ttk.Frame(frame, padding=(14, 10, 14, 6))
@@ -176,6 +181,7 @@ class BridgeApp:
         self.encoder_preset.set(s.encoder_preset)
         self.vbv.set(s.vbv_frames)
         self.capture.set(s.capture)
+        self.goggles.set(s.assume_model + UNTESTED if s.assume_model else AUTO_MODEL)
         self.bitrate['values'] = self._bitrate_choices()
         self.bitrate.set(f'{s.custom_bitrate_mbps} Mbps' if s.custom_bitrate_mbps else 'Follow picture setting')
         self._show_pacing()
@@ -190,6 +196,8 @@ class BridgeApp:
         s.encoder_preset = self.encoder_preset.get()
         s.vbv_frames = int(self.vbv.get())
         s.capture = self.capture.get()
+        goggles = self.goggles.get()
+        s.assume_model = '' if goggles == AUTO_MODEL else goggles.removesuffix(UNTESTED)
         choice = self.bitrate.get()
         s.custom_bitrate_mbps = int(choice.split()[0]) if choice[:1].isdigit() else 0
         # A custom bitrate above the new frame rate's limit falls back to the preset
@@ -328,7 +336,8 @@ class BridgeApp:
         elif event == 'connected':
             self._set_status('Goggles connected', 'Starting video...', 'busy')
         elif event == 'ready':
-            self._set_status(f"Found {row['model']}", 'Starting video...', 'busy')
+            note = '' if row.get('tested', True) else ' This model is untested; please report what you see.'
+            self._set_status(f"Found {row['model']}", f"Starting {row.get('resolution', '')} video...{note}", 'busy')
         elif event == 'streaming':
             self._set_status('Streaming', 'Look in the goggles. Press Stop when you are done.', 'good')
         elif event == 'stats':

@@ -132,6 +132,20 @@ class GuiTests(unittest.TestCase):
         self.assertNotIn('disabled', self.app.start_button.state())
         self.assertEqual(self.app.status['text'], 'Ready')
 
+    def test_goggles_choice_sets_assume_model(self):
+        from goggles_bridge.gui import AUTO_MODEL, UNTESTED
+        self.assertEqual(self.app.goggles.get(), AUTO_MODEL)
+        self.app.goggles.set('DJI FPV Goggles V2' + UNTESTED)
+        self.app._changed()
+        self.assertEqual(self.app.settings.assume_model, 'DJI FPV Goggles V2')
+        bridge = self.app.settings.bridge_settings(self.dll, self.ffmpeg)
+        self.assertEqual(bridge.assume_model, 'DJI FPV Goggles V2')
+        saved = app_config.AppSettings.load(Path(self.folder.name, 'settings.json'))
+        self.assertEqual(saved.assume_model, 'DJI FPV Goggles V2')
+        self.app.goggles.set(AUTO_MODEL)
+        self.app._changed()
+        self.assertIsNone(self.app.settings.bridge_settings(self.dll, self.ffmpeg).assume_model)
+
     def test_sixty_fps_hides_bitrates_over_the_limit(self):
         self.app.fps.set(60)
         self.app._changed()

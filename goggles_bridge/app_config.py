@@ -11,6 +11,7 @@ import shutil
 import sys
 
 from .engine import BITRATES_MBPS, PRESETS, VBV_FRAMES, SAFE_FRAME_BYTES, BridgeSettings
+from .models import BY_NAME, EXPERIMENTAL
 from .usb_transport import DEFAULT_DLL, VERIFIED_DLL_SHA256
 
 APP_NAME = 'G2 Bridge'
@@ -51,6 +52,7 @@ class AppSettings:
     encoder_preset: str = 'p4'
     vbv_frames: int = 2
     capture: str = CAPTURES[0]
+    assume_model: str = ''  # Empty detects the model from its identity; a name forces an untested profile
 
     def bitrate_mbps(self):
         wanted = self.custom_bitrate_mbps or QUALITY_PRESETS[self.quality]['bitrate_mbps']
@@ -60,7 +62,7 @@ class AppSettings:
         return BridgeSettings(dll, ffmpeg, fps=self.fps, bitrate_mbps=self.bitrate_mbps(), capture=self.capture,
                               display_index=self.display_index, show_cursor=not self.hide_cursor,
                               preset=self.encoder_preset, vbv_frames=self.vbv_frames,
-                              adaptive_quant=self.adaptive_quant)
+                              adaptive_quant=self.adaptive_quant, assume_model=self.assume_model or None)
 
     @classmethod
     def load(cls, path):
@@ -73,7 +75,8 @@ class AppSettings:
             return cls()
         settings = cls()
         allowed = dict(quality=set(QUALITY_PRESETS), fps={60, 100}, custom_bitrate_mbps={0, *BITRATES_MBPS},
-                       encoder_preset=set(PRESETS), vbv_frames=set(VBV_FRAMES), capture=set(CAPTURES))
+                       encoder_preset=set(PRESETS), vbv_frames=set(VBV_FRAMES), capture=set(CAPTURES),
+                       assume_model={'', *BY_NAME})
         for field in fields(cls):
             value = saved.get(field.name)
             if isinstance(getattr(settings, field.name), bool):

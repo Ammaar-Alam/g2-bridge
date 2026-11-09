@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 from goggles_bridge import mac_capture
 from goggles_bridge.app_config import find_ffmpeg
 from goggles_bridge.engine import BITRATES_MBPS, PRESETS, VBV_FRAMES
+from goggles_bridge.models import BY_NAME
 from goggles_bridge.usb_transport import DEFAULT_DLL, USB_WRITE_SIZES
 
 MAC = sys.platform == 'darwin'
@@ -93,6 +94,11 @@ def main():
                         help='Release complete encoded frames immediately and remove H.264 filler data (default: on)')
     parser.add_argument('--usb-write-size', type=int, choices=USB_WRITE_SIZES, default=16384,
                         help='Maximum bytes per USB write (default: 16384)')
+    parser.add_argument('--assume-model', choices=sorted(BY_NAME),
+                        help='Experimental: profile for goggles whose identity matches no known code, '
+                             'for example "DJI FPV Goggles V2"')
+    parser.add_argument('--control-type', type=int, default=28,
+                        help='Experimental: DUML device type for heartbeat, identity and simulator mode (default: 28)')
     parser.add_argument('--seconds', type=float, default=0, help='Duration in seconds, including reconnects (0 runs until stopped)')
     parser.add_argument('--no-reconnect', action='store_true', help='Exit on USB or heartbeat loss')
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
@@ -138,7 +144,8 @@ def main():
             print(f"Skipped a {row['bytes']/1024:.0f} KB frame: the goggles accept at most {row['limit']/1024:.0f} KB per frame. "
                   'Lower --bitrate-mbps or --vbv-frames.', flush=True)
         elif event == 'ready':
-            print(f"Found {row['model']} ({row['identity']})", flush=True)
+            print(f"Found {row['model']} ({row['identity']}), {row['resolution']}"
+                  + ('' if row.get('tested', True) else ' - this model is untested'), flush=True)
         elif event in ('connected', 'stopped'):
             print(event.capitalize(), flush=True)
 
@@ -147,7 +154,8 @@ def main():
             capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
             show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
             low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile,
-            vbv_frames=args.vbv_frames, adaptive_quant=args.aq)
+            vbv_frames=args.vbv_frames, adaptive_quant=args.aq, assume_model=args.assume_model,
+            control_type=args.control_type)
         print('Checking screen capture...', flush=True)
         problem = check_encoder(settings)
         if problem:

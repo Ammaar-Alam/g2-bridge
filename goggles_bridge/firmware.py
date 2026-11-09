@@ -17,9 +17,9 @@ IMAH_SIGNATURE = 384
 MAX_MANIFEST = 65536
 
 
-def manifest_request(sequence, offset, *, sender=(10, 1), length=CHUNK_REQUEST):
+def manifest_request(sequence, offset, *, sender=(10, 1), length=CHUNK_REQUEST, receiver=MANIFEST_RECEIVER):
     payload = b'\x01' + struct.pack('<II', offset, length)
-    return V1Packet(0x00, 0x4f, sender[0], sender[1], *MANIFEST_RECEIVER, 0, 2, sequence, payload)
+    return V1Packet(0x00, 0x4f, sender[0], sender[1], receiver[0], receiver[1], 0, 2, sequence, payload)
 
 
 def parse_chunk(payload):
@@ -77,8 +77,9 @@ class ManifestReader:
     The caller supplies sequence numbers from the shared allocator, sends what
     poll() returns, and passes every parsed reply to receive().
     """
-    def __init__(self, *, sender=(10, 1), timeout=.6, attempts=3):
+    def __init__(self, *, sender=(10, 1), timeout=.6, attempts=3, receiver=MANIFEST_RECEIVER):
         self.sender = sender
+        self.receiver = tuple(receiver)
         self.timeout = timeout
         self.attempts = attempts
         self.data = bytearray()
@@ -104,7 +105,7 @@ class ManifestReader:
                 return []
             self.pending = (packet, now, tries + 1)
             return [packet]
-        packet = manifest_request(next_sequence(), len(self.data), sender=self.sender)
+        packet = manifest_request(next_sequence(), len(self.data), sender=self.sender, receiver=self.receiver)
         self.pending = (packet, now, 1)
         return [packet]
 

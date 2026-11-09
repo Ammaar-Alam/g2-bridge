@@ -14,6 +14,7 @@ from .annexb import AccessUnitStream, strip_aud
 from .avi import AviPacketStream
 from .control import V1Stream
 from .mac_capture import helper_path
+from .models import BY_NAME, GOGGLES_2
 from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
 from .usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
@@ -53,12 +54,20 @@ class BridgeSettings:
     # NVENC spatial and temporal adaptive quantization (Windows only). It costs no
     # measurable encode time and scores higher on detailed scenes at the same bitrate.
     adaptive_quant: bool = True
+    # Treat goggles whose identity matches no known code as this model (see models.py).
+    assume_model: str = None
+    # DUML device type that answers heartbeats, identity and simulator mode. 28 on Goggles 2.
+    control_type: int = 28
 
     def __post_init__(self):
         if type(self.low_latency) is not bool:
             raise ValueError('low_latency must be a boolean')
         if type(self.adaptive_quant) is not bool:
             raise ValueError('adaptive_quant must be a boolean')
+        if self.assume_model is not None and self.assume_model not in BY_NAME:
+            raise ValueError(f'Unknown model {self.assume_model!r}. Known: {", ".join(BY_NAME)}')
+        if type(self.control_type) is not int or not 0 <= self.control_type < 32:
+            raise ValueError('control_type must be a DUML device type from 0 to 31')
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
         for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', BITRATES_MBPS),
@@ -78,9 +87,14 @@ class BridgeSettings:
             raise ValueError('Display index must be a nonnegative integer')
 
 
-def encoder_command(settings):
+def encoder_command(settings, size=(1920, 1080)):
+    """Build the capture-and-encode command for a picture of the given size."""
+    width, height = size
     bitrate = settings.bitrate_mbps * 1_000_000
     if settings.capture == 'screencapturekit':
+        if (width, height) != (1920, 1080):
+            raise ValueError('The ScreenCaptureKit helper encodes 1920x1080 only; use --capture avfoundation '
+                             f'for a {width}x{height} model')
         command = [str(helper_path()), '--display', str(settings.display_index), '--fps', str(settings.fps),
                    '--capture-fps', str(settings.capture_fps), '--bitrate', str(bitrate),
                    '--keyframe-seconds', str(settings.keyframe_seconds), '--profile', settings.h264_profile,
@@ -88,18 +102,18 @@ def encoder_command(settings):
         return command + ([] if settings.show_cursor else ['--hide-cursor'])
     command = [str(Path(settings.ffmpeg).resolve()), '-hide_banner', '-nostdin', '-loglevel', 'info']
     if settings.capture == 'avfoundation':
-        return command + _mac_encoder_args(settings, bitrate)
+        return command + _mac_encoder_args(settings, bitrate, width, height)
     if settings.capture == 'gfxcapture':
         source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
-                  ':width=1920:height=1080:resize_mode=scale_aspect:scale_mode=bicubic'
+                  f':width={width}:height={height}:resize_mode=scale_aspect:scale_mode=bicubic'
                   f':capture_cursor={int(settings.show_cursor)}')
         command += ['-f', 'lavfi', '-i', source, '-r', str(settings.fps), '-fps_mode', 'cfr']
     else:
         source = (f'ddagrab=output_idx={settings.display_index}:framerate={settings.fps}'
                   f':draw_mouse={int(settings.show_cursor)}')
         command += ['-f', 'lavfi', '-i', source, '-vf',
-                    'hwdownload,format=bgra,scale=1920:1080:force_original_aspect_ratio=decrease:flags=fast_bilinear,'
-                    'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=nv12']
+                    f'hwdownload,format=bgra,scale={width}:{height}:force_original_aspect_ratio=decrease:flags=fast_bilinear,'
+                    f'pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,format=nv12']
     command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
                 '-b:v', str(bitrate), '-maxrate', str(bitrate),
                 '-bufsize', str(min(bitrate*settings.vbv_frames//settings.fps, MAX_VBV_BITS))]
@@ -115,15 +129,15 @@ def encoder_command(settings):
     return command
 
 
-def _mac_encoder_args(settings, bitrate):
-    # Scale Retina captures on the GPU, then pad to the 1920x1080 the goggles expect
-    wide = 'gte(iw/ih,16/9)'
+def _mac_encoder_args(settings, bitrate, width=1920, height=1080):
+    # Scale Retina captures on the GPU, then pad to the picture size the goggles expect
+    wide = f'gte(iw/ih,{width}/{height})'
     args = ['-init_hw_device', 'videotoolbox=vt', '-filter_hw_device', 'vt',
             '-f', 'avfoundation', '-capture_cursor', str(int(settings.show_cursor)),
             '-framerate', str(settings.capture_fps), '-pixel_format', 'nv12',
             '-i', f'Capture screen {settings.display_index}:none', '-r', str(settings.fps), '-fps_mode', 'cfr',
-            '-vf', f"hwupload,scale_vt=w='if({wide},1920,-2)':h='if({wide},-2,1080)',hwdownload,format=nv12,"
-                   'pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
+            '-vf', f"hwupload,scale_vt=w='if({wide},{width},-2)':h='if({wide},-2,{height})',hwdownload,format=nv12,"
+                   f'pad={width}:{height}:(ow-iw)/2:(oh-ih)/2',
             # low_delay enables low-latency rate control, which rejects plain baseline
             '-an', '-c:v', 'h264_videotoolbox', '-realtime', '1', '-prio_speed', '1', '-flags', '+low_delay',
             '-b:v', str(bitrate), '-maxrate', str(bitrate),
@@ -208,6 +222,10 @@ class BridgeEngine:
         self.log = None
         self.waiting = None
 
+    def default_profile(self):
+        """The model assumed before the goggles identify themselves."""
+        return BY_NAME[self.settings.assume_model] if self.settings.assume_model else GOGGLES_2
+
     def stopping(self):
         return (self.stop_event.is_set() or (self.stop_file is not None and self.stop_file.exists())
                 or (self.duration > 0 and time.perf_counter()-self.started >= self.duration))
@@ -224,7 +242,7 @@ class BridgeEngine:
         with self.log_path.open('x', encoding='utf-8') as self.log:
             self.emit('starting', fps=self.settings.fps, bitrate_mbps=self.settings.bitrate_mbps,
                       capture=self.settings.capture, capture_fps=self.settings.capture_fps,
-                      resolution='1920x1080', preset=self.settings.preset,
+                      resolution=self.default_profile().size, preset=self.settings.preset,
                       keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
                       low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
                       h264_profile=self.settings.h264_profile, vbv_frames=self.settings.vbv_frames,
@@ -255,9 +273,9 @@ class BridgeEngine:
         incoming = queue.Queue(maxsize=256)
         frames = queue.Queue(maxsize=1 if self.settings.low_latency else 3)
         errors = queue.Queue()
-        session = ControlSession()
+        session = ControlSession(assume_model=self.settings.assume_model, control_type=self.settings.control_type)
         decoder = V1Stream()
-        packetizer = PcVideoPacketizer()
+        packetizer = None
         process = None
         threads = []
         frame_count = byte_count = previous_frames = oversize_count = largest_frame = 0
@@ -320,8 +338,12 @@ class BridgeEngine:
                         send_control(packet)
                     if session.state == 'ready' and process is None:
                         self.waiting = None
-                        self.emit('ready', model=session.model, identity=session.identity)
-                        process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
+                        profile = session.profile or self.default_profile()
+                        packetizer = PcVideoPacketizer(receiver=profile.video)
+                        self.emit('ready', model=session.model, identity=session.identity,
+                                  resolution=profile.size, tested=profile.tested)
+                        process = self.process_factory(encoder_command(self.settings, (profile.width, profile.height)),
+                            stdout=subprocess.PIPE,
                             stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0,
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
                         last_frame = time.perf_counter()
