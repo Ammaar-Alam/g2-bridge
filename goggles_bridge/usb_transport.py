@@ -1,9 +1,10 @@
-"""Access the Goggles 2 USB interface on Windows or macOS.
+"""Access the goggles' PC USB interface on Windows, macOS, or Linux.
 
 Windows uses DJI's x64 driver 5.0.0.7. The backend checks the DLL hash before
 using its device structure layout. Installing the driver places
 libusb0_device.dll in System32. macOS binds no driver to the vendor interface,
-so libusb-1.0 claims it directly.
+so libusb-1.0 claims it directly. Linux also uses libusb-1.0, and the udev
+rule in scripts/linux/60-dji-goggles.rules gives the user access to the device.
 """
 import ctypes as C
 import hashlib
@@ -26,6 +27,11 @@ class DeviceNotFoundError(UsbTransportError):
 
 class LinkSpeedError(UsbTransportError):
     """The USB link is full-speed (12 Mbps), which is too slow for video."""
+
+
+LINUX_UDEV_HINT = ('Install the udev rule: sudo cp scripts/linux/60-dji-goggles.rules /etc/udev/rules.d/ '
+                   '&& sudo udevadm control --reload && sudo udevadm trigger. Over SSH, '
+                   'also join the plugdev group')
 
 
 def _select_control_device(devices):
@@ -88,12 +94,23 @@ def _windows_backend(dll_path):
     return Backend()
 
 
-def _mac_backend():
+def _libusb1_backend(install_hint):
     import usb.backend.libusb1 as libusb
     backend = libusb.get_backend()
     if backend is None:
-        raise RuntimeError('Cannot load libusb. Run "brew install libusb"')
+        raise RuntimeError(f'Cannot load libusb. {install_hint}')
     return backend
+
+
+def get_backend(dll_path=None):
+    """Return the PyUSB backend for this platform."""
+    if sys.platform == 'win32':
+        return _windows_backend(dll_path)
+    if sys.platform == 'darwin':
+        return _libusb1_backend('Run "brew install libusb"')
+    if sys.platform.startswith('linux'):
+        return _libusb1_backend('Install libusb-1.0, for example "sudo apt install libusb-1.0-0"')
+    raise RuntimeError('Goggles USB access requires Windows, macOS, or Linux')
 
 
 class ControlUsb:
@@ -101,12 +118,7 @@ class ControlUsb:
         if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {write_size}')
         self.write_size = write_size
-        if sys.platform == 'win32':
-            backend = _windows_backend(dll_path)
-        elif sys.platform == 'darwin':
-            backend = _mac_backend()
-        else:
-            raise RuntimeError('Goggles USB access requires Windows or macOS')
+        backend = get_backend(dll_path)
         import usb.core
         import usb.util
         self.core = usb.core
@@ -118,10 +130,14 @@ class ControlUsb:
             raise UsbTransportError(str(exc)) from exc
         self.closed = False
         try:
+            if sys.platform.startswith('linux') and self.device.is_kernel_driver_active(4):
+                self.device.detach_kernel_driver(4)
             self.util.claim_interface(self.device, 4)
         except usb.core.USBError as exc:
             self.util.dispose_resources(self.device)
             self.closed = True
+            if sys.platform.startswith('linux') and exc.errno == 13:
+                raise UsbTransportError(f'{exc}. {LINUX_UDEV_HINT}') from exc
             raise UsbTransportError(str(exc)) from exc
 
     def read(self, timeout_ms=100):
