@@ -78,9 +78,9 @@ Unless stated otherwise, tests used 1920x1080, a 100 fps target, 20 Mbps constan
 
 Each comparison decoded 600 frames. The motion source was `testsrc2` with a gray rectangle. The desktop source was a compressed 300-frame capture repeated twice, with a scene discontinuity at frame 300. Its images are not published.
 
-Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images:
+Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images. The historical table below averages each frame's PSNR in decibels. This differs from whole-sequence PSNR, which averages pixel error before converting it to decibels. Use whole-sequence PSNR and per-frame error when comparing periodic quality dips.
 
-| Mode | Motion SSIM / PSNR | Desktop SSIM / PSNR | Finding |
+| Mode | Motion SSIM / mean per-frame PSNR | Desktop SSIM / mean per-frame PSNR | Finding |
 | --- | --- | --- | --- |
 | Baseline/p4 | 0.994244 / 44.047 dB | 0.999513 / 63.048 dB | Reference |
 | High/p4 | 0.995240 / 44.999 dB | 0.999590 / 63.663 dB | Higher scores on both sources. Desktop size fell from 3,563,921 to 2,963,206 bytes (16.86% less) |

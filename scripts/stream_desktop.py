@@ -70,7 +70,8 @@ def main():
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
-    parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24), default=20)
+    parser.add_argument('--bitrate-mbps', type=int, choices=(8, 10, 12, 16, 20, 24, 32),
+                        help='Video bitrate (default: 20 Mbps, or 32 with the clear preset)')
     parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),
                         default=MAC_CAPTURE if MAC else 'gfxcapture',
                         help='Windows: Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling. '
@@ -78,7 +79,8 @@ def main():
     parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate, in fps')
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
-    parser.add_argument('--preset', choices=('p1', 'p4'), default='p4', help='NVENC preset (Windows only)')
+    parser.add_argument('--preset', choices=('p1', 'p4', 'clear'), default='p4',
+                        help='Windows: p1 or p4 NVENC preset, or the experimental clear quality preset at 1080p100')
     parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='high',
                         help='H.264 profile (default: high)')
     parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
@@ -91,6 +93,10 @@ def main():
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='Path for a new JSON Lines log (default: a unique file in work/logs)')
     args = parser.parse_args()
+    if MAC and args.preset == 'clear':
+        parser.error('The clear preset is Windows only')
+    if args.bitrate_mbps is None:
+        args.bitrate_mbps = 32 if args.preset == 'clear' else 20
     if args.stop_file and args.stop_file.exists():
         parser.error('--stop-file already exists; use a new path or remove the old stop marker')
     if args.python_deps:

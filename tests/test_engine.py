@@ -241,6 +241,26 @@ class EngineTests(unittest.TestCase):
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
         self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
+    def test_clear_preset_keeps_buffer_small_and_avoids_periodic_idr(self):
+        settings = self.settings(preset='clear', bitrate_mbps=32)
+        command = encoder_command(settings)
+        for flag, expected in (('-preset', 'p1'), ('-b:v', '32000000'), ('-maxrate', '32000000'),
+                               ('-bufsize', '400000'), ('-bf', '0'), ('-delay', '0'), ('-r', '100'),
+                               ('-multipass', 'qres'), ('-intra-refresh', '1'),
+                               ('-single-slice-intra-refresh', '1')):
+            self.assertEqual(command[command.index(flag)+1], expected)
+        self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
+        for changes in (dict(fps=90), dict(bitrate_mbps=20), dict(capture='screencapturekit'),
+                        dict(capture='ddagrab'), dict(h264_profile='baseline'),
+                        dict(low_latency=False), dict(keyframe_seconds=1)):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                replace(settings, **changes)
+        stop = threading.Event()
+        events, _ = self.run_case(lambda _: FakeUsb(stop), stop, settings=settings)
+        self.assertTrue(events[0]['intra_refresh'])
+        self.assertEqual(events[0]['multipass'], 'qres')
+        self.assertEqual(events[0]['bitrate_mbps'], 32)
+
     def test_screencapturekit_helper_gets_stream_settings(self):
         command = encoder_command(BridgeSettings(None, None, capture='screencapturekit', display_index=1,
                                                  show_cursor=False, low_latency=False))

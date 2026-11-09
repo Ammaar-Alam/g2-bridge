@@ -40,8 +40,8 @@ class BridgeSettings:
             raise ValueError('low_latency must be a boolean')
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
-        for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24)),
-                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4')),
+        for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24, 32)),
+                              ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4', 'clear')),
                               ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
@@ -49,10 +49,16 @@ class BridgeSettings:
             raise ValueError('Capture ceiling must be between output fps and 1000')
         if type(self.display_index) is not int or self.display_index < 0:
             raise ValueError('Display index must be a nonnegative integer')
+        if self.preset == 'clear' and (self.capture != 'gfxcapture' or self.fps != 100
+                or self.bitrate_mbps != 32 or self.h264_profile != 'high' or not self.low_latency
+                or self.keyframe_seconds != 3):
+            raise ValueError('The clear preset requires gfxcapture, 100 fps, 32 Mbps, High profile, '
+                             'low-latency framing, and a 3-second recovery interval')
 
 
 def encoder_command(settings):
     bitrate = settings.bitrate_mbps * 1_000_000
+    clear = settings.preset == 'clear'
     if settings.capture == 'screencapturekit':
         command = [str(helper_path()), '--display', str(settings.display_index), '--fps', str(settings.fps),
                    '--capture-fps', str(settings.capture_fps), '--bitrate', str(bitrate),
@@ -73,11 +79,13 @@ def encoder_command(settings):
         command += ['-f', 'lavfi', '-i', source, '-vf',
                     'hwdownload,format=bgra,scale=1920:1080:force_original_aspect_ratio=decrease:flags=fast_bilinear,'
                     'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=nv12']
-    command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
-                '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
+    command += ['-an', '-c:v', 'h264_nvenc', '-preset', 'p1' if clear else settings.preset, '-tune', 'ull', '-rc', 'cbr',
+                '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(400000 if clear else bitrate*2//settings.fps),
                 '-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
                 '-profile:v', settings.h264_profile, '-level:v', '4.2' if settings.fps == 60 else '5.1',
                 '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
+    if clear:
+        command += ['-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
     if settings.low_latency:
         command += ['-bsf:v', 'filter_units=remove_types=12', '-thread_queue_size', '1', '-f', 'avi', 'pipe:1']
     else:
@@ -196,7 +204,9 @@ class BridgeEngine:
                       resolution='1920x1080', preset=self.settings.preset,
                       keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
                       low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
-                      h264_profile=self.settings.h264_profile)
+                      h264_profile=self.settings.h264_profile,
+                      intra_refresh=self.settings.preset == 'clear',
+                      multipass='qres' if self.settings.preset == 'clear' else 'disabled')
             try:
                 attempt = 0
                 while not self.stopping():

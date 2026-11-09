@@ -74,7 +74,7 @@ Use these options to adjust the stream:
 | Option | Values |
 | --- | --- |
 | `--fps` | `60`, `75`, `90`, `100` |
-| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24` |
+| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`, `32` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
 | `--capture` | Windows: `gfxcapture` or `ddagrab`. macOS: `screencapturekit` or `avfoundation` |
@@ -85,6 +85,12 @@ For example, use `python scripts/stream_desktop.py --fps 90` to target 90 fps.
 These values set the stream rate, not the goggles' panel refresh rate. Lower
 rates provide more bits per frame at the same bitrate, but increase the time
 between frames. The 100 fps target has the shortest frame interval.
+
+On Windows, `python scripts/stream_desktop.py --preset clear` selects the
+experimental 1080p100 quality preset at 32 Mbps. It reduces compression damage
+and periodic blur in synthetic tests. Goggles compatibility and added display
+delay still need a matched hardware comparison. The default remains `p4`.
+See the [quality measurements and reproduction steps](docs/research/WINDOWS_QUALITY.md).
 
 ## Run tests
 

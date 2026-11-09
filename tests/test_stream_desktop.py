@@ -42,5 +42,28 @@ class MacSetupTests(unittest.TestCase):
         prompt.assert_not_called()
 
 
+class WindowsQualityTests(unittest.TestCase):
+    def test_clear_preset_resolves_bitrate_and_rejects_conflicting_override(self):
+        for options, bitrate, code in (([], 20, 0), (['--preset', 'clear'], 32, 0),
+                (['--preset', 'clear', '--bitrate-mbps', '20'], None, 1)):
+            with self.subTest(options=options), patch.object(stream_desktop, 'MAC', False), \
+                    patch.object(Path, 'is_file', return_value=True), \
+                    patch.object(stream_desktop.sys, 'argv', ['stream_desktop', '--dll', 'driver.dll',
+                                                           '--ffmpeg', 'ffmpeg.exe', *options]), \
+                    patch('goggles_bridge.engine.check_encoder', return_value=None) as check, \
+                    patch('goggles_bridge.engine.BridgeEngine') as engine, \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(stream_desktop.main(), code)
+                if bitrate is None:
+                    check.assert_not_called()
+                    engine.assert_not_called()
+                else:
+                    settings = engine.call_args.args[0]
+                    self.assertEqual(settings.bitrate_mbps, bitrate)
+                    self.assertEqual(settings.preset, 'clear' if options else 'p4')
+                    check.assert_called_once_with(settings)
+                    engine.return_value.run.assert_called_once()
+
+
 if __name__ == '__main__':
     unittest.main()
