@@ -78,9 +78,9 @@ Unless stated otherwise, tests used 1920x1080, a 100 fps target, 20 Mbps constan
 
 Each comparison decoded 600 frames. The motion source was `testsrc2` with a gray rectangle. The desktop source was a compressed 300-frame capture repeated twice, with a scene discontinuity at frame 300. Its images are not published.
 
-Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images:
+Structural similarity (SSIM) and peak signal-to-noise ratio (PSNR) measure fidelity to the reference images. This table averages each frame's PSNR in decibels. Whole-sequence PSNR instead averages squared pixel error before converting it to decibels. To compare periodic quality dips, use whole-sequence PSNR and per-frame error:
 
-| Mode | Motion SSIM / PSNR | Desktop SSIM / PSNR | Finding |
+| Mode | Motion SSIM / mean per-frame PSNR | Desktop SSIM / mean per-frame PSNR | Finding |
 | --- | --- | --- | --- |
 | Baseline/p4 | 0.994244 / 44.047 dB | 0.999513 / 63.048 dB | Reference |
 | High/p4 | 0.995240 / 44.999 dB | 0.999590 / 63.663 dB | Higher scores on both sources. Desktop size fell from 3,563,921 to 2,963,206 bytes (16.86% less) |
@@ -245,6 +245,8 @@ A 30-second 40 Mbps stream of the same source sent 2,962 frames at a steady 100 
 
 The goggles' receive and decode time for a larger frame, and monitor-to-lens delay at 40 Mbps, weren't measured. The receiver's exact limit lies between 49 KB, which displayed, and about 65 KB, which froze.
 
-On Windows, the bridge in this repository caps the encoder buffer at 56 KB, skips any frame over 56 KB, and then skips frames until the next keyframe that fits, because later frames reference the skipped one. In CBR, every frame averages the bitrate divided by the frame rate. The bridge refuses settings whose average frame is larger than 50 KB, which is the 40 Mbps at 100 fps case that displayed. It allows at most 24 Mbps at 60 fps, and 30 Mbps at 75 or 90 fps. The macOS encoders have no cap verified on the goggles, so macOS capture keeps the earlier 24 Mbps maximum, and its frames are never skipped.
+On Windows, the bridge caps the encoder buffer at 56 KB and rejects pictures larger than 56 KB before transmission. After an oversized picture, it discards queued dependent pictures and restarts the encoder to obtain a fresh IDR. The USB session remains open. Repeated oversized pictures stop the stream with an error.
+
+The average encoded-frame budget equals the bitrate divided by the frame rate. The bridge rejects settings whose average exceeds 50 KB, matching the 40 Mbps at 100 fps case that displayed. It allows at most 24 Mbps at 60 fps, 30 Mbps at 75 fps, and 32 Mbps at 90 fps. The macOS encoders have no cap verified on the goggles, so macOS capture retains its 24 Mbps maximum and does not skip oversized frames. For the Windows defaults and recovery checks, see [Windows encoding quality](WINDOWS_QUALITY.md).
 
 In the tester's offline comparison on a zooming Mandelbrot source, adaptive quantization raised SSIM at 20 Mbps from 0.9705 to 0.9764. NVENC preset `p7` scored the same as `p4` and encoded 40% slower. These scores measure fidelity to the source, not quality or delay on the goggles. The effect of adaptive quantization on monitor-to-lens delay is untested, so `--aq` is off by default.

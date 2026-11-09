@@ -198,7 +198,8 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings())
         source = command[command.index('-i')+1]
         self.assertIn('scale_aspect', source)
-        self.assertNotIn('-vf', command)
+        self.assertNotIn('hwdownload', command[command.index('-vf')+1])
+        self.assertIn('strip_fps=1', command[command.index('-vf')+1])
         for key, value in (('-r','100'), ('-level:v','5.1'), ('-bf','0'), ('-aud','1'), ('-bufsize','400000')):
             self.assertEqual(command[command.index(key)+1], value)
         command = encoder_command(self.settings(fps=60, capture='ddagrab'))
@@ -246,6 +247,36 @@ class EngineTests(unittest.TestCase):
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
         self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
+    def test_windows_default_keeps_buffer_small_and_avoids_periodic_idr(self):
+        settings = self.settings()
+        command = encoder_command(settings)
+        for flag, expected in (('-preset', 'p1'), ('-b:v', '32000000'), ('-maxrate', '32000000'),
+                               ('-bufsize', '400000'), ('-bf', '0'), ('-delay', '0'), ('-r', '100'),
+                               ('-multipass', 'qres'), ('-intra-refresh', '1'),
+                               ('-single-slice-intra-refresh', '1')):
+            self.assertEqual(command[command.index(flag)+1], expected)
+        self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
+        for capture in ('gfxcapture', 'ddagrab'):
+            for fps in (60, 75, 90, 100):
+                for bitrate in (8, 20, 24, 32):
+                    with self.subTest(capture=capture, fps=fps, bitrate=bitrate):
+                        if bitrate*1_000_000 > fps*8*50_000:
+                            with self.assertRaises(ValueError):
+                                self.settings(capture=capture, fps=fps, bitrate_mbps=bitrate)
+                            continue
+                        command = encoder_command(self.settings(capture=capture, fps=fps, bitrate_mbps=bitrate))
+                        self.assertEqual(command[command.index('-bufsize')+1], str(min(min(bitrate, 20)*2_000_000//fps, MAX_VBV_BITS)))
+                        self.assertEqual(command[command.index('-intra-refresh')+1], '1')
+        for capture in ('avfoundation', 'screencapturekit'):
+            settings_mac = self.settings(capture=capture)
+            self.assertEqual(settings_mac.bitrate_mbps, 20)
+            self.assertNotIn('-intra-refresh', encoder_command(settings_mac))
+        stop = threading.Event()
+        events, _ = self.run_case(lambda _: FakeUsb(stop), stop, settings=settings)
+        self.assertTrue(events[0]['intra_refresh'])
+        self.assertEqual(events[0]['multipass'], 'qres')
+        self.assertEqual(events[0]['bitrate_mbps'], 32)
+
     def test_screencapturekit_helper_gets_stream_settings(self):
         command = encoder_command(BridgeSettings(None, None, capture='screencapturekit', display_index=1,
                                                  show_cursor=False, low_latency=False))
@@ -259,7 +290,7 @@ class EngineTests(unittest.TestCase):
 
     def test_low_latency_only_changes_local_framing_and_padding(self):
         command = encoder_command(self.settings(low_latency=True))
-        for key, value in (('-r','100'), ('-b:v','20000000'), ('-preset','p4'), ('-bf','0'),
+        for key, value in (('-r','100'), ('-b:v','32000000'), ('-preset','p1'), ('-bf','0'),
                            ('-bufsize','400000'), ('-bsf:v','filter_units=remove_types=12'),
                            ('-thread_queue_size','1')):
             self.assertEqual(command[command.index(key)+1], value)
@@ -285,7 +316,7 @@ class EngineTests(unittest.TestCase):
                 self.assertEqual(command[command.index('-bufsize')+1], str(MAX_VBV_BITS))
         with self.assertRaisesRegex(ValueError, 'At 60 fps, use at most 24 Mbps'):
             self.settings(fps=60, bitrate_mbps=30)
-        with self.assertRaisesRegex(ValueError, 'At 90 fps, use at most 30 Mbps'):
+        with self.assertRaisesRegex(ValueError, 'At 90 fps, use at most 32 Mbps'):
             self.settings(fps=90, bitrate_mbps=40)
         self.settings(fps=100, bitrate_mbps=40)
         for capture in ('avfoundation', 'screencapturekit'):
@@ -303,7 +334,7 @@ class EngineTests(unittest.TestCase):
             with self.subTest(**bad), self.assertRaises(ValueError):
                 self.settings(**bad)
 
-    def test_oversize_frame_is_skipped_until_a_keyframe_fits(self):
+    def test_oversize_frame_restarts_only_the_windows_encoder(self):
         idr, inter = AUD + b'\0\0\0\1\x65', AUD + b'\0\0\0\1\x41'
         packets = [idr + bytes(MAX_FRAME_BYTES), inter + b'lost', idr + b'next']
         # The guard covers only the verified NVENC cap, so macOS frames are sent unchanged
@@ -311,8 +342,10 @@ class EngineTests(unittest.TestCase):
             with self.subTest(capture=capture):
                 stop = threading.Event()
                 usb = FakeUsb(stop)
+                encoders = iter([FakeEncoder(framed=True, packets=packets),
+                                 FakeEncoder(framed=True, packets=[idr+b'next'])])
                 events, _ = self.run_case(lambda _: usb, stop, settings=self.settings(capture=capture),
-                                          encoder_factory=lambda: FakeEncoder(framed=True, packets=packets))
+                                          encoder_factory=lambda: next(encoders))
                 self.assertEqual(b'next' in usb.video[0].payload, capture == 'gfxcapture')
                 self.assertFalse(any(b'lost' in packet.payload for packet in usb.video))
                 dropped = [e for e in events if e['event'] == 'oversize_frame']

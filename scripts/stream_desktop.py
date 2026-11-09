@@ -71,7 +71,8 @@ def main():
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100,
                         help='Target encoder frame rate (default: 100)')
-    parser.add_argument('--bitrate-mbps', type=int, choices=BITRATES_MBPS, default=20)
+    parser.add_argument('--bitrate-mbps', type=int, choices=BITRATES_MBPS,
+                        help='Video bitrate (Windows default: 24 at 60 fps, 30 at 75 fps, otherwise 32; macOS: 20 Mbps)')
     parser.add_argument('--aq', action='store_true',
                         help='Turn on NVENC adaptive quantization (Windows only)')
     parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),
@@ -81,7 +82,8 @@ def main():
     parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate, in fps')
     parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', action='store_true')
-    parser.add_argument('--preset', choices=('p1', 'p4'), default='p4', help='NVENC preset (Windows only)')
+    parser.add_argument('--preset', choices=('p1', 'p4'), default='p1',
+                        help='Windows NVENC preset (default: p1)')
     parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='high',
                         help='H.264 profile (default: high)')
     parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
@@ -126,15 +128,17 @@ def main():
         if event == 'waiting':
             print(f"Waiting / reconnecting: {row['message']}", flush=True)
         elif event == 'streaming':
-            print(f'Streaming 1920x1080 at target {args.fps} fps, {args.bitrate_mbps} Mbps. Ctrl+C stops.', flush=True)
+            print(f'Streaming 1920x1080 at target {settings.fps} fps, {settings.bitrate_mbps} Mbps. Ctrl+C stops.', flush=True)
         elif event == 'stats':
             print(f"Sent {row['fps']:.1f} fps | queue p95 {row['queue_ms_p95']:.1f} ms | send p95 {row['send_ms_p95']:.1f} ms"
                   f" | largest frame {row['frame_bytes_max']/1000:.0f} KB", flush=True)
         elif event == 'oversize_frame':
             print(f"Skipped a {row['bytes']/1000:.0f} KB frame, over the {row['limit']/1000:.0f} KB limit. "
-                  'Video resumes at the next keyframe. If this repeats, lower --bitrate-mbps.', flush=True)
+                  'If this repeats, lower --bitrate-mbps.', flush=True)
         elif event == 'ready':
             print(f"Found {row['model']} ({row['identity']})", flush=True)
+        elif event == 'encoder_restart':
+            print('Restarting video after an oversized frame.', flush=True)
         elif event in ('connected', 'stopped'):
             print(event.capitalize(), flush=True)
 

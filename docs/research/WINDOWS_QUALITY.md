@@ -1,0 +1,218 @@
+# Windows encoding quality
+
+These tests compare the original Windows encoder with the quality and pacing
+changes. The quality configuration improves decoded synthetic images and
+reduces median host delay on the tested PC. The headset comparison did not
+establish a noticeable improvement. Panel cadence and optical latency remain
+unverified.
+
+The frame-size safeguards from [PR #18](https://github.com/Ammaar-Alam/g2-bridge/pull/18)
+apply to Windows encoding. Defaults adapt to the selected frame rate, and an
+oversized picture triggers an encoder restart without reopening USB.
+
+## Encoder changes
+
+At 100 fps, the quality configuration uses NVENC High profile, the `p1` preset, 32 Mbps
+constant bitrate (CBR), quarter-resolution two-pass rate
+control, and single-slice gradual intra refresh. Output stays at 1920x1080 and
+100 fps, with a 400,000-bit video buffering verifier (VBV) buffer, no B frames,
+zero output delay, and
+immediate AVI frame delivery. The default recovery interval is three seconds.
+The same encoding settings apply to Desktop Duplication. Windows selects
+24 Mbps at 60 fps, 30 Mbps at 75 fps, and 32 Mbps at 90 or 100 fps.
+The buffer cannot exceed 448,000 bits or two frames of the previous 20 Mbps budget.
+macOS encoding remains unchanged.
+
+Gradual refresh replaces the recurring instantaneous decoder refresh (IDR)
+pictures that blurred text in the decoded comparison. The first picture is
+an IDR. The buffer setting is not a guaranteed maximum picture size.
+Before transmission, the bridge rejects Windows pictures larger than 56,000 bytes.
+It stops the encoder, discards queued dependent pictures, and starts an encoder
+that supplies a fresh IDR. The USB session and packet sequence remain intact.
+Three oversize events with less than five seconds between successive events
+stop the stream with an error instead of restarting indefinitely.
+
+Both inspected streams declare three reference frames, three decoded-picture
+buffers, zero reordered frames, and a picture-timing output delay of two ticks.
+Their sequence parameter set (SPS) timing declares 100 fps. These fields do not
+measure receiver delay.
+
+## Image quality
+
+Tests used an RTX 5060 Laptop GPU, driver 610.74, and FFmpeg `0893feba65`.
+Each configuration encoded the same deterministic reference. Peak signal-to-noise
+ratio (PSNR) and structural similarity (SSIM) measure fidelity to that reference.
+Whole-sequence PSNR comes from FFmpeg's final summary, which accumulates mean
+squared pixel error before conversion to decibels. It is not the arithmetic
+mean of per-frame PSNR.
+The following table compares the original `p4` configuration at 20 Mbps with
+the `p1` quality configuration at 32 Mbps:
+
+| Source | Frames per configuration | P4 PSNR | P1 PSNR | P4 SSIM | P1 SSIM |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Moving test pattern | 1,800 | 45.017 dB | 49.354 dB | 0.995329 | 0.997853 |
+| Static text | 1,800 | 43.542 dB | 51.596 dB | 0.999043 | 0.999753 |
+| Moving pattern with abrupt changes | 1,800 | 44.825 dB | 49.055 dB | 0.995369 | 0.997825 |
+| Fine-detail fractal zoom | 600 | 35.600 dB | 38.391 dB | 0.977695 | 0.986324 |
+
+The abrupt-change source inverts colors at frame 211 of each 347-frame cycle,
+then restores them at the next cycle boundary. These transitions do not align
+with the three-second recovery
+interval. All output frames decoded at 1080p with no B frames.
+
+At frame 300, text SSIM rises from 0.938979 to 0.999635. This crop compares
+decoded pixels at that frame. The image labels identify each configuration:
+
+![The original Windows stream blurs fine text at a periodic keyframe. The quality configuration retains sharp text in the same frame.](../images/windows-quality-pulse.png)
+
+The largest pictures across these four sources were 55,649 bytes for the
+original settings and 42,643 bytes for the quality configuration. Sustained
+motion traffic increases. The
+moving-texture capture test produced approximately 20.9 versus 32.8 Mbps,
+including DUML framing. Smaller observed peak pictures do not eliminate the
+extra transmission cost of larger ordinary pictures.
+
+An additional 600-frame comparison at every supported rate improved both
+sequence PSNR and mean SSIM for motion, text, and abrupt changes.
+The baseline uses `p4` at 20 Mbps. The quality configuration uses the defaults
+for each rate, and both encoders use the same buffer cap:
+
+| Rate | Motion PSNR, P4 to P1 | Text PSNR, P4 to P1 | Abrupt changes PSNR, P4 to P1 |
+| --- | --- | --- | --- |
+| 60 fps | 47.644 to 51.726 dB | 41.678 to 48.559 dB | 47.517 to 51.449 dB |
+| 75 fps | 47.523 to 51.639 dB | 41.740 to 48.553 dB | 47.320 to 51.417 dB |
+| 90 fps | 46.039 to 50.296 dB | 41.285 to 48.021 dB | 45.797 to 50.112 dB |
+| 100 fps | 44.988 to 49.290 dB | 41.919 to 47.138 dB | 44.801 to 49.026 dB |
+
+These clips differ in duration across rates, so compare configurations within
+each row. Individual motion pictures can be larger with the quality configuration.
+The 100 fps motion and text encodes match all 600 pictures from the previously
+measured candidate byte for byte.
+
+At 60 and 75 fps, the fine-detail source also improved, from 37.932 to 39.753 dB
+and from 36.961 to 39.856 dB, respectively. All 4,800 pictures from the quality
+configuration across these eight comparisons fit the 56,000-byte limit.
+The largest was 51,371 bytes.
+
+These scores measure encoder output before the transmission guard. The baseline
+text encodes produced pictures of 60,525 and 59,137 bytes despite the buffer cap.
+The guard would reject those pictures. Neither the buffer setting nor these
+finite tests guarantee that every possible source fits the limit.
+
+## Host timing
+
+These runs measured the encoder changes before the capture-pacing change
+described in [Recovery after capture stalls](#recovery-after-capture-stalls).
+
+Two runs per configuration captured the monitor region occupied by an owned
+D3D11 test window. The window rendered a moving seeded texture and a timestamp
+protected by a checksum. Each run contained 1,800
+frames. The first 100 were excluded. The loaded condition added an offscreen graphics
+workload. The table gives the range of the two runs' statistics, not confidence
+intervals:
+
+| Condition | P4 median | P1 median | P4 p95 | P1 p95 |
+| --- | --- | --- | --- | --- |
+| Moving texture | 9.119-9.186 ms | 7.968-7.988 ms | 9.782-9.937 ms | 8.694-8.724 ms |
+| Moving texture with GPU contention | 11.249-11.405 ms | 10.586-10.692 ms | 17.067-18.864 ms | 18.076-18.160 ms |
+
+Both configurations delivered approximately 100 encoded packets/s. Under contention,
+the P1 median was lower, but the p95 ranges overlapped and source duplicates
+remained. The synthetic graphics workload completed 237.9-239.9 frames/s with
+the previous settings and 235.6-237.4 with the new settings. Source rendering was 181.7-187.5 versus
+181.7-182.0 frames/s. These results do not measure simulator performance.
+
+Timing ends when a complete encoded packet reaches the host reader. It excludes
+USB transmission and receiver behavior and does not prove unchanged or reduced
+optical latency.
+
+The normal bridge and packetizer also carried 900 frames per configuration through a
+simulated USB endpoint. Both streams fully decoded. Checks covered packet checksums,
+frame reconstruction, encoder shutdown, and the actual logged configuration.
+The quality configuration also passed 600-frame bridge and decoding checks
+at each of 60, 75, 90, and 100 fps, including SPS timing and clean shutdown.
+After integration with the frame-size safeguards, all 14,400 reference pictures
+from the paired quality checks reproduced byte for byte. All 7,200 pictures
+from the quality configuration fit the transmission limit.
+
+Encoder recovery tests cover mid-stream and startup oversize events, repeated
+failures, encoder startup failure, cancellation, forced termination, and pipe closure.
+A real NVENC test injects an oversized picture at frame 50. The bridge restarts
+only the encoder and sends 200 pictures through one simulated USB session.
+All 200 pictures decode at 1080p and match the expected reference pictures byte for byte.
+This test does not measure goggles recovery or optical delay.
+
+## Recovery after capture stalls
+
+Graphics Capture can skip timestamps while its consumer is blocked. FFmpeg's
+constant-frame-rate conversion fills that gap with copies of older pictures.
+The Windows Graphics Capture path selects at most one raw frame per target
+time slot and assigns consecutive encoder timestamps. It adds no frame buffer
+and does not discard encoded H.264 reference pictures.
+
+The selection allows half an input timestamp tick for rounding. The `setpts` filter
+also clears the previous frame-duration metadata, which would otherwise cause
+an initial duplicate for a source slower than the encoder target. For details, see the
+[FFmpeg select and setpts reference](https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect).
+The encoder declares the requested rate. Actual delivery can be lower
+when capture is slower or interrupted.
+
+A deterministic check covers 72 cases: four target rates, three source rates,
+and gaps of 0, 20, or 200 ms, before and after the change. For a source matching
+the target rate, a 200 ms gap previously generated 12, 15, 18, or 20 duplicate
+frames at 60, 75, 90, or 100 fps. The filter generates none and preserves every
+source frame when the source rate does not exceed the target. An isolated
+pacing-filter comparison preserved all 4,800 encoded motion and text pictures
+byte for byte, with the encoder settings held fixed.
+
+Direct-window Graphics Capture tests used an owned D3D11 moving texture and
+timestamps protected by checksums. Each run encoded 900 frames with a 100-frame warmup
+and blocked the encoded-output reader for 200 ms after picture 350. Recovery
+means the first of five consecutive valid pictures under 20 ms old after the
+reader resumes. Runs alternated between the original pacing and the filter
+in an A-B-B-A order. The table gives the ranges for two runs per configuration:
+
+| Target | Original pacing recovery | Filter recovery |
+| --- | --- | --- |
+| 60 fps | 17.3-18.4 ms | 12.6-15.1 ms |
+| 75 fps | 22.7-24.6 ms | 12.3-12.7 ms |
+| 90 fps | 27.5-28.1 ms | 13.1-13.7 ms |
+| 100 fps | 34.2-35.4 ms | 13.5-16.4 ms |
+
+At 100 fps, the next 100 pictures contained 92-93 distinct timestamps before
+the change and 100 after it. Normal-delay ranges overlapped. This is a recovery
+improvement, not a demonstrated reduction in steady latency. A separate 50 ms
+stall comparison showed no consistent improvement. These are direct-window
+host measurements. They exclude USB transmission and the goggles' display path.
+
+Reproduce the frame-ID checks without screen capture, a GPU, or USB:
+
+```powershell
+python tools/research/check_frame_pacing.py --output work/frame-pacing.json
+```
+
+Use `--ffmpeg` to select the executable. The results file records the
+commands, binary hash, frame counts, and duplicate counts for every case.
+
+## Reproduce the quality comparison
+
+The [comparison tool](../../tools/research/compare_quality.py) uses the actual
+bridge encoder command for the quality configuration. Its baseline uses `p4`
+at 20 Mbps with the same buffer cap, without the pacing filter, gradual refresh,
+or multipass encoding.
+It never opens USB or captures the desktop. FFmpeg needs NVENC support.
+The text source needs Windows Consolas. To compare the synthetic sources, run:
+
+```powershell
+python tools/research/compare_quality.py --output work/quality-comparison --frames 1800 --sources motion text cuts
+python tools/research/compare_quality.py --output work/detail-comparison --frames 600 --sources detail
+```
+
+Use `--ffmpeg` if the executable is not on PATH. Choose a new output directory
+for each run. The tool saves its commands, FFmpeg hash, encoded clips, metrics
+logs, and per-frame results. A null PSNR value denotes a lossless frame or
+sequence. The `lossless_frames` field identifies those frames explicitly.
+
+Use `--fps 60`, `--fps 75`, or `--fps 90` to compare another supported frame rate.
+Hardware comparisons need the same simulator workload and the
+[optical measurement method](../LATENCY.md).

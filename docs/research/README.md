@@ -15,6 +15,7 @@ The following pages describe the protocol and how to reproduce the analysis:
 | [Artifacts](ARTIFACTS.md) | Download sources, versions, hashes, and analysis tools |
 | [Native analysis](NATIVE_ANALYSIS.md) | ARM addresses, Windows relative virtual addresses, and USB driver functions |
 | [Experiments](EXPERIMENTS.md) | Transport tests, host timings, and encoder quality measurements |
+| [Windows encoding quality](WINDOWS_QUALITY.md) | Default encoding, quality metrics, host timing, and reproduction |
 | [Reproduction](REPRODUCE.md) | Emulation, Ghidra scripts, packet fixtures, and benchmarks |
 | [Stereo and head tracking](STEREO.md) | Separate views for each eye, head orientation over USB, and SteamVR |
 | [Goggles 3 probe](GOGGLES3.md) | Goggles 3 USB details and results, a step-by-step hardware probe, and Android OTG role tests |
@@ -35,4 +36,4 @@ The repository includes these records:
 
 The [analysis tools](../../tools/research) include ARM emulation harnesses and Ghidra scripts. They require separately acquired vendor binaries. APKs, executables, firmware, decompiled vendor code, personal desktop recordings, device serials, and signed download URLs are excluded.
 
-The analysis covers Virtual Flight applications, native libraries, and PC USB traffic. Goggles firmware and decoder code were not recovered. Panel frame rate and screen-to-lens latency remain unmeasured.
+The analysis covers Virtual Flight applications, native libraries, and PC USB traffic. Goggles firmware and decoder code were not recovered. Panel frame rate remains unmeasured; see the [monitor-to-lens measurements](../LATENCY.md) for optical timing results.

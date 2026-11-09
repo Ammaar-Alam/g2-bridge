@@ -67,14 +67,14 @@ The stream script offers to install whatever is missing. Tests used an M2 Pro Ma
 
    On a Mac, the script offers to install anything that's missing, and it builds the screen capture helper on the first run. If the screen can't be captured, go to **System Settings > Privacy & Security** and allow screen recording for your terminal.
 
-The default output is **1920x1080**, with a **100 fps encoder target** and a **20 Mbps** bitrate. Press **Ctrl+C** to stop. Logs are written to `work/logs/`.
+The default output is **1920x1080** at a **100 fps encoder target**. Windows uses **32 Mbps**, or automatically selects **24 Mbps at 60 fps** and **30 Mbps at 75 fps**. macOS uses **20 Mbps**. To stop streaming, press **Ctrl+C**. The bridge writes logs to `work/logs/`.
 
 Use these options to adjust the stream:
 
 | Option | Values |
 | --- | --- |
 | `--fps` | `60`, `75`, `90`, `100` |
-| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`. On Windows, also `30` and `40` |
+| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`. On Windows, also `30`, `32`, and `40` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
 | `--capture` | Windows: `gfxcapture` or `ddagrab`. macOS: `screencapturekit` or `avfoundation` |
@@ -85,6 +85,9 @@ For example, use `python scripts/stream_desktop.py --fps 90` to target 90 fps.
 These values set the stream rate, not the goggles' panel refresh rate. Lower
 rates provide more bits per frame at the same bitrate, but increase the time
 between frames. The 100 fps target has the shortest frame interval.
+
+Windows encoding uses gradual refresh to reduce periodic compression blur.
+For details, see the [quality measurements and reproduction steps](docs/research/WINDOWS_QUALITY.md).
 
 ## Run tests
 
