@@ -3,7 +3,7 @@ import hashlib
 import struct
 from unicorn import UC_HOOK_CODE
 from unicorn.arm_const import *
-from research_common import EXIT, EXPECTED, load_binary_args, load_elf, write_report
+from research_common import EMULATOR, EXIT, EXPECTED, load_binary_args, load_elf, write_report
 
 START, END = 0x049f0128, 0x049f0128 + 1276
 
@@ -72,6 +72,6 @@ if __name__ == '__main__':
     for n in [1,65404,65405,130809]:
         raw=bytes(i%256 for i in range(n))
         cases.append(dict(length=n,milliseconds=1794000000123,initial_chunk_id=0xfffffffe,packets=run(binary,raw,1794000000123)))
-    result=dict(binary_sha256=EXPECTED,function_elf_va=hex(START),emulator='Unicorn 2.1.4',
+    result=dict(binary_sha256=EXPECTED,function_elf_va=hex(START),emulator=EMULATOR,
         hooks='allocator, controlled clock, signed division, bounded memcpy, intercepted SendV2Packet; retained synthetic shared reference',cases=cases)
     write_report(args,result)

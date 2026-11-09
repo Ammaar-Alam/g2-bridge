@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from goggles_bridge.engine import BridgeSettings, encoder_command
+from goggles_bridge.engine import NO_WINDOW, BridgeSettings, encoder_command
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
                         '-video_size', '16x16', '-framerate', str(source_fps), '-i', 'pipe:0',
                         '-vf', graph, '-r', str(fps), '-fps_mode', 'cfr', '-f', 'rawvideo', 'pipe:1']
                     result = subprocess.run(command, input=raw, capture_output=True, check=True, timeout=15,
-                                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                                            creationflags=NO_WINDOW)
                     assert len(result.stdout)%256 == 0
                     ids = [sum((value>128)<<bit for bit,value in enumerate(result.stdout[i:i+16]))
                            for i in range(0, len(result.stdout), 256)]

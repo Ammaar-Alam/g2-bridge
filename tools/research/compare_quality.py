@@ -17,16 +17,15 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from goggles_bridge.annexb import strip_aud
 from goggles_bridge.avi import AviPacketStream
-from goggles_bridge.engine import BridgeSettings, encoder_command
+from goggles_bridge.engine import NO_WINDOW, BridgeSettings, encoder_command
 
 
 def run(command, log, folder):
     with log.open('x', encoding='utf-8') as stream:
         subprocess.run(command, cwd=folder, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                        stderr=stream, check=True, timeout=180,
-                       creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                       creationflags=NO_WINDOW)
 
 
 def comparison_command(ffmpeg, preset, fps=100):
@@ -52,7 +51,7 @@ def measure(ffmpeg, folder, scene, source, preset, frames, fps=100):
     packets = reader.feed(video.read_bytes())
     reader.finish()
     assert len(packets) == frames, (label, len(packets), frames)
-    sizes = [len(strip_aud(packet)) for packet in packets]
+    sizes = [len(packet) for packet in packets]
     ffprobe = ffmpeg.with_name('ffprobe'+ffmpeg.suffix)
     probe = subprocess.run([str(ffprobe), '-v', 'error', '-count_frames', '-show_entries',
         'stream=width,height,has_b_frames,nb_read_frames', '-of', 'json', str(video)],

@@ -13,7 +13,7 @@ import time
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 from goggles_bridge.avi import AviPacketStream
-from goggles_bridge.annexb import AccessUnitStream, strip_aud
+from goggles_bridge.annexb import AccessUnitStream
 
 
 class RawPayloadTap:
@@ -86,7 +86,7 @@ def run(ffmpeg, base, label, source):
                 capture.write(data)
                 for packet in avi.feed(data):
                     immediate.append(read_at)
-                    frame_hashes.append(hashlib.sha256(strip_aud(packet)).hexdigest())
+                    frame_hashes.append(hashlib.sha256(packet).hexdigest())
                 for piece in tap.feed(data):
                     for frame in raw.feed(piece):
                         delayed.append(read_at)

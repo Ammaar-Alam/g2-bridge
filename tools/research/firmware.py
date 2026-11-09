@@ -18,8 +18,8 @@ IMAH_SIGNATURE = 384
 MAX_MANIFEST = 65536
 
 
-def manifest_request(sequence, offset, *, length=CHUNK_REQUEST):
-    payload = b'\x01' + struct.pack('<II', offset, length)
+def manifest_request(sequence, offset):
+    payload = b'\x01' + struct.pack('<II', offset, CHUNK_REQUEST)
     return V1Packet(*GET_CFG_FILE, *PC, *MANIFEST_RECEIVER, 0, 2, sequence, payload)
 
 
@@ -41,7 +41,6 @@ class Manifest:
     device: str = None
     firmware: str = None
     modules: list = field(default_factory=list)
-    xml: str = ''
 
     def as_dict(self):
         return dict(device=self.device, firmware=self.firmware, modules=self.modules)
@@ -58,7 +57,7 @@ def parse_manifest(container):
     xml = container[IMAH_HEADER+IMAH_SIGNATURE:].rstrip(b'\0').decode('utf-8', errors='replace')
     if '<' not in xml:
         raise ValueError('Manifest payload is not plain XML; it may be encrypted on this firmware')
-    manifest = Manifest(xml=xml)
+    manifest = Manifest()
     device = re.search(r'<device\b[^>]*\bid="([^"]+)"', xml)
     firmware = re.search(r'<firmware\b[^>]*\bformal="([^"]+)"', xml)
     if firmware is None:

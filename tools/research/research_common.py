@@ -4,10 +4,12 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import unicorn
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_SP
 
 EXPECTED = 'c75d099fa9b7a4962909171808857a51c4ef88a02f21e9ae40c1e05924c66df7'
+EMULATOR = f'Unicorn {unicorn.__version__}'
 EXIT = 0x30000000
 
 def load_binary_args(filename):
@@ -106,7 +108,7 @@ def serializer_report(binary, start, end, payload_offset, pack_object, cases):
         packet, calls = serialize(binary, start, end, pack_object(fields), payload_offset, payload)
         results.append(dict(name=name, fields=fields, payload_hex=(payload or b'').hex(),
                             packet_hex=packet.hex(), hooks=calls))
-    return dict(binary_sha256=EXPECTED, function_elf_va=hex(start), emulator='Unicorn 2.1.4',
+    return dict(binary_sha256=EXPECTED, function_elf_va=hex(start), emulator=EMULATOR,
                 limit='memory-only; 3M instructions / 5 seconds per case', cases=results)
 
 def write_report(args,result):

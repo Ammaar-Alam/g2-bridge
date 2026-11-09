@@ -187,6 +187,15 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(usb.closed)
         self.assertFalse(usb.video)
 
+    def test_failed_handshake_leaves_no_encoder_log(self):
+        stop = threading.Event()
+        with tempfile.TemporaryDirectory() as folder:
+            engine = BridgeEngine(self.settings(), Path(folder)/'run.jsonl', stop_event=stop,
+                                  transport_factory=lambda _: FakeUsb(stop, wrong_model=True))
+            with self.assertRaises(SessionError):
+                engine.run()
+            self.assertEqual([path.name for path in Path(folder).iterdir()], ['run.jsonl'])
+
     def test_encoder_eof_is_fatal_and_releases_usb(self):
         stop = threading.Event()
         usb = FakeUsb(stop)

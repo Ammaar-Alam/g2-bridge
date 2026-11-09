@@ -13,7 +13,7 @@ import sys
 import threading
 import time
 
-from .annexb import AccessUnitStream, is_idr, strip_aud
+from .annexb import AccessUnitStream, is_idr
 from .avi import AviPacketStream
 from .control import V1Stream
 from .mac_capture import helper_path
@@ -294,7 +294,7 @@ class BridgeEngine:
         queue_times, send_times = [], []
         last_frame = last_progress = time.perf_counter()
         encoder_path = self.log_path.with_name(f'{self.log_path.stem}.encoder-{attempt}.log')
-        with self.transport_factory(self.settings.dll) as usb, encoder_path.open('x', encoding='utf-8') as encoder_log:
+        with self.transport_factory(self.settings.dll) as usb:
             self.emit('connected', attempt=attempt)
 
             def read_usb():
@@ -314,8 +314,7 @@ class BridgeEngine:
                         data = encoder.stdout.read(16384)
                         if not data:
                             raise RuntimeError(f'Capture ended. See {encoder_path}')
-                        for packet in splitter.feed(data):
-                            frame = strip_aud(packet) if self.settings.low_latency else packet
+                        for frame in splitter.feed(data):
                             completed_at = time.perf_counter()
                             while not local_stop.is_set() and not encoder_stop.is_set():
                                 try:
@@ -350,8 +349,10 @@ class BridgeEngine:
             def start_encoder():
                 nonlocal process, encoder_thread, encoder_first_frame, last_frame
                 encoder_stop.clear()
-                process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
-                    stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0, creationflags=NO_WINDOW)
+                # restarts append to the session's log, and the encoder keeps its own handle
+                with encoder_path.open('a', encoding='utf-8') as encoder_log:
+                    process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
+                        stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0, creationflags=NO_WINDOW)
                 last_frame = time.perf_counter()
                 encoder_first_frame = True
                 encoder_thread = threading.Thread(target=read_encoder, args=(process,), daemon=True)

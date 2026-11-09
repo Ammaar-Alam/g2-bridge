@@ -82,7 +82,8 @@ def main():
         parser.error('--ffmpeg file not found')
     if args.python_deps:
         sys.path.insert(0, str(args.python_deps.resolve()))
-    settings = BridgeSettings(args.dll, args.ffmpeg, fps=60)
+    # probe_command swaps the gfxcapture input; the ddagrab filters need GPU frames
+    settings = BridgeSettings(args.dll, args.ffmpeg, fps=60, capture='gfxcapture')
     command = probe_command(settings, args.layout, args.stereo_sei)
     log_path = args.log or Path(__file__).resolve().parents[2] / 'work' / 'logs' / (
         f'stereo-{args.layout}-{datetime.now():%Y%m%d-%H%M%S}.jsonl')
