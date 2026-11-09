@@ -147,6 +147,20 @@ Over the PC-side USB connection, the V2 accepts the control commands on its V1-o
 
 Logs of every run are in the owner's `work/probe/`; they contain the identity line and no serial numbers.
 
+## Picking this up
+
+Stock firmware offers no PC-side video input, so the bridge stops here. These are the starting points for anyone continuing.
+
+**Do not repeat.** On firmware 01.07.0000, in O3, FPV and Air Unit modes: V1 and V2 video frames over the COM port to 14/1, 28/1 and 14/0, from the PC's and the app's sender address, at 30 and 5 fps; bulk interface 3 with the DJI DLL, libusb-1.0 and libusb-win32 before and after simulator mode; the RNDIS service ports; DUML type 14 as a control route. None displayed a picture or accepted V2 frames.
+
+**What the receiver expects**, from the app: DUML V2 frames (header `55 18 08`), command `0b/53`, ACK 3, sender type 2 ID 0 index `0101`, receiver type 14 ID 1 index `0701`, no LogicLink wrapper, chunks of at most 65,404 encoded bytes behind the 32-byte metadata in [the mobile protocol](MOBILE_PROTOCOL.md), carrying 1440x810 H.264 with codec configuration ahead of keyframes. Control stays V1: heartbeat `00/00` to 28/0, identity `00/ff` to 28/1, simulator mode `0b/1a` to 28/0 with `01 01 00 00`. `goggles_bridge/protocol.py` already builds the Pigeon frames (`VideoPacketizer('pigeon')`), and `tools/research/probe_goggles.py --video-format v2` sends them.
+
+**Route 1, accessory emulation.** The phone path works because the goggles are the USB host and the phone enumerates as an Android Open Accessory with manufacturer `DJI` and model `com.dji.logiclink`. A Linux board with a USB device-capable port (Raspberry Pi 4 or 5, or a Linux PC with a dual-role USB-C controller) can present that accessory with the kernel's USB gadget framework and FunctionFS, then run this bridge's packetizer over the accessory's bulk endpoints. The [voc-poc input discussion](https://github.com/fpv-wtf/voc-poc/issues/15) reported a Pi prototype of this kind. Expect to confirm the accessory strings and version with a USB capture of a real phone session first.
+
+**Route 2, modified firmware.** [WTFOS](https://github.com/fpv-wtf/wtfos) roots V1 and V2, and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) already receives a PC stream on rooted goggles over USB bulk or RNDIS, at a reported 7 to 14 ms. For most people this is the practical answer today.
+
+The developer of a commercial video-out product for DJI goggles has also stated that models other than Goggles 2 and Integra need modified firmware for video input, which matches these findings.
+
 ## Report
 
 Please share the identity line, the firmware manifest output if it was read, the `work/probe/*.jsonl` logs (they contain no serials), and which steps showed a picture. Open an issue or a pull request; the next change is adding the identity code to `models.py`.

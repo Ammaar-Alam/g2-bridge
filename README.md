@@ -8,13 +8,21 @@ The bridge detects the model when it connects:
 | --- | --- | --- |
 | DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.14.00.00 |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
-| DJI FPV Goggles V2 | `WM170 PIGEON` (O3 mode) | control works over its COM port on 01.07.00.00; no PC-side video path found. See [the V2 notes](docs/research/GOGGLES_V2.md) |
-
-Goggles 3 and the FPV Goggles V1 have profiles too, both untested. For rooted FPV Goggles V1 and V2, [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) is an existing alternative.
+| DJI FPV Goggles V2 | `WM170 PIGEON` | detected, control works; **no video on stock firmware**. See [other goggles](#other-goggles) |
 
 Goggles 2 owners should update to firmware 01.14 or later: it fixes a number of bugs since 01.11, and the bridge is tested on it.
 
 We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
+
+## Other goggles
+
+**FPV Goggles V2 and V1.** The bridge can't put video on them, and it isn't a matter of more experiments. On a PC the V2 exposes its control channel as a USB serial port that understands only DUML V1, while the Virtual Flight app delivers video to these goggles as DUML V2 frames over the Android-accessory link, where the goggles are the USB host. The PC can run the whole handshake, including simulator mode, and the lenses go dark waiting for video that can't arrive on any interface a PC can reach. Every PC-side channel was tried on firmware 01.07 and every mode the goggles have; the results, with sources, are in [the V2 notes](docs/research/GOGGLES_V2.md). The developer of a commercial goggles video-out product has reached the same conclusion for models other than Goggles 2 and Integra: they need modified firmware.
+
+Anyone who wants to pick this up has two routes, and this repository is the launch pad for either: a Linux device with USB gadget support acting as the accessory (the exact packet framing, addresses and a working packetizer are here), or root through [WTFOS](https://github.com/fpv-wtf/wtfos) with [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim), which already streams a PC to rooted V1 and V2. The notes list what not to repeat.
+
+**Goggles 3.** Probed on one unit; the Goggles 2 route reaches no video input. See [the Goggles 3 notes](docs/research/GOGGLES3.md).
+
+The bridge itself stays PC-only by design: no extra hardware between the computer and the goggles, so anything the PC can show, the goggles can show.
 
 ## Windows app
 
