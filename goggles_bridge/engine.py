@@ -28,13 +28,26 @@ NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 WINGET_LINKS = Path(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WinGet', 'Links')
 CHOICES = dict(fps=(60, 75, 90, 100), bitrate_mbps=(8, 10, 12, 16, 20, 24, 30, 32, 40),
                capture=('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit'), preset=('p1', 'p4'),
+               encoder=('nvenc', 'amf'),
                keyframe_seconds=(1, 3), h264_profile=('baseline', 'high'), usb_write_size=USB_WRITE_SIZES)
 # Goggles 2 displayed frames up to 49 KB, but keyframes of about 65 KB froze it or left it
 # black until a power cycle. The encoder buffer is capped at this size, and larger frames aren't sent
 MAX_FRAME_BYTES = 56_000
 MAX_VBV_BITS = MAX_FRAME_BYTES * 8
+# AMF single-pass CBR can overshoot VBV on the initial IDR frame, so use a tighter VBV cap
+MAX_AMF_VBV_BITS = 160_000
 # Largest tested average frame, 40 Mbps at 100 fps
 MAX_AVERAGE_FRAME_BYTES = 50_000
+
+
+def default_windows_encoder(system_root=None):
+    """Detect the default Windows hardware H.264 encoder ('nvenc' or 'amf')."""
+    sys32 = Path(system_root or os.environ.get('SystemRoot', r'C:\Windows'), 'System32')
+    if (sys32 / 'nvEncodeAPI64.dll').is_file():
+        return 'nvenc'
+    if (sys32 / 'amfrt64.dll').is_file():
+        return 'amf'
+    return 'nvenc'
 
 
 def find_program(name):
@@ -58,6 +71,7 @@ class BridgeSettings:
     h264_profile: str = 'high'
     # NVENC spatial and temporal adaptive quantization, off until its goggles latency is measured
     adaptive_quant: bool = False
+    encoder: str = 'nvenc'
 
     @property
     def nvenc(self):
@@ -138,7 +152,8 @@ def encoder_command(settings, frames=0):
                       f"st(0,max(ld(0)+1/{settings.fps},pts*TB));1,0))',"
                       # Compact capture gaps so CFR does not replay stale pictures to catch up
                       f'setpts=N/({settings.fps}*TB):strip_fps=1')
-            command += ['-f', 'lavfi', '-i', source, '-vf', pacing,
+            vf = f'hwdownload,format=bgra,format=nv12,{pacing}' if settings.encoder == 'amf' else pacing
+            command += ['-f', 'lavfi', '-i', source, '-vf', vf,
                         '-r', str(settings.fps), '-fps_mode', 'cfr']
         else:
             source = (f'ddagrab=output_idx={settings.display_index}:framerate={settings.fps}'
@@ -146,12 +161,28 @@ def encoder_command(settings, frames=0):
             command += ['-f', 'lavfi', '-i', source, '-vf',
                         f'hwdownload,format=bgra,scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease:'
                         f'flags=fast_bilinear,pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2,format=nv12']
-        command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
-                    '-zerolatency', '1', '-delay', '0', '-profile:v', settings.h264_profile, *rate,
-                    '-aud', '1', '-forced-idr', '1',
-                    '-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
-        if settings.adaptive_quant:
-            command += ['-spatial-aq', '1', '-temporal-aq', '1']
+        if settings.encoder == 'amf':
+            gop = str(settings.fps * settings.keyframe_seconds)
+            bufsize = str(min(bitrate * 2 // settings.fps, MAX_AMF_VBV_BITS))
+            profile = 'constrained_baseline' if settings.h264_profile == 'baseline' else 'high'
+            quality = 'speed' if settings.preset == 'p1' else 'balanced'
+            level = '4.2' if settings.fps == 60 else '5.1'
+            command += ['-an', '-c:v', 'h264_amf', '-usage', 'transcoding', '-latency', '1',
+                        '-quality', quality, '-rc', 'cbr', '-b:v', str(bitrate), '-maxrate', str(bitrate),
+                        '-bufsize', bufsize, '-max_au_size', bufsize, '-preencode', '1', '-qmin', '29',
+                        '-enforce_hrd', '1', '-filler_data', '0', '-async_depth', '1']
+            if settings.adaptive_quant:
+                command += ['-vbaq', '1']
+            command += ['-bf', '0', '-g', gop, '-header_spacing', gop,
+                        '-profile:v', profile, '-level', level,
+                        '-aud', '1', '-forced_idr', '1', '-flush_packets', '1']
+        else:
+            command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
+                        '-zerolatency', '1', '-delay', '0', '-profile:v', settings.h264_profile, *rate,
+                        '-aud', '1', '-forced-idr', '1',
+                        '-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
+            if settings.adaptive_quant:
+                command += ['-spatial-aq', '1', '-temporal-aq', '1']
         if settings.low_latency:
             command += ['-bsf:v', 'filter_units=remove_types=12']
     if settings.low_latency:
@@ -181,9 +212,10 @@ def check_encoder(settings, run=subprocess.run):
     if 'Filter not found' in result.stderr:
         return (f'This FFmpeg build has no {settings.capture} capture. '
                 'Update it with "winget upgrade Gyan.FFmpeg", or try --capture ddagrab')
+    vendor = 'AMD AMF' if settings.encoder == 'amf' else 'NVIDIA'
     if 'Encoder not found' in result.stderr:
-        return 'This FFmpeg build has no NVIDIA encoder. Install it with "winget install Gyan.FFmpeg"'
-    return f'FFmpeg test encode failed. Check the NVIDIA driver and --display index.\n  {details}'
+        return f'This FFmpeg build has no {vendor} encoder. Install it with "winget install Gyan.FFmpeg"'
+    return f'FFmpeg test encode failed. Check the {vendor} driver and --display index.\n  {details}'
 
 
 def prioritize_gpu(process):
