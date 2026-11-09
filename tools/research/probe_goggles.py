@@ -38,6 +38,7 @@ import json
 from pathlib import Path
 import sys
 import time
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -45,9 +46,10 @@ from goggles_bridge import models
 from goggles_bridge.control import V1Packet, V1Stream
 from goggles_bridge.firmware import ManifestReader
 from goggles_bridge.pc_video import PcVideoPacketizer
-from goggles_bridge.protocol import VideoPacketizer
+from goggles_bridge.protocol import Address, VideoPacketizer, VideoProfile
 from goggles_bridge.session import ControlSession, SessionError, MODELS, EXPERIMENTAL_MODELS
 from goggles_bridge.usb_transport import DEFAULT_DLL, select_control_link
+from goggles_bridge.serial_transport import ControlSerial, list_dji_ports
 
 TEST_FRAMES = {
     (1920, 1080): (ROOT / 'docs/research/evidence/synthetic-frame.h264',
@@ -58,7 +60,7 @@ TEST_FRAMES = {
 # Mobile-app V2 profiles by model name; the PC route is V1 by default
 NATIVE_PROFILES = {'DJI Goggles 2': 'zv900', 'DJI Goggles Integra': 'zv900', 'DJI Goggles 3': 'zv900',
                    'DJI FPV Goggles V2': 'pigeon', 'DJI FPV Goggles V1': 'pigeon'}
-TEST_VIDEO_FPS = 30
+TEST_VIDEO_FPS = 30  # default; --test-fps overrides
 SCAN_WAIT = .6
 SCAN_SKIP_SIMULATOR = {3, 5}  # CPLD and upgrade modules
 DEFAULT_SCAN_TYPES = (28, 14)
@@ -232,13 +234,17 @@ def report_firmware(log, reader):
 
 class VideoSender:
     """Packetize the test picture the way the bridge does (v1) or the mobile app does (v2)."""
-    def __init__(self, profile, video_format, session):
+    def __init__(self, profile, video_format, session, receiver=None, sender=None):
         self.video_format = video_format
         self.session = session
+        receiver = receiver or profile.video
         if video_format == 'v1':
-            self.packetizer = PcVideoPacketizer(receiver=profile.video)
+            self.packetizer = PcVideoPacketizer(receiver=receiver, sender=sender or (10, 1))
         else:
             self.packetizer = VideoPacketizer(NATIVE_PROFILES[profile.name])
+            native = self.packetizer.profile
+            self.packetizer.profile = VideoProfile(Address(receiver[0], receiver[1], native.receiver.index),
+                                                   native.logiclink)
 
     def wire(self, frame):
         if self.video_format == 'v1':
@@ -262,9 +268,25 @@ def probe_session(log, args):
     frame = None
     started = time.monotonic()
     product_ids = None if args.any_product else models.PRODUCT_IDS
-    with ControlUsb(args.dll, interface=args.interface, product_ids=product_ids) as usb:
-        log('claimed', interface=usb.link.interface, product_id=f'{usb.link.product_id:04x}',
-            endpoint_out=usb.link.endpoint_out, endpoint_in=usb.link.endpoint_in, packet_size=usb.link.packet_size)
+    if args.serial:
+        transport = ControlSerial(None if args.serial == 'auto' else args.serial, product_ids=product_ids)
+    else:
+        dll = args.libusb0_dll if args.usb_backend == 'libusb0' else args.dll
+        transport = ControlUsb(dll, interface=args.interface, product_ids=product_ids, backend=args.usb_backend)
+    video_link = None
+    if args.video_bulk_interface is not None:
+        video_link = ControlUsb(args.libusb0_dll or args.dll, interface=args.video_bulk_interface, product_ids=product_ids,
+                                backend=args.usb_backend if args.usb_backend != 'auto' else 'libusb0')
+        log('video_link', interface=video_link.link.interface, endpoint_out=video_link.link.endpoint_out,
+            endpoint_in=video_link.link.endpoint_in)
+        print(f'  Video goes to bulk interface {video_link.link.interface} (out {video_link.link.endpoint_out:#04x})')
+    with transport as usb:
+        if args.serial:
+            log('claimed', serial_port=usb.port)
+            print(f'  Opened serial port {usb.port}')
+        else:
+            log('claimed', interface=usb.link.interface, product_id=f'{usb.link.product_id:04x}',
+                endpoint_out=usb.link.endpoint_out, endpoint_in=usb.link.endpoint_in, packet_size=usb.link.packet_size)
 
         def send(packet):
             data = packet.serialize()
@@ -298,18 +320,19 @@ def probe_session(log, args):
                         print(f'  Identity: {session.identity} ({session.model}{assumed}, {session.profile.size})')
                         if frame_flag(args):
                             frame, path = test_frame_for(session.profile)
-                            sender = VideoSender(session.profile, args.video_format, session)
+                            sender = VideoSender(session.profile, args.video_format, session, args.video_receiver,
+                                                 args.video_sender)
                             log('test_frame', path=str(path.relative_to(ROOT)), bytes=len(frame),
                                 size=session.profile.size, video_format=args.video_format,
-                                receiver=f'{session.profile.video[0]}/{session.profile.video[1]}')
+                                receiver='/'.join(map(str, args.video_receiver or session.profile.video)))
                         if session.state == 'simulator':
                             print(f'Step 3: sending simulator mode 0b/1a to {args.control_type}/0')
                     elif session.state == 'ready':
                         print('  Simulator mode acknowledged with status 00')
                         if frame is not None:
+                            target = '/'.join(map(str, args.video_receiver or session.profile.video))
                             print(f'Step 4: sending the {session.profile.size} test picture at {TEST_VIDEO_FPS} fps '
-                                  f'as {args.video_format} to {session.profile.video[0]}/{session.profile.video[1]}; '
-                                  'watch the lenses')
+                                  f'as {args.video_format} to {target}; watch the lenses')
                             next_frame = time.monotonic()
                 if firmware and session.state in ('identified', 'simulator', 'ready'):
                     if not firmware.done:
@@ -326,13 +349,18 @@ def probe_session(log, args):
                     print(f'Forced video: sending the {session.profile.size} test picture at {TEST_VIDEO_FPS} fps '
                           f'as {args.video_format} without simulator mode; watch the lenses', flush=True)
                     next_frame = time.monotonic()
+                if video_link is not None:
+                    bulk_in = video_link.read(timeout_ms=1)
+                    if bulk_in:
+                        log('receive_bulk', hex=bulk_in.hex())
+                        result['bulk_in_bytes'] = result.get('bulk_in_bytes', 0) + len(bulk_in)
                 if next_frame is not None and time.monotonic() >= next_frame:
                     wire = sender.wire(frame)
-                    usb.write(wire)
+                    (video_link or usb).write(wire)
                     result['frames_sent'] += 1
-                    if result['frames_sent'] % TEST_VIDEO_FPS == 1:
+                    if result['frames_sent'] % args.test_fps == 1:
                         log('video', frames=result['frames_sent'], bytes=len(wire))
-                    next_frame += 1/TEST_VIDEO_FPS
+                    next_frame += 1/args.test_fps
         except SessionError as exc:
             result['error'] = str(exc)
             print(f'  Session ended: {exc}')
@@ -341,11 +369,23 @@ def probe_session(log, args):
                       discarded_bytes=decoder.discarded)
         if scan:
             result['scan'] = scan.results
+    if video_link is not None:
+        video_link.close()
     return result
 
 
 def frame_flag(args):
     return args.test_video or args.force_video
+
+
+def parse_route(text):
+    try:
+        device_type, device_id = (int(part) for part in text.split('/'))
+    except ValueError:
+        raise argparse.ArgumentTypeError('routes look like TYPE/ID, for example 28/1') from None
+    if not (0 <= device_type < 32 and 0 <= device_id < 8):
+        raise argparse.ArgumentTypeError('TYPE ranges 0-31 and ID 0-7')
+    return (device_type, device_id)
 
 
 def parse_types(text):
@@ -376,21 +416,37 @@ def main():
                         help='DUML device type for heartbeat, identity and simulator mode (default: 28)')
     parser.add_argument('--video-format', choices=('v1', 'v2'), default='v1',
                         help='v1: PC-route V1 packets (default); v2: the mobile app envelope')
+    parser.add_argument('--video-sender', type=parse_route, metavar='TYPE/ID',
+                        help='V1 video sender address instead of the PC (10/1), for example the mobile app 2/0')
+    parser.add_argument('--test-fps', type=int, default=TEST_VIDEO_FPS, help='Test picture rate (default: 30)')
+    parser.add_argument('--video-receiver', type=parse_route, metavar='TYPE/ID',
+                        help='Send video to this DUML address instead of the model profile, for example 28/1')
+    parser.add_argument('--usb-backend', choices=('auto', 'dji', 'libusb1', 'libusb0'), default='auto',
+                        help="USB library: DJI's driver DLL (auto on Windows), libusb-1.0, or libusb-win32's libusb0.dll")
+    parser.add_argument('--libusb0-dll', type=Path, help='64-bit libusb-win32 libusb0.dll for --usb-backend libusb0 '
+                        '(default: the System32 copy)')
+    parser.add_argument('--video-bulk-interface', type=int, metavar='N',
+                        help='Send video on this bulk interface (libusb0 backend) while control stays on --serial')
     parser.add_argument('--interface', type=int, default=4, help='USB interface number to claim (default: 4)')
     parser.add_argument('--any-product', action='store_true', help='Accept any DJI product ID, not only the known ones')
+    parser.add_argument('--serial', nargs='?', const='auto', metavar='PORT',
+                        help="Talk over the goggles' USB virtual COM port instead of a bulk interface "
+                             '(FPV Goggles V2 interface 4). Without PORT, the one DJI COM port is used')
     parser.add_argument('--seconds', type=float, default=15, help='Session length in seconds, from 5 to 300')
     args = parser.parse_args()
     if args.test_video and not args.simulator:
         parser.error('--test-video requires --simulator')
     if args.simulator and (args.scan or args.force_video):
         parser.error('--scan and --force-video replace --simulator; run them without it')
+    if not 1 <= args.test_fps <= 100:
+        parser.error('--test-fps ranges from 1 to 100')
     if not 5 <= args.seconds <= 300:
         parser.error('--seconds must be between 5 and 300')
     if not 0 <= args.control_type < 32:
         parser.error('--control-type ranges from 0 to 31')
     if not 0 <= args.interface < 32:
         parser.error('--interface ranges from 0 to 31')
-    output = args.output or ROOT / 'work' / 'probe' / f'{datetime.now():%Y%m%d-%H%M%S}.jsonl'
+    output = args.output or ROOT / 'work' / 'probe' / f'{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:4]}.jsonl'
     if output.exists():
         parser.error(f'Output already exists: {output}')
     from goggles_bridge.usb_transport import get_backend
@@ -398,7 +454,17 @@ def main():
     exit_code = 1
     try:
         log('starting', platform=sys.platform, args={k: str(v) for k, v in vars(args).items()})
-        devices = probe_descriptors(log, get_backend(args.dll), args)
+        if args.serial:
+            ports = list_dji_ports(None if args.any_product else models.PRODUCT_IDS)
+            for port in ports:
+                log('serial_port', device=port.device, description=port.description, product_id=f'{port.pid:04x}')
+                print(f'Step 1: DJI serial port {port.device}: {port.description} (product {port.pid:04x})')
+            devices = ports or ([args.serial] if args.serial != 'auto' else [])
+            if not devices:
+                print('  No DJI virtual COM port found; close DJI Assistant and check the cable')
+        else:
+            dll = args.libusb0_dll if args.usb_backend == 'libusb0' else args.dll
+            devices = probe_descriptors(log, get_backend(dll, args.usb_backend), args)
         if devices and args.descriptors_only:
             exit_code = 0
         elif devices:

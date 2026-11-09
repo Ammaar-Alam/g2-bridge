@@ -26,9 +26,11 @@ class ModelTableTests(unittest.TestCase):
         self.assertIs(models.match_identity('E3T ZV900 AC Aug 11 2026|07:21:27'), models.GOGGLES_2)
         self.assertIs(models.match_identity('e3t zv901 ac'), models.GOGGLES_INTEGRA)
         self.assertIs(models.match_identity('E3T ZV902 AC'), models.GOGGLES_3)
-        self.assertIsNone(models.match_identity('GL170 something'))
+        self.assertIs(models.match_identity('WM170 PIGEON GLS Mar 21 2023|20:20:34'), models.FPV_GOGGLES_V2)
+        self.assertIsNone(models.match_identity('WM999 UNKNOWN'))
         self.assertEqual(MODELS, {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'})
-        self.assertEqual(EXPERIMENTAL_MODELS, {'ZV902': 'DJI Goggles 3'})
+        self.assertEqual(EXPERIMENTAL_MODELS, {'ZV902': 'DJI Goggles 3', 'PIGEON': 'DJI FPV Goggles V2',
+                                               'GL170': 'DJI FPV Goggles V2'})
 
     def test_v2_profile_follows_the_app(self):
         v2 = models.FPV_GOGGLES_V2
@@ -220,3 +222,35 @@ for _name in list(vars(EngineTests)):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TransportOptionTests(unittest.TestCase):
+    def test_pc_packetizer_sender(self):
+        packet, = PcVideoPacketizer(sender=(2, 0)).packetize(b'abc', lambda: 1, timestamp_ms=0)
+        self.assertEqual((packet.sender_type, packet.sender_id), (2, 0))
+        with self.assertRaises(ValueError):
+            PcVideoPacketizer(sender=(40, 0))
+
+    def test_backend_names_are_validated(self):
+        from goggles_bridge.usb_transport import get_backend
+        with self.assertRaisesRegex(ValueError, 'Unknown USB backend'):
+            get_backend(None, 'winusb')
+
+    def test_serial_port_selection(self):
+        try:
+            import serial  # noqa: F401
+        except ImportError:
+            self.skipTest('pyserial not installed')
+        from unittest import mock
+        from goggles_bridge import serial_transport
+        from goggles_bridge.usb_transport import DeviceNotFoundError
+        ports = [SimpleNamespace(device='COM3', vid=0x041e, pid=0x3271), SimpleNamespace(device='COM10', vid=0x2ca3, pid=0x001f)]
+        with mock.patch('serial.tools.list_ports.comports', return_value=ports):
+            self.assertEqual([p.device for p in serial_transport.list_dji_ports()], ['COM10'])
+            self.assertEqual(serial_transport.find_dji_port(), 'COM10')
+            self.assertEqual(serial_transport.list_dji_ports({0x0020: 'x'}), [])
+            with self.assertRaises(DeviceNotFoundError):
+                serial_transport.find_dji_port({0x0020: 'x'})
+        with mock.patch('serial.tools.list_ports.comports', return_value=ports + [SimpleNamespace(device='COM11', vid=0x2ca3, pid=0x001f)]):
+            with self.assertRaisesRegex(RuntimeError, 'Expected one'):
+                serial_transport.find_dji_port()

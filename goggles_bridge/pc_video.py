@@ -11,16 +11,21 @@ from .protocol import _bytes, _integer
 
 MAX_PC_VIDEO_CHUNK = 1023 - 13 - 32
 DEFAULT_RECEIVER = (28, 1)
+DEFAULT_SENDER = (10, 1)  # The PC
 
 
 class PcVideoPacketizer:
-    def __init__(self, *, chunk_id=0, receiver=DEFAULT_RECEIVER):
+    def __init__(self, *, chunk_id=0, receiver=DEFAULT_RECEIVER, sender=DEFAULT_SENDER):
         _integer(chunk_id, 32, 'chunk_id')
         receiver_type, receiver_id = receiver
         _integer(receiver_type, 5, 'receiver_type')
         _integer(receiver_id, 3, 'receiver_id')
+        sender_type, sender_id = sender
+        _integer(sender_type, 5, 'sender_type')
+        _integer(sender_id, 3, 'sender_id')
         self.chunk_id = chunk_id
         self.receiver = (receiver_type, receiver_id)
+        self.sender = (sender_type, sender_id)
 
     def packetize(self, frame, next_sequence, *, timestamp_ms=None):
         """Yield V1 packets using the control session's next_sequence allocator."""
@@ -36,7 +41,7 @@ class PcVideoPacketizer:
             metadata = struct.pack('<BBBBIqIIB7x', 0, len(frame)>MAX_PC_VIDEO_CHUNK,
                                    offset+len(chunk)==len(frame), 0, self.chunk_id,
                                    timestamp, 32, len(chunk), offset==0)
-            packet = V1Packet(11, 0x53, 10, 1, self.receiver[0], self.receiver[1], 0, 0,
+            packet = V1Packet(11, 0x53, self.sender[0], self.sender[1], self.receiver[0], self.receiver[1], 0, 0,
                               next_sequence(), metadata+chunk)
             self.chunk_id = (self.chunk_id+1)&0xffffffff
             yield packet

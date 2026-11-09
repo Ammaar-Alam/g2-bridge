@@ -33,7 +33,7 @@ GOGGLES_3 = GogglesModel('DJI Goggles 3', ('ZV902',), 1920, 1080)
 # module, DUML type 14 ID 1 (docs/research/MOBILE_PROTOCOL.md). The FPV Goggles V2 panels
 # are 1440x810 and DJI's bulk driver binds to that device's interface 4. Untested; see
 # docs/research/GOGGLES_V2.md.
-FPV_GOGGLES_V2 = GogglesModel('DJI FPV Goggles V2', (), 1440, 810, video=(14, 1))
+FPV_GOGGLES_V2 = GogglesModel('DJI FPV Goggles V2', ('PIGEON', 'GL170'), 1440, 810, video=(14, 1))
 # Same panels and platform as V2. Virtual Flight support on V1 is unconfirmed.
 FPV_GOGGLES_V1 = GogglesModel('DJI FPV Goggles V1', (), 1440, 810, video=(14, 1))
 

@@ -126,18 +126,49 @@ def _windows_backend(dll_path):
     return Backend()
 
 
+STOCK_LIBUSB0_DLL = Path(os.environ.get('SystemRoot', r'C:\Windows'), 'System32', 'libusb0.dll')
+
+
+def _stock_libusb0_backend(dll_path=STOCK_LIBUSB0_DLL):
+    """PyUSB's libusb0 backend with libusb-win32's own DLL, for interfaces its driver binds.
+
+    Unlike DJI's fork, the stock DLL uses PyUSB's unmodified device structure.
+    """
+    import usb.backend.libusb0 as libusb
+    if not Path(dll_path).is_file():
+        raise RuntimeError(f'libusb-win32 DLL not found at {dll_path}')
+    backend = libusb.get_backend(find_library=lambda _: str(dll_path))
+    if backend is None:
+        raise RuntimeError(f'Cannot load {dll_path}')
+    return backend
+
+
 def _libusb1_backend(install_hint):
     import usb.backend.libusb1 as libusb
-    backend = libusb.get_backend()
+    try:
+        import libusb_package  # bundles libusb-1.0 for Windows, where no system copy exists
+        backend = libusb_package.get_libusb1_backend()
+    except ImportError:
+        backend = libusb.get_backend()
     if backend is None:
         raise RuntimeError(f'Cannot load libusb. {install_hint}')
     return backend
 
 
-def get_backend(dll_path=None):
-    """Return the PyUSB backend for this platform."""
-    if sys.platform == 'win32':
+def get_backend(dll_path=None, backend='auto'):
+    """Return the PyUSB backend: DJI's libusb0 driver DLL on Windows, or libusb-1.0 ('libusb1').
+
+    libusb-1.0 reaches interfaces bound to libusb-win32, such as the FPV Goggles V2's
+    interface 3, which DJI's own DLL does not enumerate.
+    """
+    if backend not in ('auto', 'dji', 'libusb1', 'libusb0'):
+        raise ValueError(f'Unknown USB backend {backend!r}')
+    if backend == 'libusb0':
+        return _stock_libusb0_backend(dll_path or STOCK_LIBUSB0_DLL)
+    if sys.platform == 'win32' and backend != 'libusb1':
         return _windows_backend(dll_path)
+    if sys.platform == 'win32':
+        return _libusb1_backend('Run "python -m pip install libusb-package"')
     if sys.platform == 'darwin':
         return _libusb1_backend('Run "brew install libusb"')
     if sys.platform.startswith('linux'):
@@ -146,13 +177,13 @@ def get_backend(dll_path=None):
 
 
 class ControlUsb:
-    def __init__(self, dll_path=None, *, write_size=2048, interface=4, product_ids=PRODUCT_IDS):
+    def __init__(self, dll_path=None, *, write_size=2048, interface=4, product_ids=PRODUCT_IDS, backend='auto'):
         if type(write_size) is not int or write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {write_size}')
         if type(interface) is not int or not 0 <= interface < 32:
             raise ValueError('interface must be a USB interface number from 0 to 31')
         self.write_size = write_size
-        backend = get_backend(dll_path)
+        backend = get_backend(dll_path, backend)
         import usb.core
         import usb.util
         self.core = usb.core
@@ -180,7 +211,10 @@ class ControlUsb:
         try:
             return bytes(self.device.read(self.link.endpoint_in, 4096, timeout=timeout_ms))
         except self.core.USBError as exc:
-            if isinstance(exc, self.core.USBTimeoutError) or exc.backend_error_code == -116:
+            # libusb-1.0 raises USBTimeoutError; DJI's libusb0 reports -116; libusb-win32's
+            # own DLL reports a text error ending in 'timeout error'
+            if (isinstance(exc, self.core.USBTimeoutError) or exc.backend_error_code == -116
+                    or 'timeout' in str(exc).lower()):
                 return b''
             raise UsbTransportError(str(exc)) from exc
 
