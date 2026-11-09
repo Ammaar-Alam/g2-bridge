@@ -1,6 +1,6 @@
 # FPV Goggles V2 and V1 over the PC USB route
 
-The DJI FPV Goggles V2 (2021) and the original Digital FPV Goggles V1 (2019) are a different platform from Goggles 2. This page collects what is known, what the bridge prepares for them, and the steps to test a pair. **Nothing here has run on V2 or V1 hardware yet.** Every statement below names its source.
+The DJI FPV Goggles V2 (2021) and the original Digital FPV Goggles V1 (2019) are a different platform from Goggles 2. This page collects what is known, what the bridge prepares for them, the steps to test a pair, and the results from a Goggles V2 on firmware 01.07.0000. Every statement names its source.
 
 ## What is known
 
@@ -72,6 +72,50 @@ Run these on Windows with DJI Assistant 2 installed and closed, from the reposit
    In the Windows app, pick **DJI FPV Goggles V2 (untested)** under **Advanced settings > Goggles**.
 
 The test picture is 37 KB, under the Goggles 2 frame limit. A frame too large for the receiver can leave the goggles black until power-cycled, as on Goggles 2; if that happens, note which step did it.
+
+## Results on a Goggles V2, November 8, 2026
+
+Hardware: a DJI FPV Goggles V2 freshly updated to firmware 01.07.0000, in O3 air-unit mode, with no air unit powered. Windows 11 PC with DJI Assistant 2 installed but closed. USB-C data cable.
+
+### USB
+
+Windows shows `2ca3:001f` as a composite device: `MI_00` RNDIS, `MI_02` mass storage, **`MI_03` "Vision (Interface 3)"** (class `ff/43/01`, bulk out `0x03`, in `0x84`, 512-byte packets) bound to libusb-win32 from an earlier video-out tool, and **`MI_04` "DEVICE USB Virtual COM" (COM10)**, a CDC serial port (class `02/02/01` with its data interface `MI_05`). DJI's `oem27.inf` entry for `PID_001F&MI_04` is therefore its virtual COM driver, not a bulk driver. DJI's `libusb0_device.dll` enumerates none of these interfaces, and `DJIService.exe` holds the COM port while DJI Assistant runs.
+
+### Control over the COM port
+
+With `--serial`, the probe reached every control step over COM10 using the Goggles 2 routes, with the goggles on their normal screen:
+
+| Request | Result |
+| --- | --- |
+| Heartbeat `00/00` to 28/0 | Answered |
+| Identity `00/ff` to 28/1 | **`WM170 PIGEON GLS Mar 21 2023\|20:20:34`** |
+| Firmware manifest `00/4f` to 28/5 | 01.07.0000: `GLS_CPLD` 03.00.01.34, `GL170_PIGEON` 10.05.20.64 |
+| Route scan | Identity answered by 28/1 and 14/0 (status `00`), `e0` from 28/0, 28/2–28/5; simulator mode accepted only by 28/0 |
+| Simulator mode `0b/1a` to 28/0 | **Accepted (status `00`)** without any menu step. The lenses went black and stayed black until a power cycle |
+| Heartbeat to 14/0 (`--control-type 14`) | No reply |
+
+`PIGEON` and `GL170` are now identity codes of the V2 profile, so detection is automatic.
+
+### Video
+
+No variant displayed anything. Each ran after a successful simulator-mode reply.
+
+| Transport | Packets | Rate | Frames | Outcome |
+| --- | --- | --- | --- | --- |
+| COM10 | V1 (978-byte chunks) to 14/1 | 30 fps | 450 | Accepted, no picture |
+| COM10 | V1 to 28/1 | 30 fps | 1 | Port stalled (write timeout) after one frame |
+| COM10 | V1 to 14/1 from sender 2/0 | 30 fps | 360 | Accepted, no picture |
+| COM10 | App V2 envelope to 14/1 | 30 fps | 13 | Heartbeats lost: the port was saturated |
+| COM10 | App V2 envelope to 14/1, 28/1, 14/0 | 5 fps | 50 each | Accepted, no picture |
+| Bulk interface 3 (libusb-win32 x64 DLL) | heartbeat, `RMVT`, V1, V2 | | 0 | Every bulk write and read timed out, before and after simulator mode; control transfers through the same handle worked |
+
+The COM port cannot carry a stream in any case: 37 KB frames at 30 fps already saturate it.
+
+### Conclusion
+
+Over the PC-side USB connection, the V2 accepts the Virtual Flight control commands but exposes no interface that takes video. Interface 3 behaves as the video-out channel described by the fpv.wtf tools, idle without an air unit. In the phone setup the goggles are the USB host and the phone is an Android Open Accessory, so the video enters through the goggles' host role, which a Windows PC cannot present. The remaining options are a Linux device with USB gadget support acting as the accessory (the "Pi video-input prototype" discussed in [voc-poc issue 15](https://github.com/fpv-wtf/voc-poc/issues/15)), or root with [WTFOS](https://github.com/fpv-wtf/wtfos) and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim). The bridge keeps the V2 profile, the serial transport and the probe options so either path can build on them.
+
+Logs of every run are in the owner's `work/probe/`; they contain the identity line and no serial numbers.
 
 ## Report
 
