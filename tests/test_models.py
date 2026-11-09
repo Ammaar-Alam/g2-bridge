@@ -254,3 +254,16 @@ class TransportOptionTests(unittest.TestCase):
         with mock.patch('serial.tools.list_ports.comports', return_value=ports + [SimpleNamespace(device='COM11', vid=0x2ca3, pid=0x001f)]):
             with self.assertRaisesRegex(RuntimeError, 'Expected one'):
                 serial_transport.find_dji_port()
+
+
+class SerialV2ProbeTests(unittest.TestCase):
+    def test_find_v2_frames_in_mixed_bytes(self):
+        import importlib.util
+        from goggles_bridge.protocol import Address, V2Packet
+        from goggles_bridge.control import heartbeat
+        spec = importlib.util.spec_from_file_location('serial_v2_probe', Path(__file__).resolve().parents[1] / 'tools/research/serial_v2_probe.py')
+        probe = importlib.util.module_from_spec(spec); spec.loader.exec_module(probe)
+        v2 = V2Packet(0, 0, Address(28, 0, 0), Address(10, 1, 0), 0, 7, b'\0abc').serialize()
+        data = b'\x55\x18\x08junk' + heartbeat(1).serialize() + v2 + b'\x55\x18' + v2[:10]
+        frames = probe.find_v2(data)
+        self.assertEqual([(f.command_set, f.command_id, f.sender.device_type, f.payload) for f in frames], [(0, 0, 28, b'\0abc')])

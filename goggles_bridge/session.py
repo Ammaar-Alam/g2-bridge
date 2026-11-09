@@ -40,7 +40,7 @@ class Pending:
 
 class ControlSession:
     def __init__(self, *, source_type=10, source_id=1, sequence=0, models=MODELS, enter_simulator=True,
-                 assume_model=None, control_type=28):
+                 assume_model=None, control_type=28, heartbeat_timeout=1.5):
         # Validate addresses and sequence using the actual serializer.
         replace(heartbeat(sequence), sender_type=source_type, sender_id=source_id).serialize()
         if assume_model is not None and assume_model not in goggles_models.BY_NAME:
@@ -50,6 +50,9 @@ class ControlSession:
         self.models = dict(models)
         self.enter_simulator = enter_simulator
         self.assume_model = assume_model
+        if not 0.5 <= heartbeat_timeout <= 30:
+            raise ValueError('heartbeat_timeout must be between 0.5 and 30 seconds')
+        self.heartbeat_timeout = heartbeat_timeout
         self.control = (control_type, 0)
         self.identity_destination = (control_type, 1)
         self.source_type = source_type
@@ -95,8 +98,8 @@ class ControlSession:
             self.started_at = now
             self.next_heartbeat = now
             self.state = 'heartbeat'
-        if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= 1.5:
-            self._fail('Three heartbeat intervals passed without a matching success reply', SessionLost)
+        if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= self.heartbeat_timeout:
+            self._fail(f'{self.heartbeat_timeout:g} s passed without a matching heartbeat reply', SessionLost)
         if self.state not in ('ready', 'identified') and now - self.started_at >= 4:
             self._fail('Control handshake timed out', SessionLost)
         outgoing = []

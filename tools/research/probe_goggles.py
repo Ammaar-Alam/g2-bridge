@@ -255,7 +255,8 @@ class VideoSender:
 def probe_session(log, args):
     from goggles_bridge.usb_transport import ControlUsb
     session = ControlSession(models={**MODELS, **EXPERIMENTAL_MODELS}, enter_simulator=args.simulator,
-                             assume_model=args.assume_model, control_type=args.control_type)
+                             assume_model=args.assume_model, control_type=args.control_type,
+                             heartbeat_timeout=args.heartbeat_timeout)
     target = 'ready' if args.simulator else 'identified'
     decoder = V1Stream()
     scan = RouteScan(log, args.scan_types) if args.scan else None
@@ -266,6 +267,9 @@ def probe_session(log, args):
     previous = None
     next_frame = None
     frame = None
+    video_started = None
+    slot_index = -1
+    current_fps = args.test_fps
     started = time.monotonic()
     product_ids = None if args.any_product else models.PRODUCT_IDS
     if args.serial:
@@ -354,13 +358,28 @@ def probe_session(log, args):
                     if bulk_in:
                         log('receive_bulk', hex=bulk_in.hex())
                         result['bulk_in_bytes'] = result.get('bulk_in_bytes', 0) + len(bulk_in)
+                if next_frame is not None and args.video_sequence:
+                    if video_started is None:
+                        video_started = time.monotonic()
+                    index = min(int((time.monotonic() - video_started) / args.slot_seconds), len(args.video_sequence) - 1)
+                    if index != slot_index:
+                        slot_index = index
+                        slot = args.video_sequence[index]
+                        sender = VideoSender(session.profile, slot['video_format'], session, slot['receiver'], slot['sender'])
+                        current_fps = slot['fps']
+                        target = '/'.join(map(str, slot['receiver'] or session.profile.video))
+                        origin = '/'.join(map(str, slot['sender'] or (10, 1)))
+                        log('video_slot', index=index + 1, **{k: (str(v) if isinstance(v, tuple) else v) for k, v in slot.items()},
+                            frames_before=result['frames_sent'])
+                        print(f"  Slot {index + 1}/{len(args.video_sequence)}: {slot['video_format']} to {target} from {origin} "
+                              f"at {current_fps} fps", flush=True)
                 if next_frame is not None and time.monotonic() >= next_frame:
                     wire = sender.wire(frame)
                     (video_link or usb).write(wire)
                     result['frames_sent'] += 1
-                    if result['frames_sent'] % args.test_fps == 1:
+                    if result['frames_sent'] % current_fps == 1:
                         log('video', frames=result['frames_sent'], bytes=len(wire))
-                    next_frame += 1/args.test_fps
+                    next_frame = max(next_frame + 1/current_fps, time.monotonic() - 1/current_fps)
         except SessionError as exc:
             result['error'] = str(exc)
             print(f'  Session ended: {exc}')
@@ -386,6 +405,22 @@ def parse_route(text):
     if not (0 <= device_type < 32 and 0 <= device_id < 8):
         raise argparse.ArgumentTypeError('TYPE ranges 0-31 and ID 0-7')
     return (device_type, device_id)
+
+
+def parse_video_sequence(text):
+    """Slots of 'format,receiver,sender,fps' separated by ';', with '-' for a default field."""
+    slots = []
+    for part in filter(None, text.split(';')):
+        fields = [f.strip() for f in part.split(',')] + ['-'] * 4
+        fmt, receiver, sender, fps = fields[:4]
+        if fmt not in ('v1', 'v2'):
+            raise argparse.ArgumentTypeError('slot format must be v1 or v2')
+        slots.append(dict(video_format=fmt, receiver=None if receiver == '-' else parse_route(receiver),
+                          sender=None if sender == '-' else parse_route(sender),
+                          fps=TEST_VIDEO_FPS if fps == '-' else int(fps)))
+    if not slots:
+        raise argparse.ArgumentTypeError('give at least one slot, for example v1,14/1,-,30;v2,14/1,-,5')
+    return slots
 
 
 def parse_types(text):
@@ -419,6 +454,12 @@ def main():
     parser.add_argument('--video-sender', type=parse_route, metavar='TYPE/ID',
                         help='V1 video sender address instead of the PC (10/1), for example the mobile app 2/0')
     parser.add_argument('--test-fps', type=int, default=TEST_VIDEO_FPS, help='Test picture rate (default: 30)')
+    parser.add_argument('--video-sequence', type=parse_video_sequence, metavar='SLOTS',
+                        help="Within one session, cycle video variants every --slot-seconds: slots of "
+                             "'format,receiver,sender,fps' separated by ';', '-' for default. Implies --test-video")
+    parser.add_argument('--slot-seconds', type=float, default=10, help='Length of each --video-sequence slot')
+    parser.add_argument('--heartbeat-timeout', type=float, default=1.5,
+                        help='Seconds without a heartbeat reply before the session gives up (default: 1.5)')
     parser.add_argument('--video-receiver', type=parse_route, metavar='TYPE/ID',
                         help='Send video to this DUML address instead of the model profile, for example 28/1')
     parser.add_argument('--usb-backend', choices=('auto', 'dji', 'libusb1', 'libusb0'), default='auto',
@@ -434,6 +475,8 @@ def main():
                              '(FPV Goggles V2 interface 4). Without PORT, the one DJI COM port is used')
     parser.add_argument('--seconds', type=float, default=15, help='Session length in seconds, from 5 to 300')
     args = parser.parse_args()
+    if args.video_sequence and not args.test_video:
+        args.test_video = True
     if args.test_video and not args.simulator:
         parser.error('--test-video requires --simulator')
     if args.simulator and (args.scan or args.force_video):
