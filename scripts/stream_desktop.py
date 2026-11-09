@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from goggles_bridge import mac_capture
 from goggles_bridge.engine import (CHOICES, HEIGHT, WIDTH, BridgeEngine, BridgeSettings, check_encoder,
-                                   find_program)
+                                   default_windows_encoder, find_program)
 from goggles_bridge.usb_transport import DEFAULT_DLL, find_dll
 
 MAC = sys.platform == 'darwin'
@@ -83,8 +83,10 @@ def main():
                         default=BridgeSettings.display_index,
                         help='Zero-based monitor index')
     parser.add_argument('--hide-cursor', dest='show_cursor', action='store_false')
+    parser.add_argument('--encoder', choices=CHOICES['encoder'], default=default_windows_encoder(),
+                        help='Windows hardware encoder: NVIDIA NVENC or AMD AMF (default: auto-detected)')
     parser.add_argument('--preset', choices=CHOICES['preset'], default=BridgeSettings.preset,
-                        help='Windows NVENC preset (default: %(default)s)')
+                        help='Windows encoder preset (default: %(default)s)')
     parser.add_argument('--h264-profile', choices=CHOICES['h264_profile'], default=BridgeSettings.h264_profile,
                         help='H.264 profile (default: %(default)s)')
     parser.add_argument('--keyframe-seconds', type=int, choices=CHOICES['keyframe_seconds'],

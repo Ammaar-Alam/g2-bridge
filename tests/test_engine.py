@@ -8,8 +8,8 @@ import threading
 import unittest
 
 from goggles_bridge.control import V1Stream
-from goggles_bridge.engine import (BridgeEngine, BridgeSettings, MAX_FRAME_BYTES, MAX_VBV_BITS, check_encoder,
-                                   encoder_command, prioritize_gpu)
+from goggles_bridge.engine import (BridgeEngine, BridgeSettings, MAX_AMF_VBV_BITS, MAX_FRAME_BYTES, MAX_VBV_BITS,
+                                   check_encoder, default_windows_encoder, encoder_command, prioritize_gpu)
 from goggles_bridge.mac_capture import helper_path, supported
 from goggles_bridge.session import SessionError
 from goggles_bridge.usb_transport import DeviceNotFoundError, UsbTransportError
@@ -375,3 +375,26 @@ class EngineTests(unittest.TestCase):
         self.assertIn('--capture ddagrab', check_encoder(settings, run('Error opening input files: Filter not found')))
         self.assertIn('NVIDIA encoder', check_encoder(settings, run('Error opening output files: Encoder not found')))
         self.assertIn('OpenEncodeSessionEx failed', check_encoder(settings, run('a\nb\nOpenEncodeSessionEx failed')))
+
+    def test_amf_encoder_contract_and_detection(self):
+        command = encoder_command(self.settings(encoder='amf', preset='p1', h264_profile='baseline', adaptive_quant=True))
+        for key, value in (('-c:v', 'h264_amf'), ('-usage', 'transcoding'), ('-latency', '1'),
+                           ('-quality', 'speed'), ('-bufsize', str(MAX_AMF_VBV_BITS)),
+                           ('-max_au_size', str(MAX_AMF_VBV_BITS)), ('-preencode', '1'), ('-qmin', '29'),
+                           ('-vbaq', '1'), ('-g', '300'), ('-header_spacing', '300'),
+                           ('-profile:v', 'constrained_baseline'), ('-level', '5.1'),
+                           ('-aud', '1'), ('-forced_idr', '1')):
+            self.assertEqual(command[command.index(key)+1], value)
+        self.assertTrue(command[command.index('-vf')+1].startswith('hwdownload,format=bgra,format=nv12,select='))
+        with tempfile.TemporaryDirectory() as folder:
+            sys32 = Path(folder) / 'System32'
+            sys32.mkdir()
+            self.assertEqual(default_windows_encoder(folder), 'nvenc')
+            (sys32 / 'amfrt64.dll').write_bytes(b'x')
+            self.assertEqual(default_windows_encoder(folder), 'amf')
+            (sys32 / 'nvEncodeAPI64.dll').write_bytes(b'x')
+            self.assertEqual(default_windows_encoder(folder), 'nvenc')
+        amf_settings = self.settings(encoder='amf')
+        fail = lambda stderr: lambda command, **_: subprocess.CompletedProcess(command, 1, '', stderr)
+        self.assertIn('AMD AMF encoder', check_encoder(amf_settings, fail('Encoder not found')))
+        self.assertIn('AMD AMF driver', check_encoder(amf_settings, fail('SubmitInput() failed')))
