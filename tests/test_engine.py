@@ -217,7 +217,8 @@ class EngineTests(unittest.TestCase):
                         self.assertIn(f'framerate={fps}:', command[command.index('-i')+1])
                     else:
                         self.assertEqual(command[command.index('-r')+1], str(fps))
-                    for key, value in (('-g', str(fps*3)), ('-bufsize', str(min(40_000_000//fps, MAX_VBV_BITS))),
+                    bufsize = 40_000_000//fps if capture == 'avfoundation' else min(40_000_000//fps, MAX_VBV_BITS)
+                    for key, value in (('-g', str(fps*3)), ('-bufsize', str(bufsize)),
                                        ('-level:v', '4.2' if fps == 60 else '5.1'), ('-bf', '0')):
                         self.assertEqual(command[command.index(key)+1], value)
         for fps in (0, 65, 120):
@@ -278,7 +279,7 @@ class EngineTests(unittest.TestCase):
         default = encoder_command(self.settings())
         self.assertEqual(default[default.index('-bufsize')+1], '400000')
         # Two frames at 60 fps would exceed the goggles' frame limit
-        for capture in ('gfxcapture', 'avfoundation'):
+        for capture in ('gfxcapture', 'ddagrab'):
             with self.subTest(capture=capture):
                 command = encoder_command(self.settings(capture=capture, fps=60))
                 self.assertEqual(command[command.index('-bufsize')+1], str(MAX_VBV_BITS))
@@ -287,6 +288,9 @@ class EngineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'At 90 fps, use at most 30 Mbps'):
             self.settings(fps=90, bitrate_mbps=40)
         self.settings(fps=100, bitrate_mbps=40)
+        for capture in ('avfoundation', 'screencapturekit'):
+            with self.subTest(capture=capture), self.assertRaisesRegex(ValueError, 'macOS'):
+                self.settings(capture=capture, bitrate_mbps=30)
 
     def test_adaptive_quantization_is_opt_in_and_only_adds_its_options(self):
         default = encoder_command(self.settings())
@@ -302,7 +306,7 @@ class EngineTests(unittest.TestCase):
     def test_oversize_frame_is_skipped_until_a_keyframe_fits(self):
         idr, inter = AUD + b'\0\0\0\1\x65', AUD + b'\0\0\0\1\x41'
         packets = [idr + bytes(MAX_FRAME_BYTES), inter + b'lost', idr + b'next']
-        # The ScreenCaptureKit helper has no buffer cap, so its frames are sent unchanged
+        # The guard covers only the verified NVENC cap, so macOS frames are sent unchanged
         for capture in ('gfxcapture', 'screencapturekit'):
             with self.subTest(capture=capture):
                 stop = threading.Event()

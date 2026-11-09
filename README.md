@@ -74,7 +74,7 @@ Use these options to adjust the stream:
 | Option | Values |
 | --- | --- |
 | `--fps` | `60`, `75`, `90`, `100` |
-| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`, `30`, `40` |
+| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`. On Windows, also `30` and `40` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
 | `--capture` | Windows: `gfxcapture` or `ddagrab`. macOS: `screencapturekit` or `avfoundation` |

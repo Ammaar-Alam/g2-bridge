@@ -57,7 +57,7 @@ The video payload starts with this little-endian structure, followed by the enco
 | 24 | 1 | First fragment of frame |
 | 25 | 7 | Zero padding |
 
-The receiver limits the encoded size of each frame. Frames up to 49 KB displayed. Streams whose keyframes reached about 65 KB or more appeared late, froze, or stayed black. A black screen cleared only after a power cycle. The limit might match the mobile app's 65,404-byte chunk size. Except with the macOS ScreenCaptureKit helper, the bridge never sends a frame over 56 KB. For more information, see the [frame size measurements](research/EXPERIMENTS.md#frame-size-limit-and-bitrate).
+The receiver limits the encoded size of each frame. Frames up to 49 KB displayed. Streams whose keyframes reached about 65 KB or more appeared late, froze, or stayed black. A black screen cleared only after a power cycle. The limit might match the mobile app's 65,404-byte chunk size. On Windows, the bridge never sends a frame over 56 KB. For more information, see the [frame size measurements](research/EXPERIMENTS.md#frame-size-limit-and-bitrate).
 
 The timestamp follows the native operation: sample Unix milliseconds, retain the low 32 bits, interpret them as signed, then sign-extend to 64 bits. The packet header CRC8 uses seed `0x77` and reflected polynomial `0x8c`. CRC16 uses seed `0x3692` and reflected polynomial `0x8408`, with no final XOR.
 

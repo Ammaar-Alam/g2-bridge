@@ -59,6 +59,10 @@ class BridgeSettings:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
         if self.adaptive_quant and self.capture not in ('gfxcapture', 'ddagrab'):
             raise ValueError('Adaptive quantization needs the Windows NVENC encoder')
+        # shortcut: only the NVENC buffer cap is verified on goggles, so macOS keeps the earlier
+        # 24 Mbps ceiling and its frames are never skipped; lift both once a Mac cap is verified
+        if self.capture not in ('gfxcapture', 'ddagrab') and self.bitrate_mbps > 24:
+            raise ValueError('macOS capture supports at most 24 Mbps')
         # The buffer cap bounds keyframes, but in CBR every frame averages bitrate/fps
         if self.bitrate_mbps * 1_000_000 // (8 * self.fps) > MAX_AVERAGE_FRAME_BYTES:
             limit = max(b for b in BITRATES_MBPS if b * 1_000_000 // (8 * self.fps) <= MAX_AVERAGE_FRAME_BYTES)
@@ -118,8 +122,7 @@ def _mac_encoder_args(settings, bitrate):
                    'pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
             # low_delay enables low-latency rate control, which rejects plain baseline
             '-an', '-c:v', 'h264_videotoolbox', '-realtime', '1', '-prio_speed', '1', '-flags', '+low_delay',
-            '-b:v', str(bitrate), '-maxrate', str(bitrate),
-            '-bufsize', str(min(bitrate*2//settings.fps, MAX_VBV_BITS)),
+            '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(bitrate*2//settings.fps),
             '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
             '-profile:v', 'constrained_baseline' if settings.h264_profile == 'baseline' else 'high',
             '-level:v', '4.2' if settings.fps == 60 else '5.1', '-flush_packets', '1',
@@ -253,9 +256,7 @@ class BridgeEngine:
         threads = []
         frame_count = byte_count = previous_frames = oversize_count = largest_frame = 0
         resync = False
-        # shortcut: the ScreenCaptureKit helper sets no rate-control buffer, so its frames are never
-        # skipped; cap its encoder before guarding it
-        capped = self.settings.capture != 'screencapturekit'
+        guarded = self.settings.capture in ('gfxcapture', 'ddagrab')
         queue_times, send_times = [], []
         last_frame = last_progress = time.perf_counter()
         encoder_path = self.log_path.with_name(f'{self.log_path.stem}.encoder-{attempt}.log')
@@ -331,7 +332,7 @@ class BridgeEngine:
                                 raise RuntimeError(f'No video from display. See {encoder_path}')
                             continue
                         last_frame = time.perf_counter()
-                        oversize = capped and len(frame) > MAX_FRAME_BYTES
+                        oversize = guarded and len(frame) > MAX_FRAME_BYTES
                         if oversize:
                             oversize_count += 1
                             self.emit('oversize_frame', bytes=len(frame), limit=MAX_FRAME_BYTES)
