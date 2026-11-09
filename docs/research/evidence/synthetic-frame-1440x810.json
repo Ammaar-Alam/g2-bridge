@@ -1,0 +1,24 @@
+{
+  "generated": true,
+  "not_a_usb_capture": true,
+  "source": "First NVENC frame of generated testsrc2=size=1440x810:rate=100, for the FPV Goggles V2 profile",
+  "settings": {
+    "encoder": "h264_nvenc",
+    "preset": "p4",
+    "tune": "ull",
+    "profile": "baseline",
+    "level": "4.2",
+    "bitrate": 20000000,
+    "vbv": 400000,
+    "b_frames": 0,
+    "gop": 300
+  },
+  "ffmpeg_version": "9.0.2 (Gyan full build)",
+  "gpu": "RTX 3080",
+  "driver": "621.14",
+  "aud_removed": true,
+  "filler_removed": true,
+  "frame_bytes": 37266,
+  "frame_sha256": "f99c6e7668ed4a48e8de04aee570a9d3580d9277e26efb767b8650d1112ef33a",
+  "note": "Original synthetic media. Different GPU/driver versions need not reproduce bit-identical NVENC output."
+}

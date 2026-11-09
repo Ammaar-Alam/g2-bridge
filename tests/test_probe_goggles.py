@@ -18,15 +18,20 @@ class ProbeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 probe.sysfs_configuration(data)
 
-    def test_test_frame_is_pinned(self):
+    def test_test_frames_are_pinned_per_size(self):
         import hashlib
-        self.assertEqual(hashlib.sha256(probe.TEST_FRAME.read_bytes()).hexdigest(), probe.TEST_FRAME_SHA256)
+        from goggles_bridge import models
+        for (width, height), (path, digest) in probe.TEST_FRAMES.items():
+            with self.subTest(size=f'{width}x{height}'):
+                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
+        self.assertEqual(probe.test_frame_for(models.FPV_GOGGLES_V2)[1].name, 'synthetic-frame-1440x810.h264')
+        self.assertEqual(probe.test_frame_for(models.GOGGLES_2)[1].name, 'synthetic-frame.h264')
 
 
     def test_route_scan_sends_one_request_at_a_time_and_skips_risky_modules(self):
         from dataclasses import replace
         rows, sent, sequence = [], [], iter(range(100))
-        scan = probe.RouteScan(lambda event, **row: rows.append(row))
+        scan = probe.RouteScan(lambda event, **row: rows.append(row), types=(28,))
         now = 0.0
         while not scan.done:
             before = len(sent)
@@ -42,6 +47,16 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(commands, [(0, 0xff, i) for i in range(8)] + [(11, 0x1a, 0), (11, 0x1a, 1)])
         self.assertEqual([len(r['replies']) for r in rows][-2:], [0, 1])
         self.assertEqual(rows[-1]['replies'][0]['sender'], '28/1')
+
+    def test_route_scan_covers_each_requested_type(self):
+        sent, sequence = [], iter(range(100))
+        scan = probe.RouteScan(lambda event, **row: None, types=(28, 14))
+        now = 0.0
+        while not scan.done:
+            scan.poll(now, sequence.__next__, sent.append)
+            now += probe.SCAN_WAIT
+        self.assertEqual([(p.receiver_type, p.receiver_id) for p in sent],
+                         [(28, i) for i in range(8)] + [(14, i) for i in range(8)])
 
 
 if __name__ == '__main__':
