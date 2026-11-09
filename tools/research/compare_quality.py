@@ -1,4 +1,4 @@
-"""Compare Windows encoder presets on synthetic 1080p100 video, without USB or screen capture.
+"""Compare old and new Windows encoding on synthetic 1080p video, without USB or screen capture.
 
 Requires FFmpeg with NVENC, ffprobe beside it, and Windows Consolas for the text source.
 Outputs encoded clips, commands, per-frame metrics, and whole-sequence PSNR.
@@ -29,12 +29,22 @@ def run(command, log, folder):
                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
 
 
-def measure(ffmpeg, folder, scene, source, preset, frames):
+def comparison_command(ffmpeg, preset, fps=100):
+    settings = BridgeSettings(Path('unused.dll'), ffmpeg, fps=fps,
+                              preset='p4' if preset == 'previous' else 'p1',
+                              bitrate_mbps=20 if preset == 'previous' else 32)
+    command = encoder_command(settings)
+    if preset == 'previous':
+        for flag in ('-multipass', '-intra-refresh', '-single-slice-intra-refresh'):
+            at = command.index(flag)
+            del command[at:at+2]
+    return command
+
+
+def measure(ffmpeg, folder, scene, source, preset, frames, fps=100):
     label = f'{scene}-{preset}'
     video = folder/f'{label}.avi'
-    settings = BridgeSettings(Path('unused.dll'), ffmpeg, preset=preset,
-                              bitrate_mbps=32 if preset == 'clear' else 20)
-    command = encoder_command(settings)
+    command = comparison_command(ffmpeg, preset, fps)
     command[command.index('-i')+1] = source
     command[-1:] = ['-frames:v', str(frames), str(video)]
     run(command, folder/f'{label}.encode.log', folder)
@@ -49,8 +59,8 @@ def measure(ffmpeg, folder, scene, source, preset, frames):
         capture_output=True, check=True, timeout=180)
     metadata = json.loads(probe.stdout)['streams'][0]
     assert metadata == dict(width=1920, height=1080, has_b_frames=0, nb_read_frames=str(frames)), metadata
-    graph = (f'[0:v]trim=end_frame={frames},setpts=N/(100*TB),split[ra][rb];'
-             '[1:v]setpts=N/(100*TB),split[ea][eb];'
+    graph = (f'[0:v]trim=end_frame={frames},setpts=N/({fps}*TB),split[ra][rb];'
+             f'[1:v]setpts=N/({fps}*TB),split[ea][eb];'
              f'[ea][ra]ssim=stats_file={label}.ssim[a];'
              f'[eb][rb]psnr=stats_file={label}.psnr[b]')
     metrics = [str(ffmpeg), '-hide_banner', '-nostdin', '-xerror', '-f', 'lavfi', '-i', source,
@@ -86,6 +96,7 @@ def main():
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--output', type=Path, required=True, help='New output directory')
     parser.add_argument('--frames', type=int, default=1800)
+    parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100)
     parser.add_argument('--sources', nargs='+', choices=('motion', 'text', 'cuts', 'detail'),
                         default=['motion', 'text', 'cuts', 'detail'])
     args = parser.parse_args()
@@ -108,19 +119,21 @@ def main():
         sources['text'] = 'color=c=white:s=1920x1080:r=100,' + ','.join(
             f"drawtext=fontfile='{font_path}':fontsize=18:fontcolor=black:x=20:y={20+i*26}:text='{i:02d} {line}'"
             for i in range(40))
+    sources = {name: source.replace('rate=100', f'rate={args.fps}').replace('r=100', f'r={args.fps}')
+               for name, source in sources.items()}
     folder = args.output.resolve()
     folder.mkdir(parents=True)
     digest = hashlib.sha256()
     with ffmpeg.open('rb') as binary:
         for block in iter(lambda: binary.read(1024*1024), b''):
             digest.update(block)
-    manifest = dict(ffmpeg=str(ffmpeg), ffmpeg_sha256=digest.hexdigest(), frames=args.frames,
+    manifest = dict(ffmpeg=str(ffmpeg), ffmpeg_sha256=digest.hexdigest(), frames=args.frames, fps=args.fps,
                     sources=args.sources, font_sha256=hashlib.sha256(font.read_bytes()).hexdigest()
                     if 'text' in args.sources else None)
     (folder/'run.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     for scene in dict.fromkeys(args.sources):
-        for preset in ('p4', 'clear'):
-            measure(ffmpeg, folder, scene, sources[scene], preset, args.frames)
+        for preset in ('previous', 'default'):
+            measure(ffmpeg, folder, scene, sources[scene], preset, args.frames, args.fps)
 
 
 if __name__ == '__main__':

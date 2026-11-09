@@ -67,7 +67,7 @@ The stream script offers to install whatever is missing. Tests used an M2 Pro Ma
 
    On a Mac, the script offers to install anything that's missing, and it builds the screen capture helper on the first run. If the screen can't be captured, go to **System Settings > Privacy & Security** and allow screen recording for your terminal.
 
-The default output is **1920x1080**, with a **100 fps encoder target** and a **20 Mbps** bitrate. Press **Ctrl+C** to stop. Logs are written to `work/logs/`.
+The default output is **1920x1080**, with a **100 fps encoder target**, **32 Mbps on Windows**, and **20 Mbps on macOS**. Press **Ctrl+C** to stop. Logs are written to `work/logs/`.
 
 Use these options to adjust the stream:
 
@@ -86,10 +86,7 @@ These values set the stream rate, not the goggles' panel refresh rate. Lower
 rates provide more bits per frame at the same bitrate, but increase the time
 between frames. The 100 fps target has the shortest frame interval.
 
-On Windows, `python scripts/stream_desktop.py --preset clear` selects the
-experimental 1080p100 quality preset at 32 Mbps. It reduces compression damage
-and periodic blur in synthetic tests. Goggles compatibility and added display
-delay still need a matched hardware comparison. The default remains `p4`.
+Windows encoding uses gradual refresh to reduce periodic compression blur.
 See the [quality measurements and reproduction steps](docs/research/WINDOWS_QUALITY.md).
 
 ## Run tests

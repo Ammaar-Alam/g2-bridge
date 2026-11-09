@@ -241,8 +241,8 @@ class EngineTests(unittest.TestCase):
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
         self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
-    def test_clear_preset_keeps_buffer_small_and_avoids_periodic_idr(self):
-        settings = self.settings(preset='clear', bitrate_mbps=32)
+    def test_windows_default_keeps_buffer_small_and_avoids_periodic_idr(self):
+        settings = self.settings()
         command = encoder_command(settings)
         for flag, expected in (('-preset', 'p1'), ('-b:v', '32000000'), ('-maxrate', '32000000'),
                                ('-bufsize', '400000'), ('-bf', '0'), ('-delay', '0'), ('-r', '100'),
@@ -250,11 +250,17 @@ class EngineTests(unittest.TestCase):
                                ('-single-slice-intra-refresh', '1')):
             self.assertEqual(command[command.index(flag)+1], expected)
         self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
-        for changes in (dict(fps=90), dict(bitrate_mbps=20), dict(capture='screencapturekit'),
-                        dict(capture='ddagrab'), dict(h264_profile='baseline'),
-                        dict(low_latency=False), dict(keyframe_seconds=1)):
-            with self.subTest(changes=changes), self.assertRaises(ValueError):
-                replace(settings, **changes)
+        for capture in ('gfxcapture', 'ddagrab'):
+            for fps in (60, 75, 90, 100):
+                for bitrate in (8, 20, 24, 32):
+                    with self.subTest(capture=capture, fps=fps, bitrate=bitrate):
+                        command = encoder_command(self.settings(capture=capture, fps=fps, bitrate_mbps=bitrate))
+                        self.assertEqual(command[command.index('-bufsize')+1], str(min(bitrate, 20)*2_000_000//fps))
+                        self.assertEqual(command[command.index('-intra-refresh')+1], '1')
+        for capture in ('avfoundation', 'screencapturekit'):
+            settings_mac = self.settings(capture=capture)
+            self.assertEqual(settings_mac.bitrate_mbps, 20)
+            self.assertNotIn('-intra-refresh', encoder_command(settings_mac))
         stop = threading.Event()
         events, _ = self.run_case(lambda _: FakeUsb(stop), stop, settings=settings)
         self.assertTrue(events[0]['intra_refresh'])
@@ -274,7 +280,7 @@ class EngineTests(unittest.TestCase):
 
     def test_low_latency_only_changes_local_framing_and_padding(self):
         command = encoder_command(self.settings(low_latency=True))
-        for key, value in (('-r','100'), ('-b:v','20000000'), ('-preset','p4'), ('-bf','0'),
+        for key, value in (('-r','100'), ('-b:v','32000000'), ('-preset','p1'), ('-bf','0'),
                            ('-bufsize','400000'), ('-bsf:v','filter_units=remove_types=12'),
                            ('-thread_queue_size','1')):
             self.assertEqual(command[command.index(key)+1], value)
