@@ -114,8 +114,3 @@ class SessionTests(unittest.TestCase):
         session.receive(answer(request), .01)
         with self.assertRaises(SessionError):
             session.poll(1.51)
-
-    def test_mobile_address_is_explicit(self):
-        session = ControlSession(source_type=2, source_id=0)
-        request, = session.poll(0)
-        self.assertEqual(request.serialize()[4], 2)

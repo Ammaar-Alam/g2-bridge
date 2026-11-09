@@ -1,30 +1,19 @@
 """Check native video packet bytes at the intercepted AsyncIO call."""
 import hashlib
-import json
 from pathlib import Path
 import struct
 import sys
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
+from unicorn import UC_HOOK_CODE
 from unicorn.arm_const import *
-from research_common import EXPECTED, load_binary_args, write_report
+from research_common import EXIT, EXPECTED, load_binary_args, load_elf, write_report
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 from goggles_bridge.protocol import VideoPacketizer, unwrap_logiclink
-EXIT, IO = 0x30000000, 0x30000100
+IO = EXIT + 0x100
 RANGES = ((0x49f0128,1276),(0x49e3924,648),(0x49f6448,664))
 
 def run(binary, data, logiclink):
-    uc = Uc(UC_ARCH_ARM, UC_MODE_ARM)
-    phoff = struct.unpack_from('<I',binary,28)[0]
-    size,count = struct.unpack_from('<HH',binary,42)
-    segments = [struct.unpack_from('<8I',binary,phoff+i*size) for i in range(count)]
-    last = max(p[2]+p[5] for p in segments if p[0]==1)
-    uc.mem_map(0,(last+4095)&~4095)
-    for p in segments:
-        if p[0]==1: uc.mem_write(p[2],binary[p[1]:p[1]+p[4]])
-    uc.mem_map(0x10000000,0x1000000)
-    uc.mem_map(0x20000000,0x10000)
-    uc.mem_map(EXIT,0x1000)
+    uc = load_elf(binary)
     heap = 0x10100000
     owners = []
     output = []

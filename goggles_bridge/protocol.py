@@ -3,52 +3,13 @@
 See docs/research/MOBILE_PROTOCOL.md for layouts and native addresses.
 """
 from dataclasses import dataclass
-import binascii
 import struct
-import time
+from .duml import VIDEO, as_bytes, check_uint, crc8, crc16, video_fragments
 
 MAX_VIDEO_CHUNK = 65404
 V2_OVERHEAD = 29
-VIDEO_HEADER_SIZE = 32
 LOGIC_COMMAND_CHANNEL = 0x5749
 LOGIC_VIDEO_CHANNEL = 0x574A
-
-
-def _integer(value, bits, name):
-    if type(value) is not int or not 0 <= value < 1 << bits:
-        raise ValueError(f'{name} must be an unsigned {bits}-bit integer')
-
-
-def _bytes(value):
-    if not isinstance(value, (bytes, bytearray, memoryview)):
-        raise TypeError('Expected bytes, bytearray or memoryview')
-    return bytes(value)
-
-
-def _crc_table(polynomial):
-    result = []
-    for value in range(256):
-        for _ in range(8):
-            value = (value >> 1) ^ (polynomial if value & 1 else 0)
-        result.append(value)
-    return tuple(result)
-
-
-_CRC8 = _crc_table(0x8C)
-_REVERSE_BITS = bytes(int(f'{value:08b}'[::-1], 2) for value in range(256))
-
-
-def crc8(data):
-    value = 0x77
-    for byte in data:
-        value = _CRC8[value ^ byte]
-    return value
-
-
-def crc16(data):
-    # crc_hqx uses the same polynomial with the opposite bit order
-    value = binascii.crc_hqx(bytes(data).translate(_REVERSE_BITS), 0x496C)
-    return (_REVERSE_BITS[value & 255] << 8) | _REVERSE_BITS[value >> 8]
 
 
 @dataclass(frozen=True)
@@ -58,9 +19,9 @@ class Address:
     index: int
 
     def __post_init__(self):
-        _integer(self.device_type, 8, 'device_type')
-        _integer(self.device_id, 8, 'device_id')
-        _integer(self.index, 16, 'index')
+        check_uint(self.device_type, 8, 'device_type')
+        check_uint(self.device_id, 8, 'device_id')
+        check_uint(self.index, 16, 'index')
 
     def pack(self):
         return struct.pack('<IH', self.device_id << 8 | self.device_type << 16, self.index)
@@ -80,11 +41,11 @@ class V2Packet:
     payload: bytes = b''
 
     def serialize(self):
-        _integer(self.command_set, 8, 'command_set')
-        _integer(self.command_id, 8, 'command_id')
-        _integer(self.ack, 3, 'ack')
-        _integer(self.sequence, 32, 'sequence')
-        payload = _bytes(self.payload)
+        check_uint(self.command_set, 8, 'command_set')
+        check_uint(self.command_id, 8, 'command_id')
+        check_uint(self.ack, 3, 'ack')
+        check_uint(self.sequence, 32, 'sequence')
+        payload = as_bytes(self.payload)
         length = V2_OVERHEAD + len(payload)
         if length > 65535:
             raise ValueError('V2 packet exceeds its 16-bit length field')
@@ -96,7 +57,7 @@ class V2Packet:
     @classmethod
     def parse(cls, data):
         """Validate one complete packet in the recovered V2 layout."""
-        data = _bytes(data)
+        data = as_bytes(data)
         if len(data) < V2_OVERHEAD or data[:3] != b'\x55\x18\x08':
             raise ValueError('Missing or unsupported V2 header')
         length, flags, sequence = struct.unpack_from('<HHI', data, 3)
@@ -117,14 +78,14 @@ def wrap_logiclink(packet, channel=LOGIC_VIDEO_CHANNEL):
     """Add the app's eight-byte LogicLink header."""
     if channel not in (LOGIC_COMMAND_CHANNEL, LOGIC_VIDEO_CHANNEL):
         raise ValueError('Unsupported LogicLink channel')
-    packet = _bytes(packet)
+    packet = as_bytes(packet)
     if len(packet) > 65535:
         raise ValueError('Inner packet exceeds the recovered V2 limit')
     return struct.pack('<HHI', 0xCC55, channel, len(packet)) + packet
 
 
 def unwrap_logiclink(data):
-    data = _bytes(data)
+    data = as_bytes(data)
     if len(data) < 8:
         raise ValueError('Truncated LogicLink header')
     magic, channel, length = struct.unpack_from('<HHI', data)
@@ -152,37 +113,17 @@ class VideoPacketizer:
     def __init__(self, profile, *, sequence=0, chunk_id=0):
         if profile not in PROFILES:
             raise ValueError('Choose an explicit native profile: zv900 or pigeon')
-        _integer(sequence, 32, 'sequence')
-        _integer(chunk_id, 32, 'chunk_id')
+        check_uint(sequence, 32, 'sequence')
+        check_uint(chunk_id, 32, 'chunk_id')
         self.profile = PROFILES[profile]
         self.sequence = sequence
         self.chunk_id = chunk_id
 
     def packetize(self, frame, *, timestamp_ms=None):
-        """Packetize one nonempty H.264 access unit.
-
-        The caller supplies encoded bytes and access unit boundaries. Keyframes
-        must include codec configuration, as in the app's encoder output.
-
-        Timestamps follow the ARM app: truncate epoch milliseconds to signed
-        32 bits, then sign-extend to 64 bits. Without a timestamp override, sample
-        the clock for each fragment.
-        """
-        frame = _bytes(frame)
-        if not frame:
-            raise ValueError('Cannot packetize an empty video buffer')
-        if timestamp_ms is not None and (type(timestamp_ms) is not int or not -(1 << 63) <= timestamp_ms < 1 << 63):
-            raise ValueError('timestamp_ms must be a signed 64-bit integer')
+        """Return serialized V2 packets for one access unit, LogicLink-wrapped when the profile wraps."""
         packets = []
-        for offset in range(0, len(frame), MAX_VIDEO_CHUNK):
-            chunk = frame[offset:offset+MAX_VIDEO_CHUNK]
-            milliseconds = time.time_ns() // 1_000_000 if timestamp_ms is None else timestamp_ms
-            timestamp = ((milliseconds + (1 << 31)) % (1 << 32)) - (1 << 31)
-            header = struct.pack('<BBBBIqIIB7x', 0, len(frame) > MAX_VIDEO_CHUNK,
-                                 offset+len(chunk) == len(frame), 0, self.chunk_id,
-                                 timestamp, VIDEO_HEADER_SIZE, len(chunk), offset == 0)
-            packet = V2Packet(0x0B, 0x53, VIDEO_SENDER, self.profile.receiver, 3,
-                              self.sequence, header+chunk).serialize()
+        for payload in video_fragments(frame, MAX_VIDEO_CHUNK, self.chunk_id, timestamp_ms):
+            packet = V2Packet(*VIDEO, VIDEO_SENDER, self.profile.receiver, 3, self.sequence, payload).serialize()
             packets.append(wrap_logiclink(packet) if self.profile.logiclink else packet)
             self.sequence = (self.sequence + 1) & 0xFFFFFFFF
             self.chunk_id = (self.chunk_id + 1) & 0xFFFFFFFF

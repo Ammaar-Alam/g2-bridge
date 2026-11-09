@@ -8,18 +8,19 @@ firmware version and module versions. No firmware image is transferred.
 from dataclasses import dataclass, field
 import re
 import struct
-from goggles_bridge.control import V1Packet
+from goggles_bridge.control import GOGGLES, PC, V1Packet
 
-MANIFEST_RECEIVER = (28, 5)
+GET_CFG_FILE = (0x00, 0x4F)
+MANIFEST_RECEIVER = (GOGGLES, 5)
 CHUNK_REQUEST = 1000
 IMAH_HEADER = 224
 IMAH_SIGNATURE = 384
 MAX_MANIFEST = 65536
 
 
-def manifest_request(sequence, offset, *, sender=(10, 1), length=CHUNK_REQUEST):
-    payload = b'\x01' + struct.pack('<II', offset, length)
-    return V1Packet(0x00, 0x4f, sender[0], sender[1], *MANIFEST_RECEIVER, 0, 2, sequence, payload)
+def manifest_request(sequence, offset):
+    payload = b'\x01' + struct.pack('<II', offset, CHUNK_REQUEST)
+    return V1Packet(*GET_CFG_FILE, *PC, *MANIFEST_RECEIVER, 0, 2, sequence, payload)
 
 
 def parse_chunk(payload):
@@ -40,7 +41,6 @@ class Manifest:
     device: str = None
     firmware: str = None
     modules: list = field(default_factory=list)
-    xml: str = ''
 
     def as_dict(self):
         return dict(device=self.device, firmware=self.firmware, modules=self.modules)
@@ -57,7 +57,7 @@ def parse_manifest(container):
     xml = container[IMAH_HEADER+IMAH_SIGNATURE:].rstrip(b'\0').decode('utf-8', errors='replace')
     if '<' not in xml:
         raise ValueError('Manifest payload is not plain XML; it may be encrypted on this firmware')
-    manifest = Manifest(xml=xml)
+    manifest = Manifest()
     device = re.search(r'<device\b[^>]*\bid="([^"]+)"', xml)
     firmware = re.search(r'<firmware\b[^>]*\bformal="([^"]+)"', xml)
     if firmware is None:
@@ -77,8 +77,7 @@ class ManifestReader:
     The caller supplies sequence numbers from the shared allocator, sends what
     poll() returns, and passes every parsed reply to receive().
     """
-    def __init__(self, *, sender=(10, 1), timeout=.6, attempts=3):
-        self.sender = sender
+    def __init__(self, *, timeout=.6, attempts=3):
         self.timeout = timeout
         self.attempts = attempts
         self.data = bytearray()
@@ -104,7 +103,7 @@ class ManifestReader:
                 return []
             self.pending = (packet, now, tries + 1)
             return [packet]
-        packet = manifest_request(next_sequence(), len(self.data), sender=self.sender)
+        packet = manifest_request(next_sequence(), len(self.data))
         self.pending = (packet, now, 1)
         return [packet]
 
@@ -112,7 +111,7 @@ class ManifestReader:
         if self.done or not self.pending or not reply.is_response:
             return False
         request = self.pending[0]
-        if (reply.sequence, reply.command_set, reply.command_id) != (request.sequence, 0x00, 0x4f):
+        if (reply.sequence, reply.command) != (request.sequence, request.command):
             return False
         self.pending = None
         try:

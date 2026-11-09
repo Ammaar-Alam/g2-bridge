@@ -1,7 +1,17 @@
 """DUML V1 control packets recovered from Virtual Flight's ARM serializer."""
 from dataclasses import dataclass
 import struct
-from .protocol import _bytes, _integer, crc8, crc16
+from .duml import as_bytes, check_uint, crc8, crc16
+
+V1_OVERHEAD = 13
+V1_MAX_LENGTH = 1023
+# (device type, device ID) of the computer on the PC USB route, and the goggles' device type
+PC = (10, 1)
+GOGGLES = 0x1C
+# (command set, command ID)
+HEARTBEAT = (0x00, 0x00)
+DEVICE_INFO = (0x00, 0xFF)
+SIM_MODE = (0x0B, 0x1A)
 
 
 @dataclass(frozen=True)
@@ -17,14 +27,18 @@ class V1Packet:
     sequence: int
     payload: bytes = b''
 
+    @property
+    def command(self):
+        return self.command_set, self.command_id
+
     def serialize(self):
         for name, bits in (('command_set', 8), ('command_id', 8), ('sender_type', 5),
                            ('sender_id', 3), ('receiver_type', 5), ('receiver_id', 3),
                            ('is_response', 1), ('ack', 2), ('sequence', 16)):
-            _integer(getattr(self, name), bits, name)
-        payload = _bytes(self.payload)
-        length = len(payload) + 13
-        if length > 1023:
+            check_uint(getattr(self, name), bits, name)
+        payload = as_bytes(self.payload)
+        length = len(payload) + V1_OVERHEAD
+        if length > V1_MAX_LENGTH:
             raise ValueError('V1 packet exceeds its 10-bit length field')
         header = b'\x55' + struct.pack('<H', length | 0x400)
         data = (header + bytes((crc8(header), self.sender_type | self.sender_id << 5,
@@ -35,11 +49,11 @@ class V1Packet:
 
     @classmethod
     def parse(cls, data):
-        data = _bytes(data)
-        if len(data) < 13 or data[0] != 0x55:
+        data = as_bytes(data)
+        if len(data) < V1_OVERHEAD or data[0] != 0x55:
             raise ValueError('Missing V1 header')
         size_version = struct.unpack_from('<H', data, 1)[0]
-        if size_version >> 10 != 1 or size_version & 1023 != len(data):
+        if size_version >> 10 != 1 or size_version & V1_MAX_LENGTH != len(data):
             raise ValueError('V1 version or length mismatch')
         if crc8(data[:3]) != data[3] or crc16(data[:-2]) != struct.unpack_from('<H', data, len(data)-2)[0]:
             raise ValueError('V1 CRC mismatch')
@@ -57,12 +71,12 @@ class V1Stream:
         self.discarded = 0
 
     def feed(self, data):
-        self.buffer.extend(_bytes(data))
+        self.buffer.extend(as_bytes(data))
         result = []
         while len(self.buffer) >= 4:
             size_version = struct.unpack_from('<H', self.buffer, 1)[0]
-            size = size_version & 1023
-            if (self.buffer[0] != 0x55 or size_version >> 10 != 1 or size < 13
+            size = size_version & V1_MAX_LENGTH
+            if (self.buffer[0] != 0x55 or size_version >> 10 != 1 or size < V1_OVERHEAD
                     or crc8(self.buffer[:3]) != self.buffer[3]):
                 del self.buffer[0]
                 self.discarded += 1
@@ -81,12 +95,12 @@ class V1Stream:
 
 
 def heartbeat(sequence):
-    return V1Packet(0, 0, 2, 0, 0x1c, 0, 0, 2, sequence, bytes.fromhex('000020000000'))
+    return V1Packet(*HEARTBEAT, *PC, GOGGLES, 0, 0, 2, sequence, bytes.fromhex('000020000000'))
 
 
 def device_info(sequence):
-    return V1Packet(0, 0xff, 2, 0, 0x1c, 1, 0, 2, sequence, b'\0')
+    return V1Packet(*DEVICE_INFO, *PC, GOGGLES, 1, 0, 2, sequence, b'\0')
 
 
 def sim_mode(sequence):
-    return V1Packet(0x0b, 0x1a, 2, 0, 0x1c, 0, 0, 2, sequence, bytes.fromhex('01010000'))
+    return V1Packet(*SIM_MODE, *PC, GOGGLES, 0, 0, 2, sequence, bytes.fromhex('01010000'))

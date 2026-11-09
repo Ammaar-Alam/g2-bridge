@@ -51,8 +51,8 @@ class WindowsQualityTests(unittest.TestCase):
                     patch.object(Path, 'is_file', return_value=True), \
                     patch.object(stream_desktop.sys, 'argv', ['stream_desktop', '--dll', 'driver.dll',
                                                            '--ffmpeg', 'ffmpeg.exe', *options]), \
-                    patch('goggles_bridge.engine.check_encoder', return_value=None) as check, \
-                    patch('goggles_bridge.engine.BridgeEngine') as engine, \
+                    patch.object(stream_desktop, 'check_encoder', return_value=None) as check, \
+                    patch.object(stream_desktop, 'BridgeEngine') as engine, \
                     contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(stream_desktop.main(), 0)
                 settings = engine.call_args.args[0]

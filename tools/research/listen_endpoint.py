@@ -11,50 +11,21 @@ up. Run this, then move and rotate the goggles; watch for bytes that change with
 motion.
 """
 import argparse
-import ctypes as C
 import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from goggles_bridge.usb_transport import PRODUCT_ID, VENDOR_ID, get_backend, is_timeout
 
 # (interface number, IN endpoint). MI04/0x85 is the known video+DUML channel; omit it.
 DEFAULT_CHANNELS = ((3, 0x84), (5, 0x86), (6, 0x87), (7, 0x88))
 
 
-def build_backend(dll_path):
-    """Load pyusb's libusb0 backend against DJI's driver DLL (custom struct layout)."""
-    dll = Path(dll_path).resolve(strict=True)
-    import usb.core
-    import usb.util
-    import usb.backend.libusb0 as libusb
-    if libusb.get_backend(find_library=lambda _: str(dll)) is None:
-        raise RuntimeError(f'Cannot load the DJI USB DLL at {dll}')
-
-    class DjiDevice(C.Structure):
-        _pack_ = 1
-
-    DjiDevice._fields_ = [
-        ('next', C.POINTER(DjiDevice)), ('prev', C.POINTER(DjiDevice)),
-        ('filename', C.c_char * 512), ('location', C.c_char * 512),
-        ('bus', C.POINTER(libusb._usb_bus)), ('descriptor', libusb._usb_device_descriptor),
-        ('config', C.POINTER(libusb._usb_config_descriptor)), ('dev', C.c_void_p),
-        ('devnum', C.c_uint8), ('num_children', C.c_uint8),
-        ('children', C.POINTER(C.POINTER(DjiDevice))),
-    ]
-    # Same invariant the shipping backend checks: a wrong layout would misread the device.
-    assert DjiDevice.descriptor.offset == 1048 and C.sizeof(DjiDevice) == 1092
-
-    class Backend(libusb._LibUSB):
-        def enumerate_devices(self):
-            for device in super().enumerate_devices():
-                yield C.cast(C.pointer(device), C.POINTER(DjiDevice)).contents
-
-    libusb._lib.usb_open.argtypes = [C.POINTER(DjiDevice)]
-    return usb.core, usb.util, Backend()
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dll', type=Path, required=True)
+    parser.add_argument('--dll', type=Path, help='Windows only: verified DJI x64 libusb0_device.dll '
+                        '(default: DJI_USB_DLL or the installed driver copy)')
     parser.add_argument('--python-deps', type=Path, help='Directory containing PyUSB')
     parser.add_argument('--seconds', type=float, default=25.0)
     parser.add_argument('--channels', help='Comma list of iface:ep_hex, e.g. 3:0x84,5:0x86')
@@ -68,9 +39,11 @@ def main():
         channels = tuple((int(a), int(b, 0)) for a, b in
                          (pair.split(':') for pair in args.channels.split(',')))
 
-    core, util, backend = build_backend(args.dll)
+    backend = get_backend(args.dll)
+    import usb.core as core
+    import usb.util as util
     # Each MI is its own libusb-win32 node; map interface number -> owning device node.
-    nodes = list(core.find(find_all=True, backend=backend, idVendor=0x2ca3, idProduct=0x0020))
+    nodes = list(core.find(find_all=True, backend=backend, idVendor=VENDOR_ID, idProduct=PRODUCT_ID))
     iface_to_dev = {}
     for node in nodes:
         for cfg in node:
@@ -111,7 +84,7 @@ def main():
                 try:
                     data = bytes(iface_to_dev[interface].read(endpoint, 4096, timeout=200))
                 except core.USBError as exc:
-                    if isinstance(exc, core.USBTimeoutError) or getattr(exc, 'backend_error_code', None) == -116:
+                    if is_timeout(exc):
                         continue
                     stats[endpoint]['errors'] += 1
                     if stats[endpoint]['errors'] == 1:

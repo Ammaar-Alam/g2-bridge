@@ -1,6 +1,6 @@
-"""Read complete H.264 packets from FFmpeg's nonseekable, single-stream AVI."""
+"""Read complete H.264 access units, without their AUDs, from FFmpeg's nonseekable, single-stream AVI."""
 import struct
-from .protocol import _bytes
+from .annexb import strip_aud
 
 
 class AviPacketStream:
@@ -55,7 +55,7 @@ class AviPacketStream:
             raise ValueError('Missing or duplicate AVI stream headers')
 
     def feed(self, data):
-        self.buffer.extend(_bytes(data))
+        self.buffer.extend(data)
         packets = []
         while True:
             if self.phase == 'riff':
@@ -108,7 +108,7 @@ class AviPacketStream:
                 if len(self.buffer) < 8+size:
                     break
                 if tag == b'00dc' and size:
-                    packets.append(bytes(self.buffer[8:8+size]))
+                    packets.append(strip_aud(self.buffer[8:8+size]))
                 del self.buffer[:8+size]
                 self.pad_due = bool(size&1)
         return packets

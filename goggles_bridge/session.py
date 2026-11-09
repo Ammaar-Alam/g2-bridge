@@ -1,19 +1,20 @@
 """Manage the goggles control handshake independently of byte transport.
 
-The ready state requires a matching simulator-mode success reply. Source
-addresses default to the PC USB route. With enter_simulator=False, the session
-stops in the identified state after the identity reply and keeps sending
-heartbeats. Diagnostics use this to read an untested model's identity without
-changing its display mode.
+The ready state requires a matching simulator-mode success reply. With
+enter_simulator=False, the session stops in the identified state after the
+identity reply and keeps sending heartbeats. Diagnostics use this to read an
+untested model's identity without changing its display mode.
 """
-from dataclasses import dataclass, replace
-from .control import heartbeat, device_info, sim_mode
+from dataclasses import dataclass
+from .control import DEVICE_INFO, HEARTBEAT, SIM_MODE, device_info, heartbeat, sim_mode
+from .duml import check_uint
 
 
 # Identity codes that have displayed video through the PC route
 MODELS = {'ZV900': 'DJI Goggles 2', 'ZV901': 'DJI Goggles Integra'}
 SIMULATOR_SILENT = ('The goggles answered but ignored simulator mode. '
                     'Open More > DJI Virtual Flight on the goggles')
+HEARTBEAT_SECONDS = .5
 
 
 class SessionError(RuntimeError):
@@ -32,13 +33,10 @@ class Pending:
 
 
 class ControlSession:
-    def __init__(self, *, source_type=10, source_id=1, sequence=0, models=MODELS, enter_simulator=True):
-        # Validate addresses and sequence using the actual serializer.
-        replace(heartbeat(sequence), sender_type=source_type, sender_id=source_id).serialize()
+    def __init__(self, *, sequence=0, models=MODELS, enter_simulator=True):
+        check_uint(sequence, 16, 'sequence')
         self.models = dict(models)
         self.enter_simulator = enter_simulator
-        self.source_type = source_type
-        self.source_id = source_id
         self.sequence = sequence
         self.state = 'new'
         self.identity = None
@@ -60,9 +58,8 @@ class ControlSession:
         raise SessionError('Sequence space exhausted')
 
     def _new(self, factory, now):
-        sequence = self.reserve_sequence()
-        packet = replace(factory(sequence), sender_type=self.source_type, sender_id=self.source_id)
-        self.pending[sequence] = Pending(packet, now)
+        packet = factory(self.reserve_sequence())
+        self.pending[packet.sequence] = Pending(packet, now)
         return packet
 
     def _fail(self, message, error_type=SessionError):
@@ -78,7 +75,7 @@ class ControlSession:
             self.started_at = now
             self.next_heartbeat = now
             self.state = 'heartbeat'
-        if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= 1.5:
+        if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= 3*HEARTBEAT_SECONDS:
             self._fail('Three heartbeat intervals passed without a matching success reply', SessionLost)
         if self.state not in ('ready', 'identified') and now - self.started_at >= 4:
             self._fail('Control handshake timed out', SessionLost)
@@ -86,11 +83,11 @@ class ControlSession:
         for seq, item in list(self.pending.items()):
             if now - item.sent_at < .5:
                 continue
-            if (item.packet.command_set, item.packet.command_id) == (0, 0):
+            if item.packet.command == HEARTBEAT:
                 # The next heartbeat replaces this expired request.
                 del self.pending[seq]
             elif item.attempts >= 3:
-                if (item.packet.command_set, item.packet.command_id) == (0x0b, 0x1a):
+                if item.packet.command == SIM_MODE:
                     # Heartbeats and identity still answer outside Virtual Flight, but simulator
                     # mode gets no reply at all, on firmware 01.11 and 01.14 alike.
                     self._fail(SIMULATOR_SILENT, SessionLost)
@@ -101,7 +98,7 @@ class ControlSession:
                 outgoing.append(item.packet)
         if now >= self.next_heartbeat:
             outgoing.append(self._new(heartbeat, now))
-            self.next_heartbeat = now + .5
+            self.next_heartbeat = now + HEARTBEAT_SECONDS
         return outgoing
 
     def receive(self, reply, now):
@@ -112,21 +109,18 @@ class ControlSession:
         if pending is None or not reply.is_response:
             return []
         req = pending.packet
-        if (reply.command_set, reply.command_id, reply.sender_type, reply.sender_id,
-                reply.receiver_type, reply.receiver_id) != (
-                req.command_set, req.command_id, req.receiver_type, req.receiver_id,
-                req.sender_type, req.sender_id):
+        if (reply.command, reply.sender_type, reply.sender_id, reply.receiver_type, reply.receiver_id) != (
+                req.command, req.receiver_type, req.receiver_id, req.sender_type, req.sender_id):
             return []
         del self.pending[reply.sequence]
         if reply.payload[:1] != b'\0':
             self._fail(f'Goggles rejected {req.command_set:02x}/{req.command_id:02x}: {reply.payload.hex()}')
-        command = (reply.command_set, reply.command_id)
-        if command == (0, 0):
+        if reply.command == HEARTBEAT:
             self.last_heartbeat_ack = now
             if self.state == 'heartbeat':
                 self.state = 'identity'
                 return [self._new(device_info, now)]
-        elif command == (0, 255) and self.state == 'identity':
+        elif reply.command == DEVICE_INFO and self.state == 'identity':
             self.identity = reply.payload[1:].rstrip(b'\0').decode('ascii', errors='replace')
             self.model = next((name for code, name in self.models.items()
                                if self.identity.upper().startswith(f'E3T {code}')), None)
@@ -137,6 +131,6 @@ class ControlSession:
                 return []
             self.state = 'simulator'
             return [self._new(sim_mode, now)]
-        elif command == (11, 26) and self.state == 'simulator':
+        elif reply.command == SIM_MODE and self.state == 'simulator':
             self.state = 'ready'
         return []

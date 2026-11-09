@@ -1,12 +1,10 @@
-import importlib.util
 import json
 from pathlib import Path
 import unittest
 
+from tools.research import probe_goggles as probe
+
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('probe_goggles', ROOT/'tools/research/probe_goggles.py')
-probe = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(probe)
 
 
 class ProbeTests(unittest.TestCase):

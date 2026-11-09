@@ -1,3 +1,4 @@
+from dataclasses import replace
 import json
 from pathlib import Path
 import unittest
@@ -13,7 +14,10 @@ class ControlTests(unittest.TestCase):
                 self.assertEqual(packet.serialize().hex(), case['packet_hex'])
                 self.assertEqual(V1Packet.parse(bytes.fromhex(case['packet_hex'])), packet)
                 if case['name'] in ('heartbeat', 'device_info', 'sim_mode'):
-                    self.assertEqual(globals()[case['name']](4660), packet)
+                    # the oracle uses the app's own address; the bridge sends from the PC address
+                    request = globals()[case['name']](4660)
+                    self.assertEqual((request.sender_type, request.sender_id), (10, 1))
+                    self.assertEqual(replace(request, sender_type=2, sender_id=0), packet)
 
     def test_real_receive_and_fragmentation(self):
         raw = bytes.fromhex('550e04660e2ac701000943033039')

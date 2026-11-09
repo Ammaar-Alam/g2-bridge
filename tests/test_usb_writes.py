@@ -33,7 +33,7 @@ class UsbWriteTests(unittest.TestCase):
     def test_transfer_boundaries_preserve_packet_bytes_and_frame(self):
         frame = bytes(range(256))*101
         packets = PcVideoPacketizer().packetize(frame, count().__next__, timestamp_ms=123456)
-        wire = b''.join(p.serialize() for p in packets)
+        wire = b''.join(packets)
         calls = []
         for size in USB_WRITE_SIZES:
             with self.subTest(write_size=size):

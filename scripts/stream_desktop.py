@@ -1,5 +1,6 @@
 """Stream the Windows or macOS desktop to stock DJI Goggles 2 in Virtual Flight mode."""
 import argparse
+from dataclasses import fields
 from datetime import datetime
 import os
 from pathlib import Path
@@ -13,15 +14,13 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from goggles_bridge import mac_capture
-from goggles_bridge.engine import BITRATES_MBPS
-from goggles_bridge.usb_transport import DEFAULT_DLL, USB_WRITE_SIZES
+from goggles_bridge.engine import (CHOICES, HEIGHT, WIDTH, BridgeEngine, BridgeSettings, check_encoder,
+                                   find_program)
+from goggles_bridge.usb_transport import DEFAULT_DLL, find_dll
 
 MAC = sys.platform == 'darwin'
 MAC_CAPTURE = 'screencapturekit' if MAC and mac_capture.supported() else 'avfoundation'
 FFMPEG_INSTALL = 'brew install ffmpeg' if MAC else 'winget install Gyan.FFmpeg'
-
-# winget adds this folder to PATH but terminals opened before the install miss it
-WINGET_LINKS = Path(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WinGet', 'Links')
 SETUP_HINTS = {
     'dll': 'DJI USB driver not found. Install DJI Assistant 2 (Consumer Drones Series), or pass --dll',
     'ffmpeg': f'FFmpeg not found. Run "{FFMPEG_INSTALL}", or pass --ffmpeg',
@@ -63,34 +62,37 @@ def install_mac_dependencies(parser, args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dll', type=Path, default=None if MAC else os.environ.get('DJI_USB_DLL') or DEFAULT_DLL,
+    # destinations match BridgeSettings fields
+    parser.add_argument('--dll', type=Path,
                         help='Windows only: DJI x64 libusb0_device.dll (default: DJI_USB_DLL or the installed driver copy)')
-    parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or shutil.which('ffmpeg')
-                        or shutil.which('ffmpeg', path=str(WINGET_LINKS)),
+    parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or find_program('ffmpeg'),
                         help='FFmpeg executable with NVENC or VideoToolbox and the chosen capture (default: GOGGLES_FFMPEG or PATH)')
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
-    parser.add_argument('--fps', type=int, choices=(60, 75, 90, 100), default=100,
-                        help='Target encoder frame rate (default: 100)')
-    parser.add_argument('--bitrate-mbps', type=int, choices=BITRATES_MBPS,
+    parser.add_argument('--fps', type=int, choices=CHOICES['fps'], default=BridgeSettings.fps,
+                        help='Target encoder frame rate (default: %(default)s)')
+    parser.add_argument('--bitrate-mbps', type=int, choices=CHOICES['bitrate_mbps'],
                         help='Video bitrate (Windows default: 24 at 60 fps, 30 at 75 fps, otherwise 32; macOS: 20 Mbps)')
-    parser.add_argument('--aq', action='store_true',
+    parser.add_argument('--aq', dest='adaptive_quant', action='store_true',
                         help='Turn on NVENC adaptive quantization (Windows only)')
     parser.add_argument('--capture', choices=('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'),
-                        default=MAC_CAPTURE if MAC else 'gfxcapture',
+                        default=MAC_CAPTURE if MAC else BridgeSettings.capture,
                         help='Windows: Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling. '
                              'macOS: ScreenCaptureKit on 12.3 and later, or AVFoundation through FFmpeg')
-    parser.add_argument('--capture-fps', type=int, default=240, help='Maximum capture rate, in fps')
-    parser.add_argument('--display', type=int, default=0, help='Zero-based monitor index')
-    parser.add_argument('--hide-cursor', action='store_true')
-    parser.add_argument('--preset', choices=('p1', 'p4'), default='p1',
-                        help='Windows NVENC preset (default: p1)')
-    parser.add_argument('--h264-profile', choices=('baseline', 'high'), default='high',
-                        help='H.264 profile (default: high)')
-    parser.add_argument('--keyframe-seconds', type=int, choices=(1, 3), default=3)
-    parser.add_argument('--low-latency', action=argparse.BooleanOptionalAction, default=True,
+    parser.add_argument('--capture-fps', type=int, default=BridgeSettings.capture_fps, help='Maximum capture rate, in fps')
+    parser.add_argument('--display', dest='display_index', metavar='DISPLAY', type=int,
+                        default=BridgeSettings.display_index,
+                        help='Zero-based monitor index')
+    parser.add_argument('--hide-cursor', dest='show_cursor', action='store_false')
+    parser.add_argument('--preset', choices=CHOICES['preset'], default=BridgeSettings.preset,
+                        help='Windows NVENC preset (default: %(default)s)')
+    parser.add_argument('--h264-profile', choices=CHOICES['h264_profile'], default=BridgeSettings.h264_profile,
+                        help='H.264 profile (default: %(default)s)')
+    parser.add_argument('--keyframe-seconds', type=int, choices=CHOICES['keyframe_seconds'],
+                        default=BridgeSettings.keyframe_seconds)
+    parser.add_argument('--low-latency', action=argparse.BooleanOptionalAction, default=BridgeSettings.low_latency,
                         help='Release complete encoded frames immediately and remove H.264 filler data (default: on)')
-    parser.add_argument('--usb-write-size', type=int, choices=USB_WRITE_SIZES, default=16384,
-                        help='Maximum bytes per USB write (default: 16384)')
+    parser.add_argument('--usb-write-size', type=int, choices=CHOICES['usb_write_size'],
+                        default=BridgeSettings.usb_write_size, help='Maximum bytes per USB write (default: %(default)s)')
     parser.add_argument('--seconds', type=float, default=0, help='Duration in seconds, including reconnects (0 runs until stopped)')
     parser.add_argument('--no-reconnect', action='store_true', help='Exit on USB or heartbeat loss')
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
@@ -115,11 +117,11 @@ def main():
             mac_capture.build()
         except RuntimeError as exc:
             parser.error(str(exc))
-    for name in ('dll', 'ffmpeg') if not MAC else ('ffmpeg',) if args.capture == 'avfoundation' else ():
-        path = getattr(args, name)
-        if path is None or not path.is_file():
-            parser.error(SETUP_HINTS[name] if path in (None, DEFAULT_DLL) else f'--{name} file not found: {path}')
-    from goggles_bridge.engine import BridgeEngine, BridgeSettings, check_encoder
+    dll = find_dll(args.dll)
+    if not MAC and not dll.is_file():
+        parser.error(SETUP_HINTS['dll'] if dll == DEFAULT_DLL else f'--dll file not found: {dll}')
+    if args.capture != 'screencapturekit' and (args.ffmpeg is None or not args.ffmpeg.is_file()):
+        parser.error(SETUP_HINTS['ffmpeg'] if args.ffmpeg is None else f'--ffmpeg file not found: {args.ffmpeg}')
     stop = threading.Event()
     log_path = args.log or ROOT / 'work' / 'logs' / f'{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}.jsonl'
 
@@ -128,7 +130,8 @@ def main():
         if event == 'waiting':
             print(f"Waiting / reconnecting: {row['message']}", flush=True)
         elif event == 'streaming':
-            print(f'Streaming 1920x1080 at target {settings.fps} fps, {settings.bitrate_mbps} Mbps. Ctrl+C stops.', flush=True)
+            print(f'Streaming {WIDTH}x{HEIGHT} at target {settings.fps} fps, {settings.bitrate_mbps} Mbps. '
+                  'Ctrl+C stops.', flush=True)
         elif event == 'stats':
             print(f"Sent {row['fps']:.1f} fps | queue p95 {row['queue_ms_p95']:.1f} ms | send p95 {row['send_ms_p95']:.1f} ms"
                   f" | largest frame {row['frame_bytes_max']/1000:.0f} KB", flush=True)
@@ -143,11 +146,7 @@ def main():
             print(event.capitalize(), flush=True)
 
     try:
-        settings = BridgeSettings(args.dll, args.ffmpeg, fps=args.fps, bitrate_mbps=args.bitrate_mbps,
-            capture=args.capture, capture_fps=args.capture_fps, display_index=args.display,
-            show_cursor=not args.hide_cursor, preset=args.preset, keyframe_seconds=args.keyframe_seconds,
-            low_latency=args.low_latency, usb_write_size=args.usb_write_size, h264_profile=args.h264_profile,
-            adaptive_quant=args.aq)
+        settings = BridgeSettings(**{field.name: getattr(args, field.name) for field in fields(BridgeSettings)})
         print('Checking screen capture...', flush=True)
         problem = check_encoder(settings)
         if problem:
