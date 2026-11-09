@@ -10,7 +10,9 @@ The bridge detects the model when it connects:
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 | DJI FPV Goggles V2 | `WM170 PIGEON` | control works over its COM port on 01.07.00.00; no PC-side video path found. See [the V2 notes](docs/research/GOGGLES_V2.md) |
 
-Goggles 3 and the FPV Goggles V1 have profiles too, all untested. For rooted FPV Goggles V1 and V2, [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) is an existing alternative.
+Goggles 3 and the FPV Goggles V1 have profiles too, both untested. For rooted FPV Goggles V1 and V2, [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim) is an existing alternative.
+
+Goggles 2 owners should update to firmware 01.14 or later: it fixes a number of bugs since 01.11, and the bridge is tested on it.
 
 We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
 
@@ -41,7 +43,7 @@ On Windows, you need the following hardware and software:
 - FFmpeg with `gfxcapture` and `h264_nvenc`. To install it, run `winget install Gyan.FFmpeg`.
 - [DJI Assistant 2 (Consumer Drones Series)](https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series), which installs the DJI USB driver 5.0.0.7. See [USB and driver requirements](docs/PROTOCOL.md#usb-and-session).
 
-Tests used FFmpeg build `2026-11-05-git-0893feba65` and NVIDIA driver 610.74.
+Tests used FFmpeg build `2026-11-05-git-0893feba65` with NVIDIA driver 610.74 on an RTX 5060 Laptop, and FFmpeg 9.0.2 with driver 621.14 on an RTX 3080.
 
 On macOS, you need the following:
 
