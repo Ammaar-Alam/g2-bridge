@@ -10,13 +10,22 @@ import sys
 import threading
 import time
 
-from .annexb import AccessUnitStream, strip_aud
+from .annexb import AccessUnitStream, is_idr, strip_aud
 from .avi import AviPacketStream
 from .control import V1Stream
 from .mac_capture import helper_path
 from .pc_video import PcVideoPacketizer
 from .session import ControlSession, SessionLost
 from .usb_transport import ControlUsb, UsbTransportError, USB_WRITE_SIZES
+
+
+BITRATES_MBPS = (8, 10, 12, 16, 20, 24, 30, 32, 40)
+# Goggles 2 displayed frames up to 49 KB, but keyframes of about 65 KB froze it or left it
+# black until a power cycle. The encoder buffer is capped at this size, and larger frames aren't sent
+MAX_FRAME_BYTES = 56_000
+MAX_VBV_BITS = MAX_FRAME_BYTES * 8
+# Largest tested average frame, 40 Mbps at 100 fps
+MAX_AVERAGE_FRAME_BYTES = 50_000
 
 
 @dataclass(frozen=True)
@@ -34,20 +43,37 @@ class BridgeSettings:
     low_latency: bool = True
     usb_write_size: int = 16384
     h264_profile: str = 'high'
+    # NVENC spatial and temporal adaptive quantization, off until its goggles latency is measured
+    adaptive_quant: bool = False
 
     def __post_init__(self):
+        if type(self.fps) is not int or self.fps not in (60, 75, 90, 100):
+            raise ValueError(f'Unsupported fps: {self.fps}')
         if self.bitrate_mbps is None:
             object.__setattr__(self, 'bitrate_mbps',
-                               20 if self.capture in ('avfoundation', 'screencapturekit') else 32)
-        if type(self.low_latency) is not bool:
-            raise ValueError('low_latency must be a boolean')
+                               20 if self.capture in ('avfoundation', 'screencapturekit')
+                               else min(32, self.fps*8*MAX_AVERAGE_FRAME_BYTES//1_000_000))
+        for name in ('low_latency', 'adaptive_quant'):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f'{name} must be a boolean')
         if type(self.usb_write_size) is not int or self.usb_write_size not in USB_WRITE_SIZES:
             raise ValueError(f'Unsupported USB write size: {self.usb_write_size}')
-        for name, choices in (('fps', (60, 75, 90, 100)), ('bitrate_mbps', (8, 10, 12, 16, 20, 24, 32)),
+        for name, choices in (('bitrate_mbps', BITRATES_MBPS),
                               ('capture', ('gfxcapture', 'ddagrab', 'avfoundation', 'screencapturekit')), ('preset', ('p1', 'p4')),
                               ('keyframe_seconds', (1, 3)), ('h264_profile', ('baseline', 'high'))):
             if getattr(self, name) not in choices:
                 raise ValueError(f'Unsupported {name}: {getattr(self, name)}')
+        if self.adaptive_quant and self.capture not in ('gfxcapture', 'ddagrab'):
+            raise ValueError('Adaptive quantization needs the Windows NVENC encoder')
+        # shortcut: only the NVENC buffer cap is verified on goggles, so macOS keeps the earlier
+        # 24 Mbps ceiling and its frames are never skipped; lift both once a Mac cap is verified
+        if self.capture not in ('gfxcapture', 'ddagrab') and self.bitrate_mbps > 24:
+            raise ValueError('macOS capture supports at most 24 Mbps')
+        # The buffer cap bounds keyframes, but in CBR every frame averages bitrate/fps
+        if self.bitrate_mbps * 1_000_000 // (8 * self.fps) > MAX_AVERAGE_FRAME_BYTES:
+            limit = max(b for b in BITRATES_MBPS if b * 1_000_000 // (8 * self.fps) <= MAX_AVERAGE_FRAME_BYTES)
+            raise ValueError(f'At {self.fps} fps, use at most {limit} Mbps. '
+                             f'{self.bitrate_mbps} Mbps makes frames too large for the goggles')
         if type(self.capture_fps) is not int or not self.fps <= self.capture_fps <= 1000:
             raise ValueError('Capture ceiling must be between output fps and 1000')
         if type(self.display_index) is not int or self.display_index < 0:
@@ -83,8 +109,11 @@ def encoder_command(settings):
                     'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=nv12']
     # More bitrate must not enlarge the previous 20 Mbps buffer budget
     command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
-                '-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(min(bitrate, 20_000_000)*2//settings.fps),
-                '-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
+                '-b:v', str(bitrate), '-maxrate', str(bitrate),
+                '-bufsize', str(min(min(bitrate, 20_000_000)*2//settings.fps, MAX_VBV_BITS))]
+    if settings.adaptive_quant:
+        command += ['-spatial-aq', '1', '-temporal-aq', '1']
+    command += ['-zerolatency', '1', '-delay', '0', '-bf', '0', '-g', str(settings.fps*settings.keyframe_seconds),
                 '-profile:v', settings.h264_profile, '-level:v', '4.2' if settings.fps == 60 else '5.1',
                 '-aud', '1', '-forced-idr', '1', '-flush_packets', '1']
     command += ['-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
@@ -206,7 +235,7 @@ class BridgeEngine:
                       resolution='1920x1080', preset=self.settings.preset,
                       keyframe_seconds=self.settings.keyframe_seconds, display_index=self.settings.display_index,
                       low_latency=self.settings.low_latency, usb_write_size=self.settings.usb_write_size,
-                      h264_profile=self.settings.h264_profile,
+                      h264_profile=self.settings.h264_profile, adaptive_quant=self.settings.adaptive_quant,
                       intra_refresh=self.settings.capture in ('gfxcapture', 'ddagrab'),
                       multipass='qres' if self.settings.capture in ('gfxcapture', 'ddagrab') else 'disabled')
             try:
@@ -239,8 +268,15 @@ class BridgeEngine:
         decoder = V1Stream()
         packetizer = PcVideoPacketizer()
         process = None
+        encoder_thread = None
+        encoder_stop = threading.Event()
+        encoder_first_frame = True
+        restart_attempts = 0
+        last_restart = None
         threads = []
-        frame_count = byte_count = previous_frames = 0
+        frame_count = byte_count = previous_frames = oversize_count = largest_frame = 0
+        resync = False
+        guarded = self.settings.capture in ('gfxcapture', 'ddagrab')
         queue_times, send_times = [], []
         last_frame = last_progress = time.perf_counter()
         encoder_path = self.log_path.with_name(f'{self.log_path.stem}.encoder-{attempt}.log')
@@ -257,25 +293,56 @@ class BridgeEngine:
                     if not local_stop.is_set():
                         errors.put(exc)
 
-            def read_encoder():
+            def read_encoder(encoder):
                 splitter = AviPacketStream() if self.settings.low_latency else AccessUnitStream()
                 try:
-                    while not local_stop.is_set():
-                        data = process.stdout.read(16384)
+                    while not local_stop.is_set() and not encoder_stop.is_set():
+                        data = encoder.stdout.read(16384)
                         if not data:
                             raise RuntimeError(f'Capture ended. See {encoder_path}')
                         for packet in splitter.feed(data):
                             frame = strip_aud(packet) if self.settings.low_latency else packet
                             completed_at = time.perf_counter()
-                            while not local_stop.is_set():
+                            while not local_stop.is_set() and not encoder_stop.is_set():
                                 try:
                                     frames.put((completed_at, frame), timeout=.1)
                                     break
                                 except queue.Full:
                                     pass
                 except Exception as exc:
-                    if not local_stop.is_set():
+                    if not local_stop.is_set() and not encoder_stop.is_set():
                         errors.put(exc)
+
+            def stop_encoder():
+                nonlocal process, encoder_thread
+                encoder_stop.set()
+                if process and process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=3)
+                if process and process.stdout:
+                    process.stdout.close()
+                if encoder_thread:
+                    encoder_thread.join(timeout=1)
+                    if encoder_thread.is_alive():
+                        raise RuntimeError('Encoder reader did not stop')
+                process = encoder_thread = None
+                while not frames.empty():
+                    frames.get_nowait()
+
+            def start_encoder():
+                nonlocal process, encoder_thread, encoder_first_frame, last_frame
+                encoder_stop.clear()
+                process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
+                    stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0,
+                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                last_frame = time.perf_counter()
+                encoder_first_frame = True
+                encoder_thread = threading.Thread(target=read_encoder, args=(process,), daemon=True)
+                encoder_thread.start()
 
             def send_control(packet):
                 data = packet.serialize()
@@ -301,13 +368,7 @@ class BridgeEngine:
                     if session.state == 'ready' and process is None:
                         self.waiting = None
                         self.emit('ready', model=session.model, identity=session.identity)
-                        process = self.process_factory(encoder_command(self.settings), stdout=subprocess.PIPE,
-                            stderr=encoder_log, stdin=subprocess.DEVNULL, bufsize=0,
-                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-                        last_frame = time.perf_counter()
-                        thread = threading.Thread(target=read_encoder, daemon=True)
-                        threads.append(thread)
-                        thread.start()
+                        start_encoder()
                     if session.state == 'ready':
                         try:
                             completed_at, frame = frames.get(timeout=.002)
@@ -316,6 +377,28 @@ class BridgeEngine:
                                 raise RuntimeError(f'No video from display. See {encoder_path}')
                             continue
                         last_frame = time.perf_counter()
+                        oversize = guarded and len(frame) > MAX_FRAME_BYTES
+                        if oversize:
+                            oversize_count += 1
+                            self.emit('oversize_frame', bytes=len(frame), limit=MAX_FRAME_BYTES)
+                            # A fitting IDR alone must not reset repeated oversize failures
+                            if last_restart is None or last_frame-last_restart >= 5:
+                                restart_attempts = 0
+                            restart_attempts += 1
+                            last_restart = last_frame
+                            stop_encoder()
+                            if restart_attempts >= 3:
+                                raise RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')
+                            if not self.stopping():
+                                start_encoder()
+                                self.emit('encoder_restart', attempt=restart_attempts)
+                            resync = True
+                            continue
+                        # Later frames reference a skipped one, so resume only at a keyframe that fits
+                        if resync and not is_idr(frame):
+                            continue
+                        resync = False
+                        largest_frame = max(largest_frame, len(frame))
                         queue_times.append((last_frame-completed_at)*1000)
                         wire = b''.join(packet.serialize() for packet in
                                         packetizer.packetize(frame, session.reserve_sequence))
@@ -323,8 +406,9 @@ class BridgeEngine:
                         send_times.append((time.perf_counter()-last_frame)*1000)
                         byte_count += len(wire)
                         frame_count += 1
-                        if frame_count == 1:
+                        if encoder_first_frame:
                             self.emit('streaming', encoder_pid=process.pid, gpu_realtime=prioritize_gpu(process))
+                            encoder_first_frame = False
                     else:
                         self.stop_event.wait(.002)
                     now = time.perf_counter()
@@ -333,22 +417,17 @@ class BridgeEngine:
                             return round(sorted(values)[int((len(values)-1)*.95)], 2) if values else 0
                         self.emit('stats', frames=frame_count, bytes=byte_count, queued_frames=frames.qsize(),
                                   fps=round((frame_count-previous_frames)/(now-last_progress), 2),
-                                  queue_ms_p95=p95(queue_times), send_ms_p95=p95(send_times))
-                        previous_frames, last_progress = frame_count, now
+                                  queue_ms_p95=p95(queue_times), send_ms_p95=p95(send_times),
+                                  frame_bytes_max=largest_frame, oversize_frames=oversize_count)
+                        previous_frames, last_progress, largest_frame = frame_count, now, 0
                         queue_times.clear()
                         send_times.clear()
             finally:
                 local_stop.set()
-                if process and process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=3)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=3)
-                for thread in threads:
-                    thread.join(timeout=1)
-                if process and process.stdout:
-                    process.stdout.close()
-                self.emit('session_ended', frames=frame_count, bytes=byte_count,
-                          discarded_bytes=decoder.discarded)
+                try:
+                    stop_encoder()
+                finally:
+                    for thread in threads:
+                        thread.join(timeout=1)
+                    self.emit('session_ended', frames=frame_count, bytes=byte_count,
+                              discarded_bytes=decoder.discarded)

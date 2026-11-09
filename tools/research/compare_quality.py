@@ -32,7 +32,7 @@ def run(command, log, folder):
 def comparison_command(ffmpeg, preset, fps=100):
     settings = BridgeSettings(Path('unused.dll'), ffmpeg, fps=fps,
                               preset='p4' if preset == 'previous' else 'p1',
-                              bitrate_mbps=20 if preset == 'previous' else 32)
+                              bitrate_mbps=20 if preset == 'previous' else None)
     command = encoder_command(settings)
     if preset == 'previous':
         for flag in ('-vf', '-multipass', '-intra-refresh', '-single-slice-intra-refresh'):

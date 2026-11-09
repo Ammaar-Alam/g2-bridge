@@ -6,7 +6,7 @@ The bridge detects the model when it connects:
 
 | Goggles | Identity | Tested firmware |
 | --- | --- | --- |
-| DJI Goggles 2 | `E3T ZV900` | 01.11.00.00 |
+| DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.14.00.00 |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 
 We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
@@ -67,14 +67,14 @@ The stream script offers to install whatever is missing. Tests used an M2 Pro Ma
 
    On a Mac, the script offers to install anything that's missing, and it builds the screen capture helper on the first run. If the screen can't be captured, go to **System Settings > Privacy & Security** and allow screen recording for your terminal.
 
-The default output is **1920x1080** at a **100 fps encoder target**. The default bitrate is **32 Mbps on Windows** and **20 Mbps on macOS**. To stop streaming, press **Ctrl+C**. The bridge writes logs to `work/logs/`.
+The default output is **1920x1080** at a **100 fps encoder target**. Windows uses **32 Mbps**, or automatically selects **24 Mbps at 60 fps** and **30 Mbps at 75 fps**. macOS uses **20 Mbps**. To stop streaming, press **Ctrl+C**. The bridge writes logs to `work/logs/`.
 
 Use these options to adjust the stream:
 
 | Option | Values |
 | --- | --- |
 | `--fps` | `60`, `75`, `90`, `100` |
-| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`, `32` |
+| `--bitrate-mbps` | `8`, `10`, `12`, `16`, `20`, `24`. On Windows, also `30`, `32`, and `40` |
 | `--display` | Monitor index, starting at `0` |
 | `--hide-cursor` | Hide the mouse pointer |
 | `--capture` | Windows: `gfxcapture` or `ddagrab`. macOS: `screencapturekit` or `avfoundation` |

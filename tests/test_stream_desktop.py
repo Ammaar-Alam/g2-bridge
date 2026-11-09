@@ -44,7 +44,8 @@ class MacSetupTests(unittest.TestCase):
 
 class WindowsQualityTests(unittest.TestCase):
     def test_windows_defaults_and_explicit_overrides(self):
-        for options, bitrate, preset in (([], 32, 'p1'), (['--fps', '75'], 32, 'p1'),
+        for options, bitrate, preset in (([], 32, 'p1'), (['--fps', '75'], 30, 'p1'),
+                (['--fps', '60'], 24, 'p1'), (['--fps', '90'], 32, 'p1'),
                 (['--preset', 'p4', '--bitrate-mbps', '20'], 20, 'p4')):
             with self.subTest(options=options), patch.object(stream_desktop, 'MAC', False), \
                     patch.object(Path, 'is_file', return_value=True), \

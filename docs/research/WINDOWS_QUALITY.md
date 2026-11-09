@@ -6,28 +6,31 @@ reduces median host delay on the tested PC. The headset comparison did not
 establish a noticeable improvement. Panel cadence and optical latency remain
 unverified.
 
-Integration depends on the frame-size safeguards in [PR #18](https://github.com/Ammaar-Alam/g2-bridge/pull/18).
-The 60 and 75 fps configurations measured here can exceed its frame-size budget.
-Gradual refresh also needs a compatible recovery path after an oversized frame.
-Retest the combined implementation before using these results to qualify a release.
+The frame-size safeguards from [PR #18](https://github.com/Ammaar-Alam/g2-bridge/pull/18)
+apply to Windows encoding. Defaults adapt to the selected frame rate, and an
+oversized picture triggers an encoder restart without reopening USB.
 
 ## Encoder changes
 
-The quality configuration uses NVENC High profile, the `p1` preset, 32 Mbps
+At 100 fps, the quality configuration uses NVENC High profile, the `p1` preset, 32 Mbps
 constant bitrate (CBR), quarter-resolution two-pass rate
 control, and single-slice gradual intra refresh. Output stays at 1920x1080 and
 100 fps, with a 400,000-bit video buffering verifier (VBV) buffer, no B frames,
 zero output delay, and
 immediate AVI frame delivery. The default recovery interval is three seconds.
-The same encoding settings apply to Desktop Duplication. At 60, 75, and 90 fps,
-the buffer remains capped at two frames of the previous 20 Mbps budget.
+The same encoding settings apply to Desktop Duplication. Windows selects
+24 Mbps at 60 fps, 30 Mbps at 75 fps, and 32 Mbps at 90 or 100 fps.
+The buffer cannot exceed 448,000 bits or two frames of the previous 20 Mbps budget.
 macOS encoding remains unchanged.
 
 Gradual refresh replaces the recurring instantaneous decoder refresh (IDR)
 pictures that blurred text in the decoded comparison. The first picture is
-an IDR. A reconnect starts a new encoder
-and therefore a new IDR. The buffer setting is not a guaranteed maximum picture
-size; encoded sizes must be checked separately.
+an IDR. The buffer setting is not a guaranteed maximum picture size.
+Before transmission, the bridge rejects Windows pictures larger than 56,000 bytes.
+It stops the encoder, discards queued dependent pictures, and starts an encoder
+that supplies a fresh IDR. The USB session and packet sequence remain intact.
+Three oversize events with less than five seconds between successive events
+stop the stream with an error instead of restarting indefinitely.
 
 Both inspected streams declare three reference frames, three decoded-picture
 buffers, zero reordered frames, and a picture-timing output delay of two ticks.
@@ -70,12 +73,14 @@ including DUML framing. Smaller observed peak pictures do not eliminate the
 extra transmission cost of larger ordinary pictures.
 
 An additional 600-frame comparison at every supported rate improved both
-sequence PSNR and mean SSIM for motion, text, and abrupt changes:
+sequence PSNR and mean SSIM for motion, text, and abrupt changes.
+The baseline uses `p4` at 20 Mbps. The quality configuration uses the defaults
+for each rate, and both encoders use the same buffer cap:
 
 | Rate | Motion PSNR, P4 to P1 | Text PSNR, P4 to P1 | Abrupt changes PSNR, P4 to P1 |
 | --- | --- | --- | --- |
-| 60 fps | 50.619 to 56.028 dB | 43.288 to 50.845 dB | 50.399 to 55.886 dB |
-| 75 fps | 47.866 to 52.553 dB | 42.499 to 49.237 dB | 47.650 to 52.377 dB |
+| 60 fps | 47.644 to 51.726 dB | 41.678 to 48.559 dB | 47.517 to 51.449 dB |
+| 75 fps | 47.523 to 51.639 dB | 41.740 to 48.553 dB | 47.320 to 51.417 dB |
 | 90 fps | 46.039 to 50.296 dB | 41.285 to 48.021 dB | 45.797 to 50.112 dB |
 | 100 fps | 44.988 to 49.290 dB | 41.919 to 47.138 dB | 44.801 to 49.026 dB |
 
@@ -84,17 +89,24 @@ each row. Individual motion pictures can be larger with the quality configuratio
 The 100 fps motion and text encodes match all 600 pictures from the previously
 measured candidate byte for byte.
 
-The largest pictures at 60 and 75 fps were 73,124 and 58,621 bytes, respectively.
-Both exceed the 56,000-byte guard in PR #18. These offline quality scores do
-not establish that those configurations can stream safely to the goggles.
+At 60 and 75 fps, the fine-detail source also improved, from 37.932 to 39.753 dB
+and from 36.961 to 39.856 dB, respectively. All 4,800 pictures from the quality
+configuration across these eight comparisons fit the 56,000-byte limit.
+The largest was 51,371 bytes.
+
+These scores measure encoder output before the transmission guard. The baseline
+text encodes produced pictures of 60,525 and 59,137 bytes despite the buffer cap.
+The guard would reject those pictures. Neither the buffer setting nor these
+finite tests guarantee that every possible source fits the limit.
 
 ## Host timing
 
 These runs measured the encoder changes before the capture-pacing change
 described in [Recovery after capture stalls](#recovery-after-capture-stalls).
 
-Two runs per configuration captured an owned D3D11 window with a moving seeded texture
-and a render-submit timestamp protected by a checksum. Each run contained 1,800
+Two runs per configuration captured the monitor region occupied by an owned
+D3D11 test window. The window rendered a moving seeded texture and a timestamp
+protected by a checksum. Each run contained 1,800
 frames. The first 100 were excluded. The loaded condition added an offscreen graphics
 workload. The table gives the range of the two runs' statistics, not confidence
 intervals:
@@ -119,6 +131,16 @@ simulated USB endpoint. Both streams fully decoded. Checks covered packet checks
 frame reconstruction, encoder shutdown, and the actual logged configuration.
 The quality configuration also passed 600-frame bridge and decoding checks
 at each of 60, 75, 90, and 100 fps, including SPS timing and clean shutdown.
+After integration with the frame-size safeguards, all 14,400 reference pictures
+from the paired quality checks reproduced byte for byte. All 7,200 pictures
+from the quality configuration fit the transmission limit.
+
+Encoder recovery tests cover mid-stream and startup oversize events, repeated
+failures, encoder startup failure, cancellation, forced termination, and pipe closure.
+A real NVENC test injects an oversized picture at frame 50. The bridge restarts
+only the encoder and sends 200 pictures through one simulated USB session.
+All 200 pictures decode at 1080p and match the expected reference pictures byte for byte.
+This test does not measure goggles recovery or optical delay.
 
 ## Recovery after capture stalls
 
@@ -139,9 +161,9 @@ A deterministic check covers 72 cases: four target rates, three source rates,
 and gaps of 0, 20, or 200 ms, before and after the change. For a source matching
 the target rate, a 200 ms gap previously generated 12, 15, 18, or 20 duplicate
 frames at 60, 75, 90, or 100 fps. The filter generates none and preserves every
-source frame when the source rate does not exceed the target. At steady rates,
-all 4,800 encoded motion and text pictures match the previous quality defaults
-byte for byte.
+source frame when the source rate does not exceed the target. An isolated
+pacing-filter comparison preserved all 4,800 encoded motion and text pictures
+byte for byte, with the encoder settings held fixed.
 
 Direct-window Graphics Capture tests used an owned D3D11 moving texture and
 timestamps protected by checksums. Each run encoded 900 frames with a 100-frame warmup
@@ -175,8 +197,9 @@ commands, binary hash, frame counts, and duplicate counts for every case.
 ## Reproduce the quality comparison
 
 The [comparison tool](../../tools/research/compare_quality.py) uses the actual
-bridge encoder command for the quality configuration and reconstructs the original
-p4/20 Mbps command by removing the pacing filter, gradual refresh, and multipass encoding.
+bridge encoder command for the quality configuration. Its baseline uses `p4`
+at 20 Mbps with the same buffer cap, without the pacing filter, gradual refresh,
+or multipass encoding.
 It never opens USB or captures the desktop. FFmpeg needs NVENC support.
 The text source needs Windows Consolas. To compare the synthetic sources, run:
 
