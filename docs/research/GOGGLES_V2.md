@@ -111,9 +111,19 @@ No variant displayed anything. Each ran after a successful simulator-mode reply.
 
 The COM port cannot carry a stream in any case: 37 KB frames at 30 fps already saturate it.
 
+### Air Unit / Vista mode
+
+With the goggles switched to the Air Unit / Vista transmission mode and rebooted, the identity became **`WM150 PIGEON GLS`** (the original Digital FPV system; `WM170` is the DJI FPV drone system) and simulator mode `0b/1a` was **rejected with `e0`**. Virtual Flight therefore exists only in O3 mode. In this mode bulk interface 3 accepted one 19-byte write and then stalled again; reads still timed out.
+
+### Unsolicited traffic and the network link
+
+Over the COM port the V2 pushes, without requesting acknowledgement: `09/43` from 14/0 (payload `03`) twice a second, `00/81` from 28/5 (an advertisement naming `GL170`) once a second, and `06/1e` from 28/0 once a second with a 52-byte payload that is zero apart from a changing 16-bit counter. Nothing in them asks the PC for a reply.
+
+The goggles also run a network over their RNDIS interface and hand the PC an address by DHCP; the goggles answer at 192.168.42.5 with DJI Assistant's FTP service and a block of TCP service ports. None of those ports answered a DUML heartbeat. They were not explored further.
+
 ### Conclusion
 
-Over the PC-side USB connection, the V2 accepts the Virtual Flight control commands but exposes no interface that takes video. Interface 3 behaves as the video-out channel described by the fpv.wtf tools, idle without an air unit. In the phone setup the goggles are the USB host and the phone is an Android Open Accessory, so the video enters through the goggles' host role, which a Windows PC cannot present. The remaining options are a Linux device with USB gadget support acting as the accessory (the "Pi video-input prototype" discussed in [voc-poc issue 15](https://github.com/fpv-wtf/voc-poc/issues/15)), or root with [WTFOS](https://github.com/fpv-wtf/wtfos) and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim). The bridge keeps the V2 profile, the serial transport and the probe options so either path can build on them.
+Over the PC-side USB connection, in the only mode that has Virtual Flight, the V2 accepts the control commands but exposes no interface that takes video. Interface 3 behaves as the video-out channel described by the fpv.wtf tools, idle without an air unit. In the phone setup the goggles are the USB host and the phone is an Android Open Accessory, so the video enters through the goggles' host role, which a Windows PC cannot present. The remaining options are a Linux device with USB gadget support acting as the accessory (the "Pi video-input prototype" discussed in [voc-poc issue 15](https://github.com/fpv-wtf/voc-poc/issues/15)), or root with [WTFOS](https://github.com/fpv-wtf/wtfos) and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim). The bridge keeps the V2 profile, the serial transport and the probe options so either path can build on them.
 
 Logs of every run are in the owner's `work/probe/`; they contain the identity line and no serial numbers.
 
