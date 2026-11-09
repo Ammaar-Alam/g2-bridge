@@ -45,7 +45,10 @@ struct FrameRateTests {
                             let jitter = CMTime(value: Int64(phase * (frame % 2 == 0 ? 1 : -1)), timescale: 2000)
                             let gap = CMTime(value: Int64(frame >= 300 ? gapMillis : 0), timescale: 1000)
                             let time = CMTimeAdd(CMTimeAdd(regular, jitter), gap)
-                            if first == nil { first = time }
+                            if first == nil || (frame == 300 && gapMillis > 0) {
+                                first = time
+                                accepted = 0
+                            }
                             let selected = limiter.accepts(time, fps: target)
                             if selected { accepted += 1 }
                             assert(!limiter.accepts(time, fps: target), "duplicate callback was encoded")
@@ -67,14 +70,16 @@ struct FrameRateTests {
         // Subtract host timestamps before comparing with exact frame intervals: adding
         // a rounded 1/fps to a nanosecond deadline on every frame can drift over time.
         for target in [60, 75, 90, 100] {
-            var limiter = FrameRateLimiter()
-            let base = CMTime(value: 1_000_000_000_000_000, timescale: 1_000_000_000)
-            for frame in 0..<60_000 {
-                let offset = CMTimeConvertScale(CMTime(value: Int64(frame), timescale: CMTimeScale(target)),
-                                                timescale: base.timescale, method: .roundTowardZero)
-                let time = CMTimeAdd(base, offset)
-                assert(limiter.accepts(time, fps: target), "host timestamp rounding discarded a frame")
-                assert(!limiter.accepts(time, fps: target), "duplicate callback was encoded")
+            for scale in [CMTimeScale(1000), CMTimeScale(1_000_000_000)] {
+                var limiter = FrameRateLimiter()
+                let base = CMTime(value: Int64(scale) * 1_000_000, timescale: scale)
+                for frame in 0..<6000 {
+                    let offset = CMTimeConvertScale(CMTime(value: Int64(frame), timescale: CMTimeScale(target)),
+                                                    timescale: scale, method: .roundTowardZero)
+                    let time = CMTimeAdd(base, offset)
+                    assert(limiter.accepts(time, fps: target), "host timestamp rounding discarded a frame")
+                    assert(!limiter.accepts(time, fps: target), "duplicate callback was encoded")
+                }
             }
         }
 

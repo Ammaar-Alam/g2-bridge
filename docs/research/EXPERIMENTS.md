@@ -31,10 +31,22 @@ between images and the bit budget per image at a fixed bitrate.
 ScreenCaptureKit previously encoded every complete or idle callback despite
 setting `ExpectedFrameRate`. Apple documents that this property is an
 [encoder hint, not a rate control](https://developer.apple.com/documentation/videotoolbox/kvtcompressionpropertykey_expectedframerate).
-The helper now accepts the first raw frame in each target-rate time slot and
-skips further callbacks in that slot. It adds no waiting queue and never drops
-an encoded reference picture. This limits excess submissions; it cannot create
-fresh images when the display or simulator runs below the target rate.
+The helper limits raw-frame submissions before encoding. It tracks the next
+eligible callback time with at most one target interval of timing credit, so
+small timing variations do not discard otherwise valid frames. After a capture
+gap, the first callback passes immediately and resets any accumulated credit.
+It adds no waiting queue and never drops an encoded reference picture. This
+limits excess submissions; it cannot create fresh images when the display or
+simulator runs below the target rate.
+
+The previous fixed-slot limiter could halve the submitted frame rate when
+callbacks straddled adjacent slot boundaries. In a deterministic reproduction,
+600 callbacks at the target rate with alternating +0.5 and -0.5 ms offsets
+produced only 300 accepted frames at each of 60, 75, 90, and 100 fps. The corrected
+limiter accepts all 600. Native Swift regression tests exercise the production
+limiter with jitter, slower and faster sources, duplicate timestamps, and
+capture gaps. These checks measure raw-frame selection, not VideoToolbox
+throughput or the number of distinct pictures displayed by the goggles.
 
 ## Transport tests
 
