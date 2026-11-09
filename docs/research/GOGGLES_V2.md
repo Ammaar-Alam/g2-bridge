@@ -131,6 +131,16 @@ The Virtual Flight app sends Pigeon video as V2 frames to type 14, ID 1, **index
 
 In the goggles' DJI FPV transmission mode the identity is again `WM170 PIGEON GLS` and simulator mode is accepted and blanks the lenses, like O3 mode. Unlike O3 mode, the glasses module stops answering heartbeats as soon as any video packets arrive (14 heartbeats, 0 replies over 8 seconds, with telemetry pushes continuing), and a new control session cannot be started afterwards until a power cycle.
 
+### What the Virtual Flight app does for Pigeon
+
+The Android APK (version 1.4.0, hashes in [ARTIFACTS.md](ARTIFACTS.md)) was analysed statically on November 8, 2026, with JADX for the Java side and symbol listing plus disassembly of `libUE4.so` ([`list_symbols.py`](../../tools/research/list_symbols.py), [`disasm_targets.py`](../../tools/research/disasm_targets.py)). Nothing was installed or run.
+
+- The goggles present themselves to the phone as one Android accessory, `DJI` / `com.dji.logiclink`, for both models. `UDeviceManager::InitAllDeviceRef` constructs **both** `DevicePigeonGlass` and `DeviceZV900Glass` on every connection; whichever goggles answer heartbeats drives the session.
+- The simulator command set holds only `SetSimMode` (`0b/1a`), `GetSimMode` (`0b/1b`), two remote-controller status listeners (`0b/51`, `0b/52` pushes), and `V2SimCommandSet::SendVideo` (`0b/53`). There is no other receiver command to discover.
+- `DevicePigeonGlass`'s constructor sets the video destination to type `0x0e`, ID 1, index `0x0701`, builds its `CommandSession` without the LogicLink wrapper, and starts a 500 ms heartbeat timer. Its `OnReceiveHeartBeatCallBack` sends `GeneralCommandSet::GetVersion` and then `SimCommandSet::SetSimMode`, after which `SendLiveVideoStream` carries 1440x810 H.264 as V2 frames over the accessory link.
+
+So the app's Pigeon path differs from the Goggles 2 path only in the picture size, the video address (14/1 with index `0701`) and the V2 framing, all on a bulk link where the goggles are the USB host. The PC's COM port parses V1 only, so it cannot carry that video, and the PC exposes no other channel the goggles accept it on.
+
 ### Conclusion
 
 Over the PC-side USB connection, the V2 accepts the control commands on its V1-only COM port but exposes no channel that parses V2 frames, which is how Pigeon video is addressed. Interface 3 behaves as the video-out channel described by the fpv.wtf tools, idle without an air unit. In the phone setup the goggles are the USB host and the phone is an Android Open Accessory, so the video enters through the goggles' host role, which a Windows PC cannot present. The remaining options are a Linux device with USB gadget support acting as the accessory (the "Pi video-input prototype" discussed in [voc-poc issue 15](https://github.com/fpv-wtf/voc-poc/issues/15)), or root with [WTFOS](https://github.com/fpv-wtf/wtfos) and [dji-moonlight-shim](https://github.com/fpv-wtf/dji-moonlight-shim). The bridge keeps the V2 profile, the serial transport and the probe options so either path can build on them.
