@@ -152,7 +152,9 @@ def encoder_command(settings, frames=0):
         command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
                     '-zerolatency', '1', '-delay', '0', '-profile:v', settings.h264_profile, *rate,
                     '-aud', '1', '-forced-idr', '1',
-                    '-multipass', 'qres', '-intra-refresh', '1', '-single-slice-intra-refresh', '1']
+                    '-multipass', 'qres', '-intra-refresh', '1',
+                    # single-slice refresh can exceed the receiver's picture-size limit
+                    '-single-slice-intra-refresh', '0']
         if settings.adaptive_quant:
             command += ['-spatial-aq', '1', '-temporal-aq', '1']
         if settings.low_latency:

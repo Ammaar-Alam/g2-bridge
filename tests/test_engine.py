@@ -271,7 +271,7 @@ class EngineTests(unittest.TestCase):
         for flag, expected in (('-preset', 'p1'), ('-b:v', '32000000'), ('-maxrate', '32000000'),
                                ('-bufsize', '400000'), ('-bf', '0'), ('-delay', '0'), ('-r', '100'),
                                ('-multipass', 'qres'), ('-intra-refresh', '1'),
-                               ('-single-slice-intra-refresh', '1')):
+                               ('-single-slice-intra-refresh', '0')):
             self.assertEqual(command[command.index(flag)+1], expected)
         self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
         for capture in ('gfxcapture', 'ddagrab'):
@@ -285,6 +285,7 @@ class EngineTests(unittest.TestCase):
                         command = encoder_command(self.settings(capture=capture, fps=fps, bitrate_mbps=bitrate))
                         self.assertEqual(command[command.index('-bufsize')+1], str(min(min(bitrate, 20)*2_000_000//fps, MAX_VBV_BITS)))
                         self.assertEqual(command[command.index('-intra-refresh')+1], '1')
+                        self.assertEqual(command[command.index('-single-slice-intra-refresh')+1], '0')
         for capture in ('avfoundation', 'screencapturekit'):
             settings_mac = self.settings(capture=capture)
             self.assertEqual(settings_mac.bitrate_mbps, 20)
