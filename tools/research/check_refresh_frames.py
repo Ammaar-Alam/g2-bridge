@@ -16,6 +16,17 @@ from goggles_bridge.avi import AviPacketStream
 from goggles_bridge.engine import BridgeSettings, MAX_FRAME_BYTES, NO_WINDOW, encoder_command
 
 
+def detail_source(fps):
+    return (
+        f'color=gray:s=1536x1024:r={fps},format=gbrp,'
+        "geq=r='st(0,if(eq(X,0),Y*1701+17,ld(0)));255*random(0)':"
+        "g='st(0,if(eq(X,0),Y*1702+17,ld(0)));255*random(0)':"
+        "b='st(0,if(eq(X,0),Y*1703+17,ld(0)));255*random(0)',"
+        'crop=1255:837:0:0,scale=1920:1080:flags=bicubic:param0=1:param1=0,'
+        'format=bgra,setparams=range=full:colorspace=gbr:'
+        'color_primaries=bt709:color_trc=iec61966-2-1,loop=loop=-1:size=1')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ffmpeg', default='ffmpeg')
@@ -29,15 +40,7 @@ def main():
     if folder.exists():
         parser.error('Use a new output directory')
     folder.mkdir(parents=True)
-    source = (
-        f'color=gray:s=1536x1024:r={args.fps},format=gbrp,'
-        "geq=r='st(0,if(eq(X,0),Y*1701+17,ld(0)));255*random(0)':"
-        "g='st(0,if(eq(X,0),Y*1702+17,ld(0)));255*random(0)':"
-        "b='st(0,if(eq(X,0),Y*1703+17,ld(0)));255*random(0)',"
-        'crop=1255:837:0:0,scale=1920:1080:flags=bicubic:param0=1:param1=0,'
-        'format=bgra,setparams=range=full:colorspace=gbr:'
-        'color_primaries=bt709:color_trc=iec61966-2-1,'
-        'loop=loop=-1:size=1,tpad=start=1:start_mode=add:color=black')
+    source = detail_source(args.fps) + ',tpad=start=1:start_mode=add:color=black'
     reference = subprocess.run([str(ffmpeg), '-v', 'error', '-f', 'lavfi', '-i', source,
         '-frames:v', '3', '-f', 'framemd5', 'pipe:1'], capture_output=True,
         check=True, timeout=90, creationflags=NO_WINDOW)

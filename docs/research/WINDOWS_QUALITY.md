@@ -410,8 +410,9 @@ medians were 6.224 and 6.574 ms. Corresponding 95th percentiles were
 picture delivery to Python on one PC. Physical multi-slice display behavior
 and receiver latency remain unverified.
 
-A separate detailed-image startup fixture still exceeds the limit in both
-modes. The bridge retains its size guard and bounded restart policy.
+A separate detailed-image startup fixture exceeds the limit in both refresh
+modes. The startup change described in the next section addresses that fixture.
+The bridge retains its size guard and bounded restart policy.
 
 To reproduce the generated refresh test, run these commands:
 
@@ -426,10 +427,70 @@ output directory. It verifies the initial blank frame and repeated detailed
 image before encoding, and reports a failure if multi-slice pictures exceed
 the limit on the tested configuration.
 
+## Protect encoder startup
+
+The included Windows encoder uses full-resolution multipass analysis for the
+first two pictures, then restores quarter-resolution analysis without an
+encoder reset or extra keyframe. Capture waits for a real image so that
+synthetic black frames cannot consume those two startup pictures.
+Bitrate, buffering, refresh slices, and the transport limit remain unchanged.
+
+An eight-picture generated-image test reproduces the startup overflow at
+75 fps. Standard quarter-resolution analysis produces a 57,177-byte picture.
+Startup protection reduces the maximum to 50,964 bytes. All 16 pictures decode.
+The [recorded evidence](evidence/encoder-startup.json) includes input and output
+hashes, picture sizes, quality metrics, and host measurements.
+
+A detailed owned-window source also exercises the production bridge with
+simulated USB. At 100 fps, both standard runs stop after three delivered
+pictures and two encoder restarts. Both protected runs deliver 900 pictures
+without an oversized picture or restart. At 60, 75, and 90 fps, both modes
+deliver all 900 pictures per run. All 12,606 delivered pictures decode.
+The packaged executable repeats the 75 and 100 fps checks with 300-picture
+targets and the same outcome.
+
+Quality comparisons cover motion, text, scene changes, video, and fine detail
+at all four output rates. Each mode encodes the same 600 source pictures per
+case. All 24,000 pictures decode and fit the size limit. Whole-sequence PSNR
+changes range from -0.021 to +0.390 dB. Changes after startup are mixed,
+including a 0.159 dB reduction for text at 90 fps. This change prevents
+reproduced startup interruptions; it does not establish a general sharpness
+improvement.
+
+Separate comparisons use a continuous owned source and paced GPU workload.
+All eight protected segments retain the 500 source images measured after
+warmup. All 9,600 pictures across both modes decode. Host delay ranges overlap
+and vary with run order, so these tests do not establish a latency reduction.
+Idle/resume and source-closure checks complete without a capture backlog or
+stalled encoder shutdown. Goggles playback and optical latency remain
+unmeasured for this change.
+
+The results use an RTX 5060 Laptop GPU, driver 610.74, and FFmpeg revision
+`0893feba65`. NVIDIA's [reconfiguration API documentation](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/nvenc-video-encoder-api-prog-guide/index.html#reconfigure-api)
+does not explicitly guarantee multipass switching on every device. Before
+opening USB, the bridge encodes three pictures to check the change. If the
+driver rejects initialization or reconfiguration, the bridge checks the
+standard encoder path before streaming. Controlled native failure tests cover
+both rejection points, with and without an installed FFmpeg executable.
+
+To reproduce the generated startup test, install a full FFmpeg build and run:
+
+```powershell
+python tools/research/check_encoder_startup.py --output work/startup-75 --fps 75
+```
+
+The tool generates its input and does not capture the screen or open USB.
+Use `--ffmpeg` to specify the full build used for generation and decoding.
+The default `--encoder` is the included helper. The tool records picture sizes,
+commands, hashes, and decoded-frame checksums, and fails if a protected picture
+exceeds the limit. For source, licenses, and build instructions, see the
+[Windows encoder guide](../../vendor/ffmpeg/README.md).
+
 ## Reproduce the quality comparison
 
-The [comparison tool](../../tools/research/compare_quality.py) uses the actual
-bridge encoder command for the quality configuration. Its baseline uses `p4`
+The [comparison tool](../../tools/research/compare_quality.py) compares the
+compression settings before startup protection. It uses the shared bridge
+encoder command for the quality configuration. Its baseline uses `p4`
 at 20 Mbps with the same buffer cap, without the pacing filter, gradual refresh,
 or multipass encoding.
 It never opens USB or captures the desktop. FFmpeg needs NVENC support.

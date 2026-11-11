@@ -385,3 +385,20 @@ class EngineTests(unittest.TestCase):
         self.assertIn('--capture ddagrab', check_encoder(settings, run('Error opening input files: Filter not found')))
         self.assertIn('NVIDIA encoder', check_encoder(settings, run('Error opening output files: Encoder not found')))
         self.assertIn('OpenEncodeSessionEx failed', check_encoder(settings, run('a\nb\nOpenEncodeSessionEx failed')))
+
+    def test_startup_check_exercises_the_switch_and_preserves_its_failure(self):
+        calls = []
+        failure = 'Startup multipass reconfiguration failed: unsupported param (12)'
+        def run(command, **_):
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 1, '',
+                f'[h264_nvenc] {failure}\nencoder stopped\nfilter stopped\nconversion failed')
+        settings = self.settings(startup_fullres=True)
+        self.assertEqual(check_encoder(settings, run), failure)
+        self.assertEqual(calls[0][-5:], ['-frames:v', '3', '-f', 'null', '-'])
+        self.assertEqual(calls[0][calls[0].index('-startup_fullres')+1], '1')
+        self.assertIn(':wait_for_first_frame=1', calls[0][calls[0].index('-i')+1])
+        with self.assertRaises(ValueError):
+            self.settings(startup_fullres=True, capture='avfoundation')
+        with self.assertRaises(ValueError):
+            self.settings(startup_fullres=1)

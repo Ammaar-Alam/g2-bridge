@@ -1,6 +1,6 @@
 """Stream the Windows or macOS desktop to stock DJI Goggles 2 in Virtual Flight mode."""
 import argparse
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import datetime
 import os
 from pathlib import Path
@@ -19,6 +19,8 @@ from goggles_bridge.engine import (CHOICES, HEIGHT, WIDTH, BridgeEngine, BridgeS
 from goggles_bridge.usb_transport import DEFAULT_DLL, find_dll
 
 MAC = sys.platform == 'darwin'
+WINDOWS = sys.platform == 'win32'
+WINDOWS_ENCODER = ROOT / 'vendor' / 'ffmpeg' / 'windows-x64' / 'g2-encoder.exe'
 MAC_CAPTURE = 'screencapturekit' if MAC and mac_capture.supported() else 'avfoundation'
 FFMPEG_INSTALL = 'brew install ffmpeg' if MAC else 'winget install Gyan.FFmpeg'
 SETUP_HINTS = {
@@ -65,8 +67,9 @@ def main():
     # destinations match BridgeSettings fields
     parser.add_argument('--dll', type=Path,
                         help='Windows only: DJI x64 libusb0_device.dll (default: DJI_USB_DLL or the installed driver copy)')
-    parser.add_argument('--ffmpeg', type=Path, default=os.environ.get('GOGGLES_FFMPEG') or find_program('ffmpeg'),
-                        help='FFmpeg executable with NVENC or VideoToolbox and the chosen capture (default: GOGGLES_FFMPEG or PATH)')
+    parser.add_argument('--ffmpeg', type=Path,
+                        help='Override the encoder executable (also set with GOGGLES_FFMPEG)')
+    parser.set_defaults(startup_fullres=False)
     parser.add_argument('--python-deps', type=Path, help='Optional directory containing PyUSB 1.3.1')
     parser.add_argument('--fps', type=int, choices=CHOICES['fps'], default=BridgeSettings.fps,
                         help='Target encoder frame rate (default: %(default)s)')
@@ -99,6 +102,11 @@ def main():
     parser.add_argument('--stop-file', type=Path, help='Stop if this file is created')
     parser.add_argument('--log', type=Path, help='Path for a new JSON Lines log (default: a unique file in work/logs)')
     args = parser.parse_args()
+    requested_ffmpeg = args.ffmpeg or os.environ.get('GOGGLES_FFMPEG')
+    ffmpeg = requested_ffmpeg or find_program('ffmpeg')
+    args.ffmpeg = Path(ffmpeg) if ffmpeg else None
+    use_windows_encoder = (WINDOWS and not requested_ffmpeg and args.capture == 'gfxcapture'
+                           and args.preset == 'p1' and not args.adaptive_quant and WINDOWS_ENCODER.is_file())
     if args.stop_file and args.stop_file.exists():
         parser.error('--stop-file already exists; use a new path or remove the old stop marker')
     if args.python_deps:
@@ -121,7 +129,7 @@ def main():
     dll = find_dll(args.dll)
     if not MAC and not dll.is_file():
         parser.error(SETUP_HINTS['dll'] if dll == DEFAULT_DLL else f'--dll file not found: {dll}')
-    if args.capture != 'screencapturekit' and (args.ffmpeg is None or not args.ffmpeg.is_file()):
+    if not use_windows_encoder and args.capture != 'screencapturekit' and (args.ffmpeg is None or not args.ffmpeg.is_file()):
         parser.error(SETUP_HINTS['ffmpeg'] if args.ffmpeg is None else f'--ffmpeg file not found: {args.ffmpeg}')
     stop = threading.Event()
     log_path = args.log or ROOT / 'work' / 'logs' / f'{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}.jsonl'
@@ -149,7 +157,13 @@ def main():
     try:
         settings = BridgeSettings(**{field.name: getattr(args, field.name) for field in fields(BridgeSettings)})
         print('Checking screen capture...', flush=True)
+        fallback = settings
+        if use_windows_encoder:
+            settings = replace(settings, ffmpeg=WINDOWS_ENCODER, startup_fullres=True)
         problem = check_encoder(settings)
+        if problem and settings.startup_fullres and problem.startswith('Startup multipass '):
+            settings = fallback if fallback.ffmpeg else replace(settings, startup_fullres=False)
+            problem = check_encoder(settings)
         if problem:
             print(problem, file=sys.stderr)
             return 1

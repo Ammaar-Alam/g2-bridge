@@ -34,6 +34,6 @@ The repository includes these records:
 - `quality-*.json` in the [evidence directory](evidence): per-frame structural similarity (SSIM), peak signal-to-noise ratio (PSNR), and encoded sizes. Desktop reference images are not included.
 - [CRC benchmark](evidence/crc-benchmark.json), [USB write equivalence](evidence/usb-write-equivalence.json), and [timing-metadata removal results](evidence/timing-sei-offline.json).
 
-The [analysis tools](../../tools/research) include ARM emulation harnesses and Ghidra scripts. They require separately acquired vendor binaries. APKs, executables, firmware, decompiled vendor code, personal desktop recordings, device serials, and signed download URLs are excluded.
+The [analysis tools](../../tools/research) include ARM emulation harnesses and Ghidra scripts. They require separately acquired vendor binaries. APKs, proprietary executables, firmware, decompiled vendor code, personal desktop recordings, device serials, and signed download URLs are excluded.
 
 The analysis covers Virtual Flight applications, native libraries, and PC USB traffic. Goggles firmware and decoder code were not recovered. Panel frame rate remains unmeasured; see the [monitor-to-lens measurements](../LATENCY.md) for optical timing results.

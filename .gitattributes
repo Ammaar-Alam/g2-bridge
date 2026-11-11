@@ -3,3 +3,9 @@
 /tests/fixtures/*.json text eol=lf
 /docs/research/evidence/*.h264 binary
 /docs/research/evidence/*.bin binary
+/tools/build_windows_encoder.sh text eol=lf
+/vendor/ffmpeg/** text eol=lf
+/vendor/ffmpeg/windows-x64/*.exe binary
+/vendor/ffmpeg/windows-x64/*.xz binary
+/vendor/ffmpeg/startup.patch whitespace=-blank-at-eol
+/vendor/ffmpeg/windows-x64/licenses/*/COPYING.RUNTIME whitespace=-blank-at-eof

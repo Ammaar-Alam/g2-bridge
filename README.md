@@ -16,11 +16,13 @@ We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how w
 On Windows, you need the following hardware and software:
 
 - 64-bit Windows and Python 3.10 or later.
-- An NVIDIA GPU with NVENC support.
-- FFmpeg with `gfxcapture` and `h264_nvenc`. To install it, run `winget install Gyan.FFmpeg`.
+- An NVIDIA GPU with NVENC support and driver 570 or later.
 - [DJI Assistant 2 (Consumer Drones Series)](https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series), which installs the DJI USB driver 5.0.0.7. See [USB and driver requirements](docs/PROTOCOL.md#usb-and-session).
 
-Tests used FFmpeg build `2026-11-05-git-0893feba65` and NVIDIA driver 610.74.
+The Windows encoder is included. See its [source and build instructions](vendor/ffmpeg/README.md).
+Tests used FFmpeg revision `0893feba65` and NVIDIA driver 610.74.
+Desktop Duplication and encoding overrides require an installed FFmpeg build.
+To install one, run `winget install Gyan.FFmpeg`.
 
 On macOS, you need the following:
 
@@ -63,7 +65,7 @@ The stream script offers to install whatever is missing. Tests used an M2 Pro Ma
    .venv/bin/python scripts/stream_desktop.py
    ```
 
-   On Windows, the script finds the DJI driver and FFmpeg automatically. If either is installed somewhere else, pass `--dll` or `--ffmpeg` with the file path.
+   On Windows, the script finds the DJI driver and uses the included encoder. To specify another driver path, pass `--dll`. To use another encoder executable, pass `--ffmpeg`.
 
    On a Mac, the script offers to install anything that's missing, and it builds the screen capture helper on the first run. If the screen can't be captured, go to **System Settings > Privacy & Security** and allow screen recording for your terminal.
 

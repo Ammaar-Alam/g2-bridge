@@ -1,0 +1,176 @@
+--- a/libavcodec/nvenc.c
++++ b/libavcodec/nvenc.c
+@@ -1813,6 +1813,19 @@
+     if (res)
+         return res;
+ 
++    if (ctx->startup_fullres) {
++        if (avctx->codec_id != AV_CODEC_ID_H264 ||
++            ctx->encode_config.rcParams.multiPass != NV_ENC_TWO_PASS_QUARTER_RESOLUTION ||
++            ctx->encode_config.rcParams.rateControlMode != NV_ENC_PARAMS_RC_CBR ||
++            ctx->encode_config.frameIntervalP != 1 ||
++            ctx->encode_config.rcParams.enableLookahead || ctx->async_depth != 0) {
++            av_log(avctx, AV_LOG_ERROR,
++                   "startup_fullres requires H.264, qres, CBR, no B-frames or lookahead, and delay 0\n");
++            return AVERROR(EINVAL);
++        }
++        ctx->encode_config.rcParams.multiPass = NV_ENC_TWO_PASS_FULL_RESOLUTION;
++    }
++
+     res = nvenc_push_context(avctx);
+     if (res < 0)
+         return res;
+@@ -1820,7 +1833,8 @@
+     nv_status = p_nvenc->nvEncInitializeEncoder(ctx->nvencoder, &ctx->init_encode_params);
+     if (nv_status != NV_ENC_SUCCESS) {
+         nvenc_pop_context(avctx);
+-        return nvenc_print_error(avctx, nv_status, "InitializeEncoder failed");
++        return nvenc_print_error(avctx, nv_status, ctx->startup_fullres ?
++                                 "Startup multipass initialization failed" : "InitializeEncoder failed");
+     }
+ 
+     if (ctx->cu_context) {
+@@ -2875,7 +2889,7 @@
+     return res;
+ }
+ 
+-static void reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
++static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
+ {
+     NvencContext *ctx = avctx->priv_data;
+     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &ctx->nvenc_dload_funcs.nvenc_funcs;
+@@ -2889,6 +2903,20 @@
+ 
+     params.version = NV_ENC_RECONFIGURE_PARAMS_VER;
+     params.reInitEncodeParams = ctx->init_encode_params;
++
++    if (ctx->startup_fullres && ctx->frame_idx_counter == 2) {
++        NV_ENC_CONFIG startup_config = ctx->encode_config;
++        NV_ENC_RECONFIGURE_PARAMS startup_params = { 0 };
++        startup_config.rcParams.multiPass = NV_ENC_TWO_PASS_QUARTER_RESOLUTION;
++        startup_params.version = NV_ENC_RECONFIGURE_PARAMS_VER;
++        startup_params.reInitEncodeParams = ctx->init_encode_params;
++        startup_params.reInitEncodeParams.encodeConfig = &startup_config;
++        ret = p_nvenc->nvEncReconfigureEncoder(ctx->nvencoder, &startup_params);
++        if (ret != NV_ENC_SUCCESS)
++            return nvenc_print_error(avctx, ret, "Startup multipass reconfiguration failed");
++        ctx->encode_config = startup_config;
++        av_log(avctx, AV_LOG_VERBOSE, "Restored quarter-resolution multipass after startup\n");
++    }
+ 
+     compute_dar(avctx, &dw, &dh);
+     if (dw != ctx->init_encode_params.darWidth || dh != ctx->init_encode_params.darHeight) {
+@@ -2965,6 +2993,7 @@
+ 
+         }
+     }
++    return 0;
+ }
+ 
+ #ifdef NVENC_HAVE_HEVC_AND_AV1_MASTERING_METADATA
+@@ -3073,9 +3102,11 @@
+         if (res < 0)
+             return res;
+ 
+-        reconfig_encoder(avctx, frame);
+-
+-        res = nvenc_upload_frame(avctx, frame, in_surf);
++        res = reconfig_encoder(avctx, frame);
++        if (res >= 0)
++            res = nvenc_upload_frame(avctx, frame, in_surf);
++        else if (av_fifo_write(ctx->unused_surface_queue, &in_surf, 1) < 0)
++            res = AVERROR_BUG;
+ 
+         res2 = nvenc_pop_context(avctx);
+         if (res2 < 0)
+--- a/libavcodec/nvenc.h
++++ b/libavcodec/nvenc.h
+@@ -259,6 +259,7 @@
+     int dpb_size;
+     int tuning_info;
+     int multipass;
++    int startup_fullres;
+     int ldkfs;
+     int extra_sei;
+     int intra_refresh;
+--- a/libavcodec/nvenc_h264.c
++++ b/libavcodec/nvenc_h264.c
+@@ -151,6 +151,8 @@
+ #endif
+     { "dpb_size",     "Specifies the DPB size used for encoding (0 means automatic)",
+                                                             OFFSET(dpb_size),     AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE },
++    { "startup_fullres", "Analyze the first two pictures at full resolution before restoring qres",
++                                                            OFFSET(startup_fullres), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+     { "multipass",    "Set the multipass encoding",         OFFSET(multipass),    AV_OPT_TYPE_INT,   { .i64 = NV_ENC_MULTI_PASS_DISABLED },         NV_ENC_MULTI_PASS_DISABLED, NV_ENC_TWO_PASS_FULL_RESOLUTION, VE, .unit = "multipass" },
+     { "disabled",     "Single Pass",                        0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_MULTI_PASS_DISABLED },         0,                          0,                               VE, .unit = "multipass" },
+     { "qres",         "Two Pass encoding is enabled where first Pass is quarter resolution",
+--- a/libavfilter/vsrc_gfxcapture.h
++++ b/libavfilter/vsrc_gfxcapture.h
+@@ -68,6 +68,7 @@
+     int scale_mode;
+     int premult_alpha;
+     int dup_frames;
++    int wait_first_frame;
+ } GfxCaptureContext;
+ 
+ #ifdef __cplusplus
+--- a/libavfilter/vsrc_gfxcapture.c
++++ b/libavfilter/vsrc_gfxcapture.c
+@@ -59,6 +59,8 @@
+     { "premultiplied",   "return premultiplied alpha frames", OFFSET(premult_alpha),  AV_OPT_TYPE_BOOL,       { .i64 = 0 },      0, 1,          FLAGS },
+     { "dup_frames",      "repeat the last frame if the source delivers none in time",
+                                                               OFFSET(dup_frames),     AV_OPT_TYPE_BOOL,       { .i64 = 1 },      0, 1,          FLAGS },
++    { "wait_for_first_frame", "wait for a captured frame before producing repeated output",
++                                                              OFFSET(wait_first_frame), AV_OPT_TYPE_BOOL,     { .i64 = 0 },      0, 1,          FLAGS },
+     { "resize_mode",     "capture source resize behavior",    OFFSET(resize_mode),    AV_OPT_TYPE_INT,        { .i64 = GFX_RESIZE_CROP },  0, GFX_RESIZE_NB - 1, FLAGS, .unit = "resize_mode" },
+     { "crop",            "crop or add black bars into frame", 0,                      AV_OPT_TYPE_CONST,      { .i64 = GFX_RESIZE_CROP  }, 0, 0, FLAGS, .unit = "resize_mode" },
+     { "scale",           "scale source to fit initial size",  0,                      AV_OPT_TYPE_CONST,      { .i64 = GFX_RESIZE_SCALE }, 0, 0, FLAGS, .unit = "resize_mode" },
+--- a/libavfilter/vsrc_gfxcapture_winrt.cpp
++++ b/libavfilter/vsrc_gfxcapture_winrt.cpp
+@@ -1613,7 +1613,7 @@
+         }
+ 
+         int64_t timeout = TIMESPAN_RES64;
+-        if (cctx->dup_frames) {
++        if (cctx->dup_frames && (!cctx->wait_first_frame || ctx->last_frame)) {
+             if (ctx->next_pts == AV_NOPTS_VALUE)
+                 ctx->next_pts = qpc_now() + dup_interval(cctx);
+             timeout = av_clip64(ctx->next_pts - qpc_now(), 0, TIMESPAN_RES64);
+@@ -1624,7 +1624,7 @@
+         }))
+             continue;
+ 
+-        if (cctx->dup_frames && qpc_now() >= ctx->next_pts) {
++        if (cctx->dup_frames && (!cctx->wait_first_frame || ctx->last_frame) && qpc_now() >= ctx->next_pts) {
+             frame_lock.unlock();
+             return output_dup_frame(outlink);
+         }
+--- a/doc/encoders.texi
++++ b/doc/encoders.texi
+@@ -4251,6 +4251,13 @@
+ @subsection H.264 options
+ 
+ @table @option
++@item startup_fullres @var{boolean}
++Use full-resolution multipass analysis for the first two pictures, then restore
++quarter-resolution analysis. The default is 0.
++
++This option requires @option{multipass=qres}, CBR, no B-frames or lookahead,
++and @option{delay=0}. Encoding fails if the driver rejects the mode change.
++
+ @item profile @var{integer}
+ Set the H.264 profile using a named value from the table (recommended)
+ or its integer. The default is @samp{high} (2).
+--- a/doc/filters.texi
++++ b/doc/filters.texi
+@@ -31022,6 +31022,10 @@
+ output flowing while the captured content is static. The output rate is still
+ not constant, add an @code{fps} filter if needed.
+ 
++@item wait_for_first_frame
++Wait for the first captured frame before allowing repeated output. The default
++is 0. This option affects startup only when @option{dup_frames} is enabled.
++
+ @item resize_mode
+ Defines how the captured content is fitted into the output canvas size.
+ Possible values:

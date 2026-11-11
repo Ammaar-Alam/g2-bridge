@@ -58,6 +58,7 @@ class BridgeSettings:
     h264_profile: str = 'high'
     # NVENC spatial and temporal adaptive quantization, off until its goggles latency is measured
     adaptive_quant: bool = False
+    startup_fullres: bool = False
 
     @property
     def nvenc(self):
@@ -75,13 +76,15 @@ class BridgeSettings:
         if self.bitrate_mbps is None:
             object.__setattr__(self, 'bitrate_mbps',
                                min(32, self.fps*8*MAX_AVERAGE_FRAME_BYTES//1_000_000) if self.nvenc else 20)
-        for name in ('low_latency', 'adaptive_quant'):
+        for name in ('low_latency', 'adaptive_quant', 'startup_fullres'):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f'{name} must be a boolean')
         for name in CHOICES:
             check(name)
         if self.adaptive_quant and not self.nvenc:
             raise ValueError('Adaptive quantization needs the Windows NVENC encoder')
+        if self.startup_fullres and not self.nvenc:
+            raise ValueError('Startup protection needs the Windows NVENC encoder')
         # shortcut: only the NVENC buffer cap is verified on goggles, so macOS keeps the earlier
         # 24 Mbps ceiling and its frames are never skipped; lift both once a Mac cap is verified
         if not self.nvenc and self.bitrate_mbps > 24:
@@ -134,6 +137,8 @@ def encoder_command(settings, frames=0):
             source = (f'gfxcapture=monitor_idx={settings.display_index}:max_framerate={settings.capture_fps}'
                       f':width={WIDTH}:height={HEIGHT}:resize_mode=scale_aspect:scale_mode=bicubic'
                       f':capture_cursor={int(settings.show_cursor)}')
+            if settings.startup_fullres:
+                source += ':wait_for_first_frame=1'
             # ld(0) holds the next eligible timestamp with at most one frame of jitter credit
             pacing = ("select='if(isnan(prev_selected_pts),st(0,pts*TB);1,"
                       "if(gte((pts+0.5)*TB,ld(0)),"
@@ -157,6 +162,8 @@ def encoder_command(settings, frames=0):
                     '-single-slice-intra-refresh', '0']
         if settings.adaptive_quant:
             command += ['-spatial-aq', '1', '-temporal-aq', '1']
+        if settings.startup_fullres:
+            command += ['-startup_fullres', '1']
         if settings.low_latency:
             command += ['-bsf:v', 'filter_units=remove_types=12']
     if settings.low_latency:
@@ -167,14 +174,19 @@ def encoder_command(settings, frames=0):
 
 
 def check_encoder(settings, run=subprocess.run):
-    """Encode one captured frame and return a setup problem, or None if the encoder can stream."""
-    command = encoder_command(settings, frames=1)
+    """Check capture and encoder setup, including the startup mode change when enabled."""
+    command = encoder_command(settings, frames=3 if settings.startup_fullres else 1)
     try:
         result = run(command, capture_output=True, text=True, errors='replace', timeout=30, creationflags=NO_WINDOW)
     except subprocess.TimeoutExpired:
         return 'No frame was captured within 30 seconds'
     if result.returncode == 0:
         return None
+    if settings.startup_fullres:
+        for line in result.stderr.splitlines():
+            start = line.find('Startup multipass ')
+            if start >= 0 and ' failed' in line[start:]:
+                return line[start:]
     details = '\n  '.join(result.stderr.strip().splitlines()[-3:])
     if settings.capture == 'screencapturekit':
         return f'Screen capture test failed.\n  {details}'
