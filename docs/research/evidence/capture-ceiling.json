@@ -1,0 +1,838 @@
+{
+  "base_commit": "a34690a58d48f0cd9b43cdeddf39b5efaf024b9c",
+  "ffmpeg_revision": "0893feba65",
+  "ffmpeg_sha256": "a4156224c87b6f2decb59af159360237b4d82b48080bd2b2381c0fb7cd4332d4",
+  "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "driver": "610.74",
+  "output_size": [
+    1920,
+    1080
+  ],
+  "order": [
+    240,
+    1000,
+    1000,
+    240
+  ],
+  "measurement": "Source render submission to first complete encoded picture at the host; direct-window capture; no USB",
+  "source_timestamp_resolution_ms": 1,
+  "source": "Moving texture seeded with 1701 and a CRC8-protected timestamp",
+  "background_load": "Offscreen 2560x1600 fragment shader paced at 60 completions per second",
+  "cases": [
+    {
+      "source_present_fps": 100.004042,
+      "workload_fps": 59.995618,
+      "distinct_fps": 99.979765,
+      "fresh_median_ms": 7.7706,
+      "fresh_p95_ms": 11.3912,
+      "age_mean_ms": 12.736479,
+      "age_p95_ms": 18.845441,
+      "maximum_picture_bytes": 44244,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 0.71875,
+      "gpu_samples": 7,
+      "gpu_clock_range_mhz": [
+        2595.0,
+        2670.0
+      ],
+      "gpu_utilization_mean": 48.142857,
+      "gpu_temperature_range_c": [
+        66.0,
+        67.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source100-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 100.003753,
+      "workload_fps": 60.000519,
+      "distinct_fps": 99.971186,
+      "fresh_median_ms": 7.6967,
+      "fresh_p95_ms": 11.2733,
+      "age_mean_ms": 12.662124,
+      "age_p95_ms": 18.676351,
+      "maximum_picture_bytes": 44058,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 0.765625,
+      "gpu_samples": 7,
+      "gpu_clock_range_mhz": [
+        2580.0,
+        2670.0
+      ],
+      "gpu_utilization_mean": 48.285714,
+      "gpu_temperature_range_c": [
+        67.0,
+        68.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source100-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 99.998708,
+      "workload_fps": 60.003479,
+      "distinct_fps": 93.648727,
+      "fresh_median_ms": 8.6269,
+      "fresh_p95_ms": 15.0799,
+      "age_mean_ms": 14.528281,
+      "age_p95_ms": 22.409144,
+      "maximum_picture_bytes": 46556,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 0.8125,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2565.0,
+        2655.0
+      ],
+      "gpu_utilization_mean": 46.5,
+      "gpu_temperature_range_c": [
+        64.0,
+        66.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source100-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 99.999076,
+      "workload_fps": 59.995597,
+      "distinct_fps": 95.336078,
+      "fresh_median_ms": 8.8577,
+      "fresh_p95_ms": 15.255,
+      "age_mean_ms": 14.72184,
+      "age_p95_ms": 23.041291,
+      "maximum_picture_bytes": 45830,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 0.828125,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2595.0,
+        2677.0
+      ],
+      "gpu_utilization_mean": 48.75,
+      "gpu_temperature_range_c": [
+        68.0,
+        68.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source100-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 143.997135,
+      "workload_fps": 60.006855,
+      "distinct_fps": 99.919518,
+      "fresh_median_ms": 7.9103,
+      "fresh_p95_ms": 11.1956,
+      "age_mean_ms": 13.382168,
+      "age_p95_ms": 21.377636,
+      "maximum_picture_bytes": 47160,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.671875,
+      "gpu_samples": 7,
+      "gpu_clock_range_mhz": [
+        2617.0,
+        2670.0
+      ],
+      "gpu_utilization_mean": 53.571429,
+      "gpu_temperature_range_c": [
+        69.0,
+        69.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source144-load60-scaled",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 144.021757,
+      "workload_fps": 59.997863,
+      "distinct_fps": 99.912439,
+      "fresh_median_ms": 7.88645,
+      "fresh_p95_ms": 11.2456,
+      "age_mean_ms": 13.409457,
+      "age_p95_ms": 21.363394,
+      "maximum_picture_bytes": 43833,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.84375,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2625.0,
+        2662.0
+      ],
+      "gpu_utilization_mean": 54.25,
+      "gpu_temperature_range_c": [
+        69.0,
+        70.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source144-load60-scaled",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 143.998752,
+      "workload_fps": 59.992276,
+      "distinct_fps": 93.062577,
+      "fresh_median_ms": 8.1878,
+      "fresh_p95_ms": 13.0025,
+      "age_mean_ms": 14.380898,
+      "age_p95_ms": 23.271085,
+      "maximum_picture_bytes": 48122,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.46875,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2602.0,
+        2670.0
+      ],
+      "gpu_utilization_mean": 52.375,
+      "gpu_temperature_range_c": [
+        68.0,
+        69.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source144-load60-scaled",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 143.993674,
+      "workload_fps": 60.001982,
+      "distinct_fps": 91.036188,
+      "fresh_median_ms": 8.2738,
+      "fresh_p95_ms": 12.2992,
+      "age_mean_ms": 14.111975,
+      "age_p95_ms": 22.132104,
+      "maximum_picture_bytes": 46875,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.453125,
+      "gpu_samples": 7,
+      "gpu_clock_range_mhz": [
+        2617.0,
+        2655.0
+      ],
+      "gpu_utilization_mean": 53.0,
+      "gpu_temperature_range_c": [
+        70.0,
+        70.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source144-load60-scaled",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 30.000861,
+      "workload_fps": 60.004509,
+      "distinct_fps": 29.99811,
+      "fresh_median_ms": 7.0339,
+      "fresh_p95_ms": 7.9814,
+      "age_mean_ms": 23.773746,
+      "age_p95_ms": 38.774266,
+      "maximum_picture_bytes": 51382,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.234375,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2535.0,
+        2610.0
+      ],
+      "gpu_utilization_mean": 45.0,
+      "gpu_temperature_range_c": [
+        67.0,
+        67.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source30-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 29.999561,
+      "workload_fps": 59.997789,
+      "distinct_fps": 29.970528,
+      "fresh_median_ms": 7.09985,
+      "fresh_p95_ms": 8.2257,
+      "age_mean_ms": 23.79493,
+      "age_p95_ms": 38.803802,
+      "maximum_picture_bytes": 51308,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.046875,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2527.0,
+        2602.0
+      ],
+      "gpu_utilization_mean": 42.9,
+      "gpu_temperature_range_c": [
+        67.0,
+        68.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 1000,
+      "source": "source30-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 30.000724,
+      "workload_fps": 59.997142,
+      "distinct_fps": 29.999911,
+      "fresh_median_ms": 7.39945,
+      "fresh_p95_ms": 11.8883,
+      "age_mean_ms": 25.007204,
+      "age_p95_ms": 40.041803,
+      "maximum_picture_bytes": 52826,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.734375,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2557.0,
+        2602.0
+      ],
+      "gpu_utilization_mean": 45.2,
+      "gpu_temperature_range_c": [
+        65.0,
+        66.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source30-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 29.999151,
+      "workload_fps": 60.000086,
+      "distinct_fps": 29.96149,
+      "fresh_median_ms": 6.9302,
+      "fresh_p95_ms": 11.724,
+      "age_mean_ms": 24.223011,
+      "age_p95_ms": 39.240383,
+      "maximum_picture_bytes": 51870,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 2.03125,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2505.0,
+        2602.0
+      ],
+      "gpu_utilization_mean": 44.0,
+      "gpu_temperature_range_c": [
+        68.0,
+        68.0
+      ],
+      "output_target_fps": 100,
+      "capture_ceiling_fps": 240,
+      "source": "source30-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 59.999528,
+      "workload_fps": 60.000761,
+      "distinct_fps": 59.998048,
+      "fresh_median_ms": 7.1936,
+      "fresh_p95_ms": 8.1385,
+      "age_mean_ms": 15.569198,
+      "age_p95_ms": 23.095324,
+      "maximum_picture_bytes": 61614,
+      "oversized_picture_indices": [
+        2
+      ],
+      "cpu_seconds": 2.125,
+      "gpu_samples": 12,
+      "gpu_clock_range_mhz": [
+        2445.0,
+        2550.0
+      ],
+      "gpu_utilization_mean": 33.166667,
+      "gpu_temperature_range_c": [
+        65.0,
+        65.0
+      ],
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 1000,
+      "source": "source60-out60-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 59.999265,
+      "workload_fps": 59.999741,
+      "distinct_fps": 60.003113,
+      "fresh_median_ms": 7.1146,
+      "fresh_p95_ms": 8.2257,
+      "age_mean_ms": 15.567976,
+      "age_p95_ms": 23.10884,
+      "maximum_picture_bytes": 54746,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.875,
+      "gpu_samples": 12,
+      "gpu_clock_range_mhz": [
+        2430.0,
+        2557.0
+      ],
+      "gpu_utilization_mean": 33.0,
+      "gpu_temperature_range_c": [
+        65.0,
+        66.0
+      ],
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 1000,
+      "source": "source60-out60-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 60.001546,
+      "workload_fps": 59.999115,
+      "distinct_fps": 59.845733,
+      "fresh_median_ms": 7.5791,
+      "fresh_p95_ms": 12.1277,
+      "age_mean_ms": 16.717948,
+      "age_p95_ms": 25.175168,
+      "maximum_picture_bytes": 56165,
+      "oversized_picture_indices": [
+        1
+      ],
+      "cpu_seconds": 1.703125,
+      "gpu_samples": 12,
+      "gpu_clock_range_mhz": [
+        2445.0,
+        2572.0
+      ],
+      "gpu_utilization_mean": 33.416667,
+      "gpu_temperature_range_c": [
+        62.0,
+        64.0
+      ],
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 240,
+      "source": "source60-out60-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 59.999837,
+      "workload_fps": 60.000383,
+      "distinct_fps": 58.366649,
+      "fresh_median_ms": 7.1326,
+      "fresh_p95_ms": 12.3437,
+      "age_mean_ms": 17.19628,
+      "age_p95_ms": 27.426753,
+      "maximum_picture_bytes": 56048,
+      "oversized_picture_indices": [
+        781
+      ],
+      "cpu_seconds": 1.65625,
+      "gpu_samples": 12,
+      "gpu_clock_range_mhz": [
+        2430.0,
+        2542.0
+      ],
+      "gpu_utilization_mean": 33.916667,
+      "gpu_temperature_range_c": [
+        66.0,
+        67.0
+      ],
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 240,
+      "source": "source60-out60-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 75.000111,
+      "workload_fps": 59.999919,
+      "distinct_fps": 74.686145,
+      "fresh_median_ms": 7.6083,
+      "fresh_p95_ms": 8.9913,
+      "age_mean_ms": 13.794552,
+      "age_p95_ms": 20.534741,
+      "maximum_picture_bytes": 59988,
+      "oversized_picture_indices": [
+        1,
+        512
+      ],
+      "cpu_seconds": 1.59375,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2467.0,
+        2595.0
+      ],
+      "gpu_utilization_mean": 34.4,
+      "gpu_temperature_range_c": [
+        68.0,
+        69.0
+      ],
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 1000,
+      "source": "source75-out75-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 75.003113,
+      "workload_fps": 60.000512,
+      "distinct_fps": 75.002583,
+      "fresh_median_ms": 7.5834,
+      "fresh_p95_ms": 8.9575,
+      "age_mean_ms": 13.69787,
+      "age_p95_ms": 20.361505,
+      "maximum_picture_bytes": 57732,
+      "oversized_picture_indices": [
+        1
+      ],
+      "cpu_seconds": 1.734375,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2490.0,
+        2580.0
+      ],
+      "gpu_utilization_mean": 34.9,
+      "gpu_temperature_range_c": [
+        68.0,
+        69.0
+      ],
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 1000,
+      "source": "source75-out75-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 74.996146,
+      "workload_fps": 60.000932,
+      "distinct_fps": 71.92589,
+      "fresh_median_ms": 8.0985,
+      "fresh_p95_ms": 12.3245,
+      "age_mean_ms": 15.389925,
+      "age_p95_ms": 24.017235,
+      "maximum_picture_bytes": 57766,
+      "oversized_picture_indices": [
+        287
+      ],
+      "cpu_seconds": 1.375,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2490.0,
+        2595.0
+      ],
+      "gpu_utilization_mean": 34.0,
+      "gpu_temperature_range_c": [
+        67.0,
+        68.0
+      ],
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 240,
+      "source": "source75-out75-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 75.001862,
+      "workload_fps": 59.999024,
+      "distinct_fps": 71.533571,
+      "fresh_median_ms": 8.0182,
+      "fresh_p95_ms": 11.9682,
+      "age_mean_ms": 15.374859,
+      "age_p95_ms": 24.075468,
+      "maximum_picture_bytes": 60172,
+      "oversized_picture_indices": [
+        1,
+        511
+      ],
+      "cpu_seconds": 1.5625,
+      "gpu_samples": 10,
+      "gpu_clock_range_mhz": [
+        2467.0,
+        2587.0
+      ],
+      "gpu_utilization_mean": 35.2,
+      "gpu_temperature_range_c": [
+        67.0,
+        69.0
+      ],
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 240,
+      "source": "source75-out75-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 89.99998,
+      "workload_fps": 60.001068,
+      "distinct_fps": 89.813729,
+      "fresh_median_ms": 7.614,
+      "fresh_p95_ms": 10.7118,
+      "age_mean_ms": 13.366869,
+      "age_p95_ms": 19.540921,
+      "maximum_picture_bytes": 50398,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.78125,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2505.0,
+        2580.0
+      ],
+      "gpu_utilization_mean": 35.25,
+      "gpu_temperature_range_c": [
+        67.0,
+        67.0
+      ],
+      "output_target_fps": 90,
+      "capture_ceiling_fps": 1000,
+      "source": "source90-out90-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 89.998395,
+      "workload_fps": 59.998349,
+      "distinct_fps": 90.038038,
+      "fresh_median_ms": 7.5104,
+      "fresh_p95_ms": 10.6831,
+      "age_mean_ms": 13.307789,
+      "age_p95_ms": 19.373179,
+      "maximum_picture_bytes": 51697,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.546875,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2520.0,
+        2580.0
+      ],
+      "gpu_utilization_mean": 35.125,
+      "gpu_temperature_range_c": [
+        67.0,
+        67.0
+      ],
+      "output_target_fps": 90,
+      "capture_ceiling_fps": 1000,
+      "source": "source90-out90-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 90.000126,
+      "workload_fps": 60.001068,
+      "distinct_fps": 86.441878,
+      "fresh_median_ms": 8.5543,
+      "fresh_p95_ms": 13.7055,
+      "age_mean_ms": 15.134429,
+      "age_p95_ms": 22.652522,
+      "maximum_picture_bytes": 49951,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.484375,
+      "gpu_samples": 8,
+      "gpu_clock_range_mhz": [
+        2535.0,
+        2655.0
+      ],
+      "gpu_utilization_mean": 36.125,
+      "gpu_temperature_range_c": [
+        67.0,
+        67.0
+      ],
+      "output_target_fps": 90,
+      "capture_ceiling_fps": 240,
+      "source": "source90-out90-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    },
+    {
+      "source_present_fps": 90.005043,
+      "workload_fps": 60.001142,
+      "distinct_fps": 86.485797,
+      "fresh_median_ms": 8.1089,
+      "fresh_p95_ms": 13.1542,
+      "age_mean_ms": 14.62746,
+      "age_p95_ms": 22.044137,
+      "maximum_picture_bytes": 50755,
+      "oversized_picture_indices": [],
+      "cpu_seconds": 1.421875,
+      "gpu_samples": 9,
+      "gpu_clock_range_mhz": [
+        2557.0,
+        2587.0
+      ],
+      "gpu_utilization_mean": 35.222222,
+      "gpu_temperature_range_c": [
+        67.0,
+        67.0
+      ],
+      "output_target_fps": 90,
+      "capture_ceiling_fps": 240,
+      "source": "source90-out90-load60",
+      "encoded_pictures": 900,
+      "timing_warmup_pictures": 100
+    }
+  ],
+  "output_targets_fps": [
+    60,
+    75,
+    90,
+    100
+  ],
+  "additional_validation_commit": "64ec35b6d504b69ca13d9871252bde6c2784dd3c",
+  "bridge_measurement": "Real capture, NVENC, bridge guard, encoder recovery, packetization, and simulated USB; strict FFmpeg decoding of delivered pictures",
+  "bridge_cases": [
+    {
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 1000,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 1,
+      "maximum_sent_picture_bytes": 54673,
+      "error": null,
+      "oversized_frames": [
+        {
+          "seconds": 0.27087,
+          "bytes": 61174
+        }
+      ],
+      "stream_sha256": "0078ad3accced3b055e56ee59af6ce5da022277385a544a7fbab3dc548d4d396"
+    },
+    {
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 1000,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 0,
+      "maximum_sent_picture_bytes": 55548,
+      "error": null,
+      "oversized_frames": [],
+      "stream_sha256": "2676bbebddba036650b06e3bcebcc0e471ce47f2ca24c2e7a767e5ddb1c01036"
+    },
+    {
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 240,
+      "requested_pictures": 900,
+      "delivered_pictures": 604,
+      "decoded_pictures": 604,
+      "usb_sessions": 1,
+      "encoder_restarts": 2,
+      "maximum_sent_picture_bytes": 53126,
+      "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+      "oversized_frames": [
+        {
+          "seconds": 10.301107,
+          "bytes": 58320
+        },
+        {
+          "seconds": 10.648103,
+          "bytes": 58369
+        },
+        {
+          "seconds": 10.951342,
+          "bytes": 56795
+        }
+      ],
+      "stream_sha256": "3606174b82905cce6c69eec6576c858bfe1dab65cc71026dca34662851fd7008"
+    },
+    {
+      "output_target_fps": 60,
+      "capture_ceiling_fps": 240,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 0,
+      "maximum_sent_picture_bytes": 54837,
+      "error": null,
+      "oversized_frames": [],
+      "stream_sha256": "c85a255cf5dd42c9e022085fe90c3e2f0e32318a009ef1232f2e15a0e3c4a9e5"
+    },
+    {
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 1000,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 1,
+      "maximum_sent_picture_bytes": 55176,
+      "error": null,
+      "oversized_frames": [
+        {
+          "seconds": 0.36178,
+          "bytes": 57148
+        }
+      ],
+      "stream_sha256": "7afc9f5c7fba5310155b347ff15ffdb5727fa1b5a5291d02d252461e13ddb20e"
+    },
+    {
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 1000,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 2,
+      "maximum_sent_picture_bytes": 55708,
+      "error": null,
+      "oversized_frames": [
+        {
+          "seconds": 0.338165,
+          "bytes": 62215
+        },
+        {
+          "seconds": 0.638094,
+          "bytes": 57242
+        }
+      ],
+      "stream_sha256": "84b8d855dfa0b3a100975f9aba6e94c94742725a5a13805ef2cfa89f473a986a"
+    },
+    {
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 240,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 0,
+      "maximum_sent_picture_bytes": 53588,
+      "error": null,
+      "oversized_frames": [],
+      "stream_sha256": "5b92636741da60a3670db64fee136bfdd46a5d759cbe93f145c33a16b0e0e0ac"
+    },
+    {
+      "output_target_fps": 75,
+      "capture_ceiling_fps": 240,
+      "requested_pictures": 900,
+      "delivered_pictures": 900,
+      "decoded_pictures": 900,
+      "usb_sessions": 1,
+      "encoder_restarts": 1,
+      "maximum_sent_picture_bytes": 55952,
+      "error": null,
+      "oversized_frames": [
+        {
+          "seconds": 4.141536,
+          "bytes": 57677
+        }
+      ],
+      "stream_sha256": "a2b2e9fb4463af8902117f478924439070c733fcff672b32409efce910ed3cfc"
+    }
+  ]
+}

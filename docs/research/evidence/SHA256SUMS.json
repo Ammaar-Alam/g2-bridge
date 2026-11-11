@@ -5,6 +5,11 @@
     "sha256": "2041c90bc530a694ef574ce48c518dccebc48d649dd37dc363ec5405f889233a"
   },
   {
+    "file": "capture-ceiling.json",
+    "bytes": 22698,
+    "sha256": "b6a84d561c1b45a933359c4b3168d0b38c9cf8a4f14161a08284f32e747fda83"
+  },
+  {
     "file": "crc-benchmark.json",
     "bytes": 314,
     "sha256": "363200a4dd8760b8a7a7d832568dfb8a590b8de81129e071a41a2965587a5329"
