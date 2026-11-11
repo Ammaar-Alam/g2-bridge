@@ -147,7 +147,8 @@ def encoder_command(settings, frames=0):
                       f':draw_mouse={int(settings.show_cursor)}')
             command += ['-f', 'lavfi', '-i', source, '-vf',
                         f'hwdownload,format=bgra,scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease:'
-                        f'flags=fast_bilinear,pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2,format=nv12']
+                        f'flags=fast_bilinear:out_color_matrix=bt601,'
+                        f'pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2,format=nv12']
         command += ['-an', '-c:v', 'h264_nvenc', '-preset', settings.preset, '-tune', 'ull', '-rc', 'cbr',
                     '-zerolatency', '1', '-delay', '0', '-profile:v', settings.h264_profile, *rate,
                     '-aud', '1', '-forced-idr', '1',
