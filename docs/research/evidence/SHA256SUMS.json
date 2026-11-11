@@ -125,6 +125,11 @@
     "sha256": "ae842f3098105df90d2ad1f3891aab3c4379ee0a5051028bac8f4e07db339abf"
   },
   {
+    "file": "refresh-slices.json",
+    "bytes": 23814,
+    "sha256": "5e561ec18e34ed539ce00e1ee2d8ac7620f31ce80f122c3b8d1530c223a668d4"
+  },
+  {
     "file": "sequence-storage.json",
     "bytes": 243,
     "sha256": "6d87e09922a9542994f9875ea73778a17bf0e4b021a5d8307037a3b444ffa9d6"

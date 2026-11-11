@@ -1,0 +1,945 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-11",
+  "base_commit": "018f18f462d64b004018dd8f0563e9551653c047",
+  "hardware": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "driver": "610.74",
+  "ffmpeg_revision": "0893feba65",
+  "ffmpeg_sha256": "a4156224c87b6f2decb59af159360237b4d82b48080bd2b2381c0fb7cd4332d4",
+  "change": {
+    "single-slice-intra-refresh": [
+      1,
+      0
+    ]
+  },
+  "repro_tool": "tools/research/check_refresh_frames.py",
+  "reproductions": [
+    {
+      "fps": 75,
+      "frames_per_mode": 900,
+      "source_frame_md5": [
+        "5ba6df7acef516f7dab78587cf30ce20",
+        "61dbf2eb7344f719a9b598252a217c36",
+        "61dbf2eb7344f719a9b598252a217c36"
+      ],
+      "runs": [
+        {
+          "mode": "single-slice",
+          "maximum_bytes": 59521,
+          "oversize_indexes": [
+            285,
+            286,
+            287,
+            510,
+            511,
+            512,
+            735,
+            736,
+            737
+          ],
+          "stream_sha256": "25665a923feb3bda5c6a2a86e6c35d052307d03d3b0d20f9e3d005aa5881155a"
+        },
+        {
+          "mode": "multi-slice",
+          "maximum_bytes": 50975,
+          "oversize_indexes": [],
+          "stream_sha256": "ccdca53822006d190cfc19ada884aac43594f6ca77e8e503d41391b848da97d1"
+        }
+      ]
+    },
+    {
+      "fps": 100,
+      "frames_per_mode": 900,
+      "source_frame_md5": [
+        "5ba6df7acef516f7dab78587cf30ce20",
+        "61dbf2eb7344f719a9b598252a217c36",
+        "61dbf2eb7344f719a9b598252a217c36"
+      ],
+      "runs": [
+        {
+          "mode": "single-slice",
+          "maximum_bytes": 59449,
+          "oversize_indexes": [
+            360,
+            361,
+            660,
+            661
+          ],
+          "stream_sha256": "d32cb8e6aba6ec18b9d9534583930e3846fdb7031bda51654c38607eba4ea72f"
+        },
+        {
+          "mode": "multi-slice",
+          "maximum_bytes": 42800,
+          "oversize_indexes": [],
+          "stream_sha256": "935d1cdb38af4d5b62215eb0bccb5152436f80f16c626690c5bd399f9094e829"
+        }
+      ]
+    }
+  ],
+  "quality": {
+    "mode_order": [
+      "single-slice",
+      "multi-slice"
+    ],
+    "decoded_pictures": 19500,
+    "method": "Whole-sequence PSNR from accumulated pixel MSE; mean per-frame SSIM; identical deterministic source and frame rate per pair",
+    "sources": {
+      "synthetic": "tools/research/compare_quality.py: motion, text, cuts, detail",
+      "detail": "Mandelbrot end_pts equals six seconds at the selected fps",
+      "movie_url": "https://raw.githubusercontent.com/renesas-rz/media/main/Big_Buck_Bunny/big_buck_bunny_1080p_30fps_30s.mp4",
+      "movie_sha256": "f03e635f0d24cdd8b7b482758b16f14eb0cbfa1056c23611a3a72cf3ff039ced",
+      "attribution": "Big Buck Bunny (c) 2008 Blender Foundation / www.bigbuckbunny.org, CC BY 3.0",
+      "movie_segment_seconds": [
+        18,
+        24
+      ],
+      "movie_resampling": "Repeat 30 fps source to the selected output fps; yuv420p"
+    },
+    "cases": [
+      {
+        "fps": 60,
+        "source": "motion",
+        "frames_per_mode": 360,
+        "psnr_db": [
+          51.679382,
+          51.601816
+        ],
+        "ssim_mean": [
+          0.9987171111111112,
+          0.9986921666666667
+        ],
+        "largest_picture_bytes": [
+          50189,
+          50189
+        ],
+        "worst_frame_psnr_delta_db": -1.31,
+        "worst_frame_index": 228,
+        "psnr_at_worst_frame_db": [
+          52.25,
+          50.94
+        ],
+        "worst_frame_ssim_delta": -0.00034599999999995745
+      },
+      {
+        "fps": 60,
+        "source": "text",
+        "frames_per_mode": 360,
+        "psnr_db": [
+          46.399864,
+          46.391645
+        ],
+        "ssim_mean": [
+          0.9994080666666667,
+          0.9994051305555556
+        ],
+        "largest_picture_bytes": [
+          50319,
+          50319
+        ],
+        "worst_frame_psnr_delta_db": -1.92,
+        "worst_frame_index": 242,
+        "psnr_at_worst_frame_db": [
+          63.31,
+          61.39
+        ],
+        "worst_frame_ssim_delta": -1.6000000000016e-05
+      },
+      {
+        "fps": 60,
+        "source": "cuts",
+        "frames_per_mode": 360,
+        "psnr_db": [
+          51.387231,
+          51.376339
+        ],
+        "ssim_mean": [
+          0.9986628888888889,
+          0.9986622861111111
+        ],
+        "largest_picture_bytes": [
+          49990,
+          49990
+        ],
+        "worst_frame_psnr_delta_db": -1.15,
+        "worst_frame_index": 198,
+        "psnr_at_worst_frame_db": [
+          51.73,
+          50.58
+        ],
+        "worst_frame_ssim_delta": -0.00035799999999996945
+      },
+      {
+        "fps": 60,
+        "source": "video",
+        "frames_per_mode": 360,
+        "psnr_db": [
+          47.299098,
+          47.319419
+        ],
+        "ssim_mean": [
+          0.9938160333333333,
+          0.9938419333333334
+        ],
+        "largest_picture_bytes": [
+          50341,
+          50293
+        ],
+        "worst_frame_psnr_delta_db": -1.07,
+        "worst_frame_index": 236,
+        "psnr_at_worst_frame_db": [
+          60.3,
+          59.23
+        ],
+        "worst_frame_ssim_delta": -0.00042399999999997995
+      },
+      {
+        "fps": 60,
+        "source": "detail",
+        "frames_per_mode": 360,
+        "psnr_db": [
+          41.268372,
+          41.202441
+        ],
+        "ssim_mean": [
+          0.9908815305555555,
+          0.9908292277777778
+        ],
+        "largest_picture_bytes": [
+          49948,
+          49948
+        ],
+        "worst_frame_psnr_delta_db": -1.53,
+        "worst_frame_index": 196,
+        "psnr_at_worst_frame_db": [
+          41.32,
+          39.79
+        ],
+        "worst_frame_ssim_delta": -0.0017480000000000828
+      },
+      {
+        "fps": 75,
+        "source": "motion",
+        "frames_per_mode": 450,
+        "psnr_db": [
+          51.580232,
+          51.550699
+        ],
+        "ssim_mean": [
+          0.9986528133333333,
+          0.9986476822222222
+        ],
+        "largest_picture_bytes": [
+          50189,
+          50189
+        ],
+        "worst_frame_psnr_delta_db": -1.46,
+        "worst_frame_index": 270,
+        "psnr_at_worst_frame_db": [
+          52.4,
+          50.94
+        ],
+        "worst_frame_ssim_delta": -0.0003810000000000757
+      },
+      {
+        "fps": 75,
+        "source": "text",
+        "frames_per_mode": 450,
+        "psnr_db": [
+          47.34073,
+          47.330956
+        ],
+        "ssim_mean": [
+          0.9995109533333333,
+          0.9995080044444444
+        ],
+        "largest_picture_bytes": [
+          50319,
+          50319
+        ],
+        "worst_frame_psnr_delta_db": -1.92,
+        "worst_frame_index": 287,
+        "psnr_at_worst_frame_db": [
+          63.31,
+          61.39
+        ],
+        "worst_frame_ssim_delta": -1.6000000000016e-05
+      },
+      {
+        "fps": 75,
+        "source": "cuts",
+        "frames_per_mode": 450,
+        "psnr_db": [
+          51.383727,
+          51.376003
+        ],
+        "ssim_mean": [
+          0.99864978,
+          0.9986448288888888
+        ],
+        "largest_picture_bytes": [
+          49990,
+          49990
+        ],
+        "worst_frame_psnr_delta_db": -1.32,
+        "worst_frame_index": 271,
+        "psnr_at_worst_frame_db": [
+          52.06,
+          50.74
+        ],
+        "worst_frame_ssim_delta": -0.00035399999999996545
+      },
+      {
+        "fps": 75,
+        "source": "video",
+        "frames_per_mode": 450,
+        "psnr_db": [
+          48.11838,
+          48.11526
+        ],
+        "ssim_mean": [
+          0.9947774822222222,
+          0.9947717355555555
+        ],
+        "largest_picture_bytes": [
+          50063,
+          50090
+        ],
+        "worst_frame_psnr_delta_db": -1.09,
+        "worst_frame_index": 288,
+        "psnr_at_worst_frame_db": [
+          60.49,
+          59.4
+        ],
+        "worst_frame_ssim_delta": -0.00026599999999998847
+      },
+      {
+        "fps": 75,
+        "source": "detail",
+        "frames_per_mode": 450,
+        "psnr_db": [
+          40.531022,
+          40.492892
+        ],
+        "ssim_mean": [
+          0.9900420622222222,
+          0.9900073644444445
+        ],
+        "largest_picture_bytes": [
+          49912,
+          49912
+        ],
+        "worst_frame_psnr_delta_db": -1.54,
+        "worst_frame_index": 243,
+        "psnr_at_worst_frame_db": [
+          40.55,
+          39.01
+        ],
+        "worst_frame_ssim_delta": -0.001927000000000012
+      },
+      {
+        "fps": 90,
+        "source": "motion",
+        "frames_per_mode": 540,
+        "psnr_db": [
+          50.299073,
+          50.29927
+        ],
+        "ssim_mean": [
+          0.9982261740740741,
+          0.9982249574074074
+        ],
+        "largest_picture_bytes": [
+          47859,
+          47859
+        ],
+        "worst_frame_psnr_delta_db": -0.85,
+        "worst_frame_index": 322,
+        "psnr_at_worst_frame_db": [
+          50.63,
+          49.78
+        ],
+        "worst_frame_ssim_delta": -0.00026100000000006673
+      },
+      {
+        "fps": 90,
+        "source": "text",
+        "frames_per_mode": 540,
+        "psnr_db": [
+          47.579123,
+          47.574754
+        ],
+        "ssim_mean": [
+          0.9995689925925926,
+          0.9995692611111111
+        ],
+        "largest_picture_bytes": [
+          47927,
+          47927
+        ],
+        "worst_frame_psnr_delta_db": -1.54,
+        "worst_frame_index": 332,
+        "psnr_at_worst_frame_db": [
+          62.54,
+          61.0
+        ],
+        "worst_frame_ssim_delta": -1.1000000000094268e-05
+      },
+      {
+        "fps": 90,
+        "source": "cuts",
+        "frames_per_mode": 540,
+        "psnr_db": [
+          50.143856,
+          50.128201
+        ],
+        "ssim_mean": [
+          0.9982183833333333,
+          0.9982014444444445
+        ],
+        "largest_picture_bytes": [
+          47851,
+          47851
+        ],
+        "worst_frame_psnr_delta_db": -0.85,
+        "worst_frame_index": 354,
+        "psnr_at_worst_frame_db": [
+          50.92,
+          50.07
+        ],
+        "worst_frame_ssim_delta": -0.00039599999999995195
+      },
+      {
+        "fps": 90,
+        "source": "video",
+        "frames_per_mode": 540,
+        "psnr_db": [
+          48.220661,
+          48.239142
+        ],
+        "ssim_mean": [
+          0.9948458907407407,
+          0.9948713962962963
+        ],
+        "largest_picture_bytes": [
+          46403,
+          46803
+        ],
+        "worst_frame_psnr_delta_db": -0.64,
+        "worst_frame_index": 361,
+        "psnr_at_worst_frame_db": [
+          59.4,
+          58.76
+        ],
+        "worst_frame_ssim_delta": -0.00032200000000004447
+      },
+      {
+        "fps": 90,
+        "source": "detail",
+        "frames_per_mode": 540,
+        "psnr_db": [
+          39.269503,
+          39.240175
+        ],
+        "ssim_mean": [
+          0.9880463759259259,
+          0.987995937037037
+        ],
+        "largest_picture_bytes": [
+          47559,
+          47559
+        ],
+        "worst_frame_psnr_delta_db": -0.86,
+        "worst_frame_index": 290,
+        "psnr_at_worst_frame_db": [
+          39.28,
+          38.42
+        ],
+        "worst_frame_ssim_delta": -0.001558999999999977
+      },
+      {
+        "fps": 100,
+        "source": "motion",
+        "frames_per_mode": 600,
+        "psnr_db": [
+          49.290158,
+          49.276276
+        ],
+        "ssim_mean": [
+          0.9977901283333334,
+          0.9977636916666667
+        ],
+        "largest_picture_bytes": [
+          42629,
+          42629
+        ],
+        "worst_frame_psnr_delta_db": -0.79,
+        "worst_frame_index": 356,
+        "psnr_at_worst_frame_db": [
+          49.57,
+          48.78
+        ],
+        "worst_frame_ssim_delta": -0.00030600000000002847
+      },
+      {
+        "fps": 100,
+        "source": "text",
+        "frames_per_mode": 600,
+        "psnr_db": [
+          47.137992,
+          47.131742
+        ],
+        "ssim_mean": [
+          0.9993623,
+          0.9993611116666667
+        ],
+        "largest_picture_bytes": [
+          42643,
+          42643
+        ],
+        "worst_frame_psnr_delta_db": -1.45,
+        "worst_frame_index": 363,
+        "psnr_at_worst_frame_db": [
+          61.27,
+          59.82
+        ],
+        "worst_frame_ssim_delta": -2.2999999999995246e-05
+      },
+      {
+        "fps": 100,
+        "source": "cuts",
+        "frames_per_mode": 600,
+        "psnr_db": [
+          49.026279,
+          49.021878
+        ],
+        "ssim_mean": [
+          0.9977659433333333,
+          0.9977523216666667
+        ],
+        "largest_picture_bytes": [
+          42432,
+          42432
+        ],
+        "worst_frame_psnr_delta_db": -0.74,
+        "worst_frame_index": 350,
+        "psnr_at_worst_frame_db": [
+          48.25,
+          47.51
+        ],
+        "worst_frame_ssim_delta": -0.00040799999999996395
+      },
+      {
+        "fps": 100,
+        "source": "video",
+        "frames_per_mode": 600,
+        "psnr_db": [
+          48.106415,
+          48.109731
+        ],
+        "ssim_mean": [
+          0.9947078633333334,
+          0.9947230366666666
+        ],
+        "largest_picture_bytes": [
+          41926,
+          41920
+        ],
+        "worst_frame_psnr_delta_db": -0.22,
+        "worst_frame_index": 363,
+        "psnr_at_worst_frame_db": [
+          58.7,
+          58.48
+        ],
+        "worst_frame_ssim_delta": -0.0007039999999999269
+      },
+      {
+        "fps": 100,
+        "source": "detail",
+        "frames_per_mode": 600,
+        "psnr_db": [
+          38.390867,
+          38.364859
+        ],
+        "ssim_mean": [
+          0.9863244933333334,
+          0.9862678266666667
+        ],
+        "largest_picture_bytes": [
+          42448,
+          42448
+        ],
+        "worst_frame_psnr_delta_db": -0.78,
+        "worst_frame_index": 320,
+        "psnr_at_worst_frame_db": [
+          38.35,
+          37.57
+        ],
+        "worst_frame_ssim_delta": -0.0016450000000000076
+      }
+    ]
+  },
+  "bridge": {
+    "source": "Generated seeded texture: plain background followed by frozen detail after the first delivered picture",
+    "capture": "Owned 1920x1080 window, ceiling 1000",
+    "transport": "Production BridgeEngine and packetization with simulated USB",
+    "target_pictures": {
+      "60": 900,
+      "75": 900,
+      "90": 900,
+      "100": 1800
+    },
+    "decoded_pictures": 14722,
+    "cases": [
+      {
+        "trial": 1,
+        "fps": 100,
+        "single_slice": true,
+        "delivered": 363,
+        "encoder_starts": 3,
+        "oversize": 3,
+        "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+        "maximum_delivered_bytes": 53905,
+        "usb_sessions": 1,
+        "decoded": 363,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 2,
+        "fps": 100,
+        "single_slice": true,
+        "delivered": 363,
+        "encoder_starts": 3,
+        "oversize": 3,
+        "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+        "maximum_delivered_bytes": 53905,
+        "usb_sessions": 1,
+        "decoded": 363,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 3,
+        "fps": 100,
+        "single_slice": false,
+        "delivered": 1800,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 43946,
+        "usb_sessions": 1,
+        "decoded": 1800,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 4,
+        "fps": 100,
+        "single_slice": false,
+        "delivered": 1800,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 44073,
+        "usb_sessions": 1,
+        "decoded": 1800,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 5,
+        "fps": 60,
+        "single_slice": true,
+        "delivered": 720,
+        "encoder_starts": 3,
+        "oversize": 3,
+        "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+        "maximum_delivered_bytes": 55384,
+        "usb_sessions": 1,
+        "decoded": 720,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 6,
+        "fps": 60,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 50691,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 7,
+        "fps": 60,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 51061,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 8,
+        "fps": 60,
+        "single_slice": true,
+        "delivered": 720,
+        "encoder_starts": 3,
+        "oversize": 3,
+        "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+        "maximum_delivered_bytes": 55092,
+        "usb_sessions": 1,
+        "decoded": 720,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 9,
+        "fps": 75,
+        "single_slice": true,
+        "delivered": 900,
+        "encoder_starts": 3,
+        "oversize": 2,
+        "error": null,
+        "maximum_delivered_bytes": 55893,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 10,
+        "fps": 75,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 52107,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 11,
+        "fps": 75,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 50353,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 12,
+        "fps": 75,
+        "single_slice": true,
+        "delivered": 856,
+        "encoder_starts": 3,
+        "oversize": 3,
+        "error": "RuntimeError('Encoded frames repeatedly exceed the size limit. Lower the bitrate')",
+        "maximum_delivered_bytes": 55889,
+        "usb_sessions": 1,
+        "decoded": 856,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 13,
+        "fps": 90,
+        "single_slice": true,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 49697,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 14,
+        "fps": 90,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 49086,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 15,
+        "fps": 90,
+        "single_slice": false,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 49701,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      },
+      {
+        "trial": 16,
+        "fps": 90,
+        "single_slice": true,
+        "delivered": 900,
+        "encoder_starts": 1,
+        "oversize": 0,
+        "error": null,
+        "maximum_delivered_bytes": 49259,
+        "usb_sessions": 1,
+        "decoded": 900,
+        "closed": true,
+        "encoders_stopped": true
+      }
+    ]
+  },
+  "host_timing": {
+    "endpoint": "Source render timestamp to encoded AVI picture available in Python",
+    "source": "Owned 1920x1080 moving-texture window at 100 fps",
+    "gpu_workload": "Paced 2560x1600 shader at 60 fps",
+    "cases": [
+      {
+        "mode": "single-slice",
+        "frames": 600,
+        "warmup": 100,
+        "fresh_frames": 500,
+        "median_ms": 6.717200040817261,
+        "p95_ms": 9.171800136566162,
+        "distinct_fps": 99.80165271360242,
+        "output_fps": 99.80165271360242,
+        "maximum_picture_bytes": 46757,
+        "oversize": 0,
+        "source_fps": 100.00467155965615,
+        "load_fps": 59.99891921685727
+      },
+      {
+        "mode": "multi-slice",
+        "frames": 600,
+        "warmup": 100,
+        "fresh_frames": 500,
+        "median_ms": 6.2243499755859375,
+        "p95_ms": 8.223199844360352,
+        "distinct_fps": 99.95177677723036,
+        "output_fps": 99.95177677723036,
+        "maximum_picture_bytes": 44037,
+        "oversize": 0,
+        "source_fps": 99.99433967926493,
+        "load_fps": 60.00004134037481
+      },
+      {
+        "mode": "multi-slice",
+        "frames": 600,
+        "warmup": 100,
+        "fresh_frames": 500,
+        "median_ms": 6.573750019073486,
+        "p95_ms": 9.907299995422363,
+        "distinct_fps": 99.9643814312661,
+        "output_fps": 99.9643814312661,
+        "maximum_picture_bytes": 43197,
+        "oversize": 0,
+        "source_fps": 100.0053336123231,
+        "load_fps": 60.00855021021347
+      },
+      {
+        "mode": "single-slice",
+        "frames": 600,
+        "warmup": 100,
+        "fresh_frames": 487,
+        "median_ms": 6.67549991607666,
+        "p95_ms": 11.307899951934814,
+        "distinct_fps": 97.39743433825538,
+        "output_fps": 100.00271550368196,
+        "maximum_picture_bytes": 47256,
+        "oversize": 0,
+        "source_fps": 99.99901607822777,
+        "load_fps": 59.995584481979826
+      }
+    ]
+  },
+  "bitstream": [
+    {
+      "mode": "single",
+      "vcl_counts": {
+        "1": 600
+      },
+      "headers": {
+        "max_num_ref_frames": [
+          "3"
+        ],
+        "max_dec_frame_buffering": [
+          "3"
+        ],
+        "bit_rate_value_minus1": [
+          "499999"
+        ],
+        "cpb_size_value_minus1": [
+          "24999"
+        ],
+        "dpb_output_delay": [
+          "2"
+        ],
+        "max_num_reorder_frames": [
+          "0"
+        ]
+      }
+    },
+    {
+      "mode": "multi",
+      "vcl_counts": {
+        "1": 536,
+        "2": 2,
+        "3": 62
+      },
+      "headers": {
+        "max_num_ref_frames": [
+          "3"
+        ],
+        "max_dec_frame_buffering": [
+          "3"
+        ],
+        "bit_rate_value_minus1": [
+          "499999"
+        ],
+        "cpb_size_value_minus1": [
+          "24999"
+        ],
+        "dpb_output_delay": [
+          "2"
+        ],
+        "max_num_reorder_frames": [
+          "0"
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "Detailed-image startup overflow remains reproducible in both modes",
+    "Frozen capture-only multi-slice startup success was excluded because its first source picture was black",
+    "Small sequence-average quality changes include larger differences in individual refresh pictures",
+    "Finite synthetic trials do not establish a general stream failure rate or an encoder frame-size guarantee",
+    "No physical goggles, USB transfer timing, panel cadence, or optical latency test"
+  ]
+}

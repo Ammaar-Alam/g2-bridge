@@ -14,7 +14,7 @@ oversized picture triggers an encoder restart without reopening USB.
 
 At 100 fps, the quality configuration uses NVENC High profile, the `p1` preset, 32 Mbps
 constant bitrate (CBR), quarter-resolution two-pass rate
-control, and single-slice gradual intra refresh. Output stays at 1920x1080 and
+control, and gradual intra refresh. Output stays at 1920x1080 and
 100 fps, with a 400,000-bit video buffering verifier (VBV) buffer, no B frames,
 zero output delay, and
 immediate AVI frame delivery. The default recovery interval is three seconds.
@@ -45,6 +45,9 @@ ratio (PSNR) and structural similarity (SSIM) measure fidelity to that reference
 Whole-sequence PSNR comes from FFmpeg's final summary, which accumulates mean
 squared pixel error before conversion to decibels. It is not the arithmetic
 mean of per-frame PSNR.
+The original quality comparisons used single-slice refresh. The
+[picture-size comparison](#picture-sizes-during-refresh) evaluates allowing
+multiple slices during refresh.
 The following table compares the original `p4` configuration at 20 Mbps with
 the `p1` quality configuration at 32 Mbps:
 
@@ -360,6 +363,68 @@ python tools/research/check_frame_pacing.py --output work/frame-pacing.json
 
 Use `--ffmpeg` to select the executable. The results file records the
 commands, binary hash, frame counts, and duplicate counts for every case.
+
+## Picture sizes during refresh
+
+Forcing a single slice during gradual refresh can produce pictures that exceed
+the 56,000-byte receiver limit. Windows encoding allows multiple slices during
+refresh. Bitrate, VBV budget, preset, quarter-resolution multipass, and the
+frame-size guard stay unchanged.
+
+[NVIDIA documents slice-based refresh](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.1/nvenc-video-encoder-api-prog-guide/index.html).
+In the recorded 600-picture motion comparison, the encoder used three slices
+in 62 pictures and two slices in two pictures. The other 536 pictures had one
+slice. Both modes declared three reference buffers, zero reordered pictures,
+and the same bitrate, VBV budget, and picture-timing output delay.
+
+A generated blank-to-detail transition reproduced the overflow without screen
+capture or USB. Each mode encoded 900 pictures. The following results use the
+same GPU, driver, and FFmpeg revision as the quality tests:
+
+| Output setting | Single-slice maximum | Single-slice oversized pictures | Multi-slice maximum | Multi-slice oversized pictures |
+| --- | ---: | ---: | ---: | ---: |
+| 75 fps | 59,521 bytes | 9 | 50,975 bytes | 0 |
+| 100 fps | 59,449 bytes | 4 | 42,800 bytes | 0 |
+
+An owned-window comparison also exercised the production bridge, packetization,
+and recovery logic with simulated USB. Each mode ran twice at every supported
+rate. The target was 900 delivered pictures at 60, 75, and 90 fps, and 1,800 at
+100 fps. Five of eight single-slice runs stopped after repeated oversized
+pictures. All eight multi-slice runs reached their target without an oversized
+picture or encoder restart. Every delivered picture decoded: 14,722 across
+both modes. These finite trials do not establish a general failure rate.
+
+The quality comparison covers motion, text, scene changes, movie footage, and
+fine detail at all four rates. All 19,500 pictures decoded and fit the size
+limit. Whole-sequence PSNR changes range from -0.078 to +0.020 dB. Individual
+refresh pictures have larger differences; the
+[recorded evidence](evidence/refresh-slices.json) includes their worst PSNR and
+SSIM changes. Decoded image fidelity changes are small and mixed. The benefit
+is fewer stream interruptions.
+
+Four alternating single/multi/multi/single trials measured host delay under a
+paced GPU workload. Single-slice medians were 6.717 and 6.675 ms; multi-slice
+medians were 6.224 and 6.574 ms. Corresponding 95th percentiles were
+9.172/11.308 and 8.223/9.907 ms. The source and workload maintained about
+100 and 60 fps. These measurements cover source rendering through encoded
+picture delivery to Python on one PC. Physical multi-slice display behavior
+and receiver latency remain unverified.
+
+A separate detailed-image startup fixture still exceeds the limit in both
+modes. The bridge retains its size guard and bounded restart policy.
+
+To reproduce the generated refresh test, run these commands:
+
+```powershell
+python tools/research/check_refresh_frames.py --output work/refresh-100 --fps 100
+python tools/research/check_refresh_frames.py --output work/refresh-75 --fps 75
+```
+
+The tool requires NVENC and accepts `--ffmpeg` for an executable outside PATH.
+It saves commands, hashes, picture sizes, and decoded-frame checksums in a new
+output directory. It verifies the initial blank frame and repeated detailed
+image before encoding, and reports a failure if multi-slice pictures exceed
+the limit on the tested configuration.
 
 ## Reproduce the quality comparison
 
