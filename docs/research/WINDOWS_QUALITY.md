@@ -153,7 +153,7 @@ The ceiling controls the capture session's minimum update interval and
 FFmpeg's repeated-frame timing. For the implementation, see the
 [FFmpeg Graphics Capture source](https://github.com/FFmpeg/FFmpeg/blob/0893feba65/libavfilter/vsrc_gfxcapture_winrt.cpp).
 The comparison changes this ceiling from 240 to 1000 while keeping the
-bounded-credit selector and 100 fps encoder target fixed.
+bounded-credit selector and each run's encoder target fixed.
 
 Tests use an owned D3D11 window with a moving seeded texture and a timestamp
 protected by a checksum. A separate offscreen shader completes 60 workloads/s.
@@ -163,7 +163,8 @@ with driver 610.74 and FFmpeg `0893feba65`.
 
 The source and background workload maintain their requested rates in every
 measurement window. Recorded GPU clocks overlap within each comparison.
-The following ranges describe the two runs, not confidence intervals.
+At a 100 fps encoder target, the following ranges describe the two runs,
+not confidence intervals.
 Fresh-frame delay starts at source render submission and ends when the host
 receives the first encoded picture with that timestamp:
 
@@ -178,6 +179,31 @@ overlap. Time-weighted source age also improves in each group. Repeated
 pictures therefore do not account for the reported improvement. All 10,800
 pictures decode, all steady-state timestamp checks pass, and every picture
 fits the 56,000-byte limit. The largest picture is 52,826 bytes.
+
+A further 10,800-picture comparison matches source and output rates at 60,
+75, and 90 fps under the same paced GPU workload. These capture-only results
+precede the frame-size guard and exclude encoder recovery delays:
+
+| Source and output target | Distinct fps, 240 to 1000 | Fresh p95, 240 to 1000 |
+| --- | --- | --- |
+| 60 fps | 58.37-59.85 to 60.00 | 12.13-12.34 to 8.14-8.23 ms |
+| 75 fps | 71.53-71.93 to 74.69-75.00 | 11.97-12.33 to 8.96-8.99 ms |
+| 90 fps | 86.44-86.49 to 89.81-90.04 | 13.15-13.71 to 10.68-10.71 ms |
+
+At 60 and 75 fps, nine pictures exceed 56,000 bytes across both capture
+ceilings. The largest is 61,614 bytes. All 90 fps pictures fit. The bridge
+rejects oversized pictures and restarts the encoder, so these capture-only
+figures do not establish uninterrupted delivery at the lower rates.
+
+Eight additional runs pass real capture and NVENC output through the bridge
+engine, packetizer, and simulated USB at 60 and 75 fps. All four runs with
+the higher ceiling deliver their requested 900 pictures. With the previous
+ceiling, three runs deliver 900 and one stops at 604 after repeated oversized
+pictures. Each configuration produces four oversize events across its four
+runs. Every run uses one simulated USB session, and all 6,904 delivered
+pictures decode with FFmpeg's `-xerror` check. No oversized picture reaches
+the simulated endpoint. These finite checks verify guard and recovery behavior,
+not the probability of an interruption or goggles recovery.
 
 Higher capture rates can consume more CPU. In the scaled-source comparison,
 encoder-process CPU time rises from 1.45-1.47 to 1.67-1.84 seconds per
