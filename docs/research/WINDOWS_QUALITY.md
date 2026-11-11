@@ -99,6 +99,46 @@ text encodes produced pictures of 60,525 and 59,137 bytes despite the buffer cap
 The guard would reject those pictures. Neither the buffer setting nor these
 finite tests guarantee that every possible source fits the limit.
 
+## Desktop Duplication color metadata
+
+The `--capture ddagrab` fallback converts BGRA pixels to NV12 with the CPU
+`scale` filter. Tests with FFmpeg `0893feba65` show that its default conversion
+uses BT.601 coefficients but can leave the H.264 color matrix unspecified.
+A fully tagged RGB input instead retains an incorrect RGB matrix label.
+Either result leaves the receiver without an accurate description of the YUV
+conversion. A receiver that assumes BT.709 can display shifted colors.
+
+The filter explicitly sets `out_color_matrix=bt601`. The
+[FFmpeg scale implementation](https://github.com/FFmpeg/FFmpeg/blob/0893feba65/libavfilter/vf_scale.c#L1006-L1013)
+maps this value to `bt470bg`, while retaining the input's BT.709 primaries and sRGB
+transfer function. The matrix describes the RGB-to-YUV conversion, not the
+display primaries or transfer function. Color range remains unchanged.
+
+The [color check](../../tools/research/check_fallback_color.py) generates eight
+RGB swatches at 1920x1080, 2560x1600, and 3840x2160. It tests inferred limited
+range and explicitly tagged full range at 60 and 100 fps. Across 24 encodes,
+all 1,440 pictures decode at 1080p with no B frames and fit the 56,000-byte limit.
+Swatch samples match BT.601 coefficients within one code value. Converted NV12
+pixels and encoded H.264 picture data match byte for byte before and after
+the change. Only the color metadata changes.
+
+A separate Desktop Duplication check captures a 2x2-pixel corner region.
+The original stream has an unspecified matrix; the corrected stream declares
+`bt470bg`. Both retain limited range, BT.709 primaries, and the sRGB transfer
+function. The change adds no processing stage or frame queue. These checks
+do not measure headset color rendering or end-to-end latency.
+
+To reproduce the synthetic checks without screen capture or USB, run:
+
+```powershell
+python tools/research/check_fallback_color.py --output work/fallback-color
+```
+
+FFmpeg needs NVENC support and an `ffprobe` executable in the same directory.
+Use `--ffmpeg` to select the executable and choose a new output directory for
+each run. The tool saves generated clips, commands, the FFmpeg hash, decoded
+frame counts, color tags, and sample values.
+
 ## Host timing
 
 These runs measured the encoder changes before the capture-pacing change
