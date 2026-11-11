@@ -207,6 +207,7 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings())
         source = command[command.index('-i')+1]
         self.assertIn('scale_aspect', source)
+        self.assertIn('max_framerate=1000:', source)
         self.assertNotIn('hwdownload', command[command.index('-vf')+1])
         self.assertIn('strip_fps=1', command[command.index('-vf')+1])
         for key, value in (('-r','100'), ('-level:v','5.1'), ('-bf','0'), ('-aud','1'), ('-bufsize','400000')):
@@ -214,6 +215,14 @@ class EngineTests(unittest.TestCase):
         command = encoder_command(self.settings(fps=60, capture='ddagrab'))
         self.assertEqual(command[command.index('-level:v')+1], '4.2')
         self.assertIn('force_original_aspect_ratio=decrease', command[command.index('-vf')+1])
+
+    def test_capture_ceiling_defaults_and_explicit_override(self):
+        for capture in ('ddagrab', 'avfoundation', 'screencapturekit'):
+            with self.subTest(capture=capture):
+                self.assertEqual(self.settings(capture=capture).capture_fps, 240)
+        settings = self.settings(capture_fps=144)
+        command = encoder_command(settings)
+        self.assertIn('max_framerate=144:', command[command.index('-i')+1])
 
     def test_frame_rates_reach_every_capture_backend(self):
         for fps in (60, 75, 90, 100):

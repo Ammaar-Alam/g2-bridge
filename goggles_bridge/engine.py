@@ -48,7 +48,7 @@ class BridgeSettings:
     fps: int = 100
     bitrate_mbps: int | None = None
     capture: str = 'gfxcapture'
-    capture_fps: int = 240
+    capture_fps: int | None = None
     display_index: int = 0
     show_cursor: bool = True
     preset: str = 'p1'
@@ -91,6 +91,8 @@ class BridgeSettings:
             limit = max(b for b in CHOICES['bitrate_mbps'] if b * 1_000_000 // (8 * self.fps) <= MAX_AVERAGE_FRAME_BYTES)
             raise ValueError(f'At {self.fps} fps, use at most {limit} Mbps. '
                              f'{self.bitrate_mbps} Mbps makes frames too large for the goggles')
+        if self.capture_fps is None:
+            object.__setattr__(self, 'capture_fps', 1000 if self.capture == 'gfxcapture' else 240)
         if type(self.capture_fps) is not int or not self.fps <= self.capture_fps <= 1000:
             raise ValueError('Capture ceiling must be between output fps and 1000')
         if type(self.display_index) is not int or self.display_index < 0:

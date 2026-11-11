@@ -142,6 +142,55 @@ only the encoder and sends 200 pictures through one simulated USB session.
 All 200 pictures decode at 1080p and match the expected reference pictures byte for byte.
 This test does not measure goggles recovery or optical delay.
 
+## Windows capture ceiling
+
+Windows Graphics Capture uses a 1000 fps capture ceiling. The existing frame
+selector limits output to `--fps` before encoding. The encoder configuration,
+resize filter, and frame-size guard remain unchanged. macOS keeps its 240 fps
+capture ceiling, and an explicit `--capture-fps` value overrides the default.
+
+The ceiling controls the capture session's minimum update interval and
+FFmpeg's repeated-frame timing. For the implementation, see the
+[FFmpeg Graphics Capture source](https://github.com/FFmpeg/FFmpeg/blob/0893feba65/libavfilter/vsrc_gfxcapture_winrt.cpp).
+The comparison changes this ceiling from 240 to 1000 while keeping the
+bounded-credit selector and 100 fps encoder target fixed.
+
+Tests use an owned D3D11 window with a moving seeded texture and a timestamp
+protected by a checksum. A separate offscreen shader completes 60 workloads/s.
+Each source has two 900-picture runs per configuration in A-B-B-A order.
+The first 100 pictures are excluded from timing. The GPU is an RTX 5060 Laptop
+with driver 610.74 and FFmpeg `0893feba65`.
+
+The source and background workload maintain their requested rates in every
+measurement window. Recorded GPU clocks overlap within each comparison.
+The following ranges describe the two runs, not confidence intervals.
+Fresh-frame delay starts at source render submission and ends when the host
+receives the first encoded picture with that timestamp:
+
+| Source | Distinct fps, 240 to 1000 | Fresh median, 240 to 1000 | Fresh p95, 240 to 1000 |
+| --- | --- | --- | --- |
+| 1080p at 100 fps | 93.65-95.34 to 99.97-99.98 | 8.63-8.86 to 7.70-7.77 ms | 15.08-15.26 to 11.27-11.39 ms |
+| 1080p at 30 fps | 29.96-30.00 to 29.97-30.00 | 6.93-7.40 to 7.03-7.10 ms | 11.72-11.89 to 7.98-8.23 ms |
+| 2400x1500 at 144 fps | 91.04-93.06 to 99.91-99.92 | 8.19-8.27 to 7.89-7.91 ms | 12.30-13.00 to 11.20-11.25 ms |
+
+The 30 fps source retains its distinct frame rate, and median-delay ranges
+overlap. Time-weighted source age also improves in each group. Repeated
+pictures therefore do not account for the reported improvement. All 10,800
+pictures decode, all steady-state timestamp checks pass, and every picture
+fits the 56,000-byte limit. The largest picture is 52,826 bytes.
+
+Higher capture rates can consume more CPU. In the scaled-source comparison,
+encoder-process CPU time rises from 1.45-1.47 to 1.67-1.84 seconds per
+900-picture run. Source and background-workload throughput stay stable in
+that test. This result does not establish unchanged application performance
+on every PC.
+
+The [per-run results](evidence/capture-ceiling.json) include source and
+workload rates, fresh-frame delay, time-weighted age, and GPU telemetry.
+These are direct-window host measurements with 1 ms source-timestamp
+resolution. They exclude physical USB, goggles decoding, and panel scanout.
+They do not establish headset frame rate or end-to-end latency.
+
 ## Capture timestamp jitter
 
 Fixed time slots can discard valid frames when capture runs near the target

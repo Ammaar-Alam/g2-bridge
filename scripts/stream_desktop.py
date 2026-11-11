@@ -78,7 +78,8 @@ def main():
                         default=MAC_CAPTURE if MAC else BridgeSettings.capture,
                         help='Windows: Graphics Capture with GPU scaling, or Desktop Duplication with CPU scaling. '
                              'macOS: ScreenCaptureKit on 12.3 and later, or AVFoundation through FFmpeg')
-    parser.add_argument('--capture-fps', type=int, default=BridgeSettings.capture_fps, help='Maximum capture rate, in fps')
+    parser.add_argument('--capture-fps', type=int, default=BridgeSettings.capture_fps,
+                        help='Maximum capture rate (default: 1000 for Windows Graphics Capture, otherwise 240)')
     parser.add_argument('--display', dest='display_index', metavar='DISPLAY', type=int,
                         default=BridgeSettings.display_index,
                         help='Zero-based monitor index')
