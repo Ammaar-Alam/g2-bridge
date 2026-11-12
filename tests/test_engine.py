@@ -265,14 +265,17 @@ class EngineTests(unittest.TestCase):
         self.assertIn('brew upgrade ffmpeg', check_encoder(settings, fail('Error opening output files: Filter not found')))
         self.assertIn('screen recording', check_encoder(settings, fail('Error opening input files: Input/output error')))
 
-    def test_windows_default_keeps_buffer_small_and_avoids_periodic_idr(self):
+    def test_windows_default_keeps_buffer_small_and_repeats_idr(self):
         settings = self.settings()
         command = encoder_command(settings)
         for flag, expected in (('-preset', 'p1'), ('-b:v', '32000000'), ('-maxrate', '32000000'),
                                ('-bufsize', '400000'), ('-bf', '0'), ('-delay', '0'), ('-r', '100'),
                                ('-multipass', 'qres'), ('-intra-refresh', '1'),
-                               ('-single-slice-intra-refresh', '0')):
+                               ('-single-slice-intra-refresh', '0'), ('-forced-idr', '1'),
+                               ('-force_key_frames', 'expr:not(mod(n,300))+lt(n,300)*not(mod(n,10))')):
             self.assertEqual(command[command.index(flag)+1], expected)
+        command = encoder_command(self.settings(fps=75, keyframe_seconds=1))
+        self.assertEqual(command[command.index('-force_key_frames')+1], 'expr:not(mod(n,75))+lt(n,75)*not(mod(n,7))')
         self.assertEqual(command[-3:], ['-f', 'avi', 'pipe:1'])
         for capture in ('gfxcapture', 'ddagrab'):
             for fps in (60, 75, 90, 100):

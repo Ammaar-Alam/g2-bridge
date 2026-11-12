@@ -23,9 +23,13 @@ The same encoding settings apply to Desktop Duplication. Windows selects
 The buffer cannot exceed 448,000 bits or two frames of the previous 20 Mbps budget.
 macOS encoding remains unchanged.
 
-Gradual refresh replaces the recurring instantaneous decoder refresh (IDR)
-pictures that blurred text in the decoded comparison. The first picture is
-an IDR. The buffer setting is not a guaranteed maximum picture size.
+Gradual refresh replaced the recurring instantaneous decoder refresh (IDR)
+pictures that blurred text in the decoded comparison. With gradual refresh
+alone, only the first picture is an IDR. Goggles that miss it show a black
+screen for the rest of the stream, so the encoder also
+[repeats the IDR](#recurring-idr-pictures). The comparisons in
+[Image quality](#image-quality) predate the recurring IDR pictures.
+The buffer setting is not a guaranteed maximum picture size.
 Before transmission, the bridge rejects Windows pictures larger than 56,000 bytes.
 It stops the encoder, discards queued dependent pictures, and starts an encoder
 that supplies a fresh IDR. The USB session and packet sequence remain intact.
@@ -425,6 +429,41 @@ It saves commands, hashes, picture sizes, and decoded-frame checksums in a new
 output directory. It verifies the initial blank frame and repeated detailed
 image before encoding, and reports a failure if multi-slice pictures exceed
 the limit on the tested configuration.
+
+## Recurring IDR pictures
+
+NVENC makes the group of pictures unbounded when gradual refresh is on. A
+1,000-picture encode at 100 fps with gradual refresh alone contained one IDR,
+at the start. A decoder that misses that picture has no later entry point.
+[Issue #27](https://github.com/Ammaar-Alam/g2-bridge/issues/27) reports the
+resulting black screen. Goggles 2 on firmware 01.11.00.00 reproduced it: a
+30-second stream delivered 2,132 pictures without a USB error or an oversized
+picture, and the display stayed black. With recurring IDR pictures, the same
+goggles displayed the desktop.
+
+The encoder forces an IDR at every keyframe interval, three seconds by
+default. During the first interval, it forces one every tenth of a second of
+pictures. The schedule counts pictures, not time. FFmpeg 9.0 and earlier
+deliver a Windows Graphics Capture frame only when the screen changes, and the
+reported still-desktop streams sent 3.2 to 5.2 pictures per second. At that
+rate, 300 pictures take about a minute, and ten take two to three seconds.
+
+The following table shows the largest picture in generated 10-second to
+15-second encodes. No picture exceeded the 56,000-byte limit:
+
+| Source | 60 fps | 75 fps | 90 fps | 100 fps |
+| --- | ---: | ---: | ---: | ---: |
+| Moving test pattern | 51,156 bytes | 51,124 bytes | 49,157 bytes | 43,860 bytes |
+| Still desktop capture | 52,416 bytes | 52,283 bytes | 50,350 bytes | 45,100 bytes |
+
+The still noise image from the [refresh test](#picture-sizes-during-refresh)
+is a known exception. At 100 fps, the picture after each later IDR reached
+77,441 bytes, and the size guard restarts the encoder. A plain group of
+pictures without gradual refresh reached 77,617 bytes on the same source.
+Moving noise exceeds the limit with or without recurring IDR pictures.
+
+On the still desktop capture at 100 fps, SSIM is 0.9995 between IDR pictures,
+0.9921 at an IDR, and 0.9973 one picture later.
 
 ## Reproduce the quality comparison
 
