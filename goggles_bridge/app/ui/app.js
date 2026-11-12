@@ -295,6 +295,8 @@
     once('display-row', s.displays.length, () => {
       const row = controls.display_index;
       row.className = s.displays.length > 1 ? 'thumbs' : 'row-value';
+      // the row switches between buttons and plain text, so the buttons must be drawn again next time
+      delete drawn['thumbs-display-picker'];
     });
     if (s.displays.length > 1) thumbs(controls.display_index, s);
     else if (m.display) controls.display_index.textContent = `${m.display.width} × ${m.display.height}`;
