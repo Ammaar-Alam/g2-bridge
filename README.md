@@ -39,7 +39,7 @@ To stream from Windows without installing Python or FFmpeg, use the Goggles Brid
 2. Download `GogglesBridge-VERSION-Setup.exe` from [Releases](https://github.com/Ammaar-Alam/g2-bridge/releases), and then run it. The installer isn't signed, so Windows might show a SmartScreen warning.
 3. Open Goggles Bridge, and then follow the setup guide.
 
-The app requires 64-bit Windows 10 or 11 and an NVIDIA GPU.
+The app requires 64-bit Windows 10 or 11, an NVIDIA GPU, and the Microsoft Edge WebView2 Runtime, which Windows 11 includes.
 
 ![The Goggles Bridge window while streaming. A drawing shows a computer connected to goggles, next to the stream settings. The numbers are simulated.](docs/images/app-window.png)
 

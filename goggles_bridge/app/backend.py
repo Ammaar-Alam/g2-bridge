@@ -28,6 +28,7 @@ LINKS = {
     'driver': 'https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series',
     'github': 'https://github.com/Ammaar-Alam/g2-bridge',
     'report': 'https://github.com/Ammaar-Alam/g2-bridge/issues/new',
+    'webview2': 'https://developer.microsoft.com/microsoft-edge/webview2/',
 }
 CAPTURES = (('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'))
 # identity build dates of the firmware that displayed video, by model. Integra 01.09.00.00 also
@@ -329,6 +330,21 @@ class Desktop:
         return dict(ok=True)
 
 
+def has_webview2():
+    """Return whether the WebView2 Runtime, which draws the window on Windows, is installed."""
+    import winreg
+    client = r'Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+    for root, path in ((winreg.HKEY_LOCAL_MACHINE, rf'SOFTWARE\WOW6432Node\{client}'),
+                       (winreg.HKEY_LOCAL_MACHINE, rf'SOFTWARE\{client}'), (winreg.HKEY_CURRENT_USER, rf'Software\{client}')):
+        try:
+            with winreg.OpenKey(root, path) as key:
+                if winreg.QueryValueEx(key, 'pv')[0] not in ('', '0.0.0.0'):
+                    return True
+        except OSError:
+            pass
+    return False
+
+
 def tint_title_bar(window):
     """Match the Windows title bar to the window's light ground."""
     try:
@@ -343,6 +359,12 @@ def main():
     import webview
     api = Desktop()
     self_test = '--self-test' in sys.argv
+    if WINDOWS and not self_test and not has_webview2():
+        # the fallback renderer cannot run the interface, so say what is missing before the window opens
+        text = ('Goggles Bridge needs the Microsoft Edge WebView2 Runtime to show its window.\n\n'
+                'To open the download page, select OK.')
+        if C.windll.user32.MessageBoxW(None, text, APP_NAME, 0x31) == 1:  # OK and Cancel, with a warning icon
+            webbrowser.open(LINKS['webview2'])
     window = webview.create_window(APP_NAME, str(UI/'index.html'), js_api=api, width=1120, height=740,
                                    min_size=(940, 660), background_color='#F5F5F7', hidden=self_test)
     window.events.closed += api._stop.set

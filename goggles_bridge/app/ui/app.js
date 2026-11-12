@@ -24,7 +24,7 @@
   ];
   const ADVANCED = [
     { key: 'capture', label: 'Capture method', kind: 'select',
-      info: 'Windows Graphics Capture scales the picture on the GPU. Desktop Duplication scales it on the CPU. Use it if capture fails.' },
+      info: 'Windows Graphics Capture scales the picture on the GPU. Desktop Duplication scales it on the CPU. Use it if capture fails. With more than one graphics adapter, Desktop Duplication can number displays differently from the Display setting.' },
     { key: 'keyframe_seconds', label: 'Keyframe interval', kind: 'select',
       info: 'Time between complete pictures. The goggles need a complete picture to start or recover the image.' },
     { key: 'h264_profile', label: 'H.264 profile', kind: 'select',

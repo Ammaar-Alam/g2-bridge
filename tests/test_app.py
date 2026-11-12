@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import sys
 import tempfile
 import threading
 import unittest
@@ -113,6 +114,13 @@ class AppTests(unittest.TestCase):
         app._probe.join(5)
         device = app.snapshot()['device']
         self.assertEqual((device['build'], device['tested']), ('Feb 26 2025', False))
+
+    @unittest.skipUnless(sys.platform == 'win32', 'the WebView2 Runtime is a Windows component')
+    def test_missing_webview2_is_detected(self):
+        import winreg
+        with mock.patch.object(winreg, 'OpenKey', side_effect=OSError):
+            self.assertFalse(backend.has_webview2())
+        self.assertTrue(backend.has_webview2())
 
     def test_problems_name_their_recovery(self):
         app = self.app((dict(event='waiting', message=SIMULATOR_SILENT),))
