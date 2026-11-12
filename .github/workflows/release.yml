@@ -1,9 +1,9 @@
 name: Release
 
-# a version tag builds the Windows installer and opens a draft release to finish by hand
+# run from the Actions page: builds the Windows installer for the version in the code
+# and opens a draft release to finish by hand
 on:
-  push:
-    tags: ['[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,16 +11,31 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Read the version and check that it is new
+        id: version
+        shell: bash
+        run: |
+          version="$(python -c 'import goggles_bridge; print(goggles_bridge.__version__)')"
+          if gh release list --limit 200 --json tagName -q '.[].tagName' | grep -qx "$version"; then
+            echo "::error::Release $version already exists. Set a new __version__ in goggles_bridge/__init__.py first."
+            exit 1
+          fi
+          # an existing tag must be the commit being built, or the installer and the tagged source would differ
+          tagged="$(git ls-remote origin "refs/tags/$version" "refs/tags/$version^{}" | tail -n 1 | cut -f 1)"
+          if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
+            echo "::error::Tag $version exists at another commit. Set a new __version__ in goggles_bridge/__init__.py, or delete the tag."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - run: python -m pip install -r requirements-app.txt pyinstaller==6.22.3
       - run: python -m unittest discover -s tests
-      - name: Check that the tag is the app version
-        shell: bash
-        run: test "$(python -c 'import goggles_bridge; print(goggles_bridge.__version__)')" = "$GITHUB_REF_NAME"
       - name: Install Inno Setup if the runner lacks it
         shell: bash
         run: test -f "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" || choco install innosetup --yes --no-progress
@@ -28,24 +43,24 @@ jobs:
       - name: Draft the release
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          tag="$GITHUB_REF_NAME"
-          installer="dist/GogglesBridge-$tag-Setup.exe"
+          installer="dist/GogglesBridge-$TAG-Setup.exe"
           sha="$(sha256sum "$installer" | cut -d ' ' -f 1)"
           previous="$(gh release list --exclude-drafts --limit 1 --json tagName -q '.[0].tagName // ""')"
           changelog="First release."
           if [ -n "$previous" ]; then
             # the merged pull requests since the last release, as "- [#12](link) title @author"
-            pulls="$(gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$tag" -f previous_tag_name="$previous" -q .body \
+            pulls="$(gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
+              -f previous_tag_name="$previous" -q .body \
               | sed -nE 's|^\* (.*) by @([^ ]+) in (https://[^ ]+/pull/([0-9]+))$|- [#\4](\3) \1 @\2|p')"
-            changelog="Full Changelog: https://github.com/$GITHUB_REPOSITORY/compare/$previous...$tag"$'\n\n'"$pulls"
+            changelog="Full Changelog: https://github.com/$GITHUB_REPOSITORY/compare/$previous...$TAG"$'\n\n'"$pulls"
           fi
           notes="$(cat .github/RELEASE_TEMPLATE.md)"
-          notes="${notes//'{{VERSION}}'/$tag}"
+          notes="${notes//'{{VERSION}}'/$TAG}"
           notes="${notes//'{{SHA256}}'/$sha}"
           notes="${notes//'{{CHANGELOG}}'/$changelog}"
           printf '%s\n' "$notes" > notes.md
-          # pre-release until a stable version is declared; the title's headline is written by hand
-          gh release create "$tag" "$installer" --draft --prerelease --verify-tag --title "$tag: " --notes-file notes.md
+          # pre-release until a stable version is declared; publishing the draft creates the tag
+          gh release create "$TAG" "$installer" --draft --prerelease --target "$GITHUB_SHA" --title "$TAG: " --notes-file notes.md
