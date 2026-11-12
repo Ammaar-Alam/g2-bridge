@@ -30,7 +30,10 @@ class AppTests(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.settings_path = Path(self.folder.name)/'settings.json'
-        for name, value in (('data_dir', lambda: Path(self.folder.name)), ('goggles_attached', lambda: True)):
+        # two displays on every test host, so a saved second display stays valid
+        two = [dict(index=i, name=f'Display {i+1}', x=1920*i, y=0, width=1920, height=1080, hz=60, primary=not i) for i in range(2)]
+        for name, value in (('data_dir', lambda: Path(self.folder.name)), ('goggles_attached', lambda: True),
+                            ('list_displays', lambda: two)):
             patcher = mock.patch.object(backend, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
