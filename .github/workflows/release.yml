@@ -27,6 +27,12 @@ jobs:
             echo "::error::Release $version already exists. Set a new __version__ in goggles_bridge/__init__.py first."
             exit 1
           fi
+          # an existing tag must be the commit being built, or the installer and the tagged source would differ
+          tagged="$(git ls-remote origin "refs/tags/$version" "refs/tags/$version^{}" | tail -n 1 | cut -f 1)"
+          if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
+            echo "::error::Tag $version exists at another commit. Set a new __version__ in goggles_bridge/__init__.py, or delete the tag."
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - run: python -m pip install -r requirements-app.txt pyinstaller==6.22.3
       - run: python -m unittest discover -s tests
