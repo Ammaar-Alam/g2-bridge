@@ -31,7 +31,28 @@ On macOS, you need the following:
 
 The stream script offers to install whatever is missing. Tests used an M2 Pro MacBook Pro with macOS 27.0, Swift 6.4.2, and Homebrew FFmpeg 8.1.1.
 
-## Start streaming
+## Use the desktop app
+
+To stream from Windows without installing Python or FFmpeg, use the Goggles Bridge app:
+
+1. Install [DJI Assistant 2 (Consumer Drones Series)](https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series) for its USB driver.
+2. Download `GogglesBridge-VERSION-Setup.exe` from [Releases](https://github.com/Ammaar-Alam/g2-bridge/releases), and then run it. The installer isn't signed, so Windows might show a SmartScreen warning.
+3. Open Goggles Bridge, and then follow the setup guide.
+
+The app requires 64-bit Windows 10 or 11 and an NVIDIA GPU.
+
+![The Goggles Bridge window while streaming. A drawing shows a computer connected to goggles, next to the stream settings. The numbers are simulated.](docs/images/app-window.png)
+
+To run the app from the repository, install its dependencies and start it:
+
+```powershell
+python -m pip install -r requirements-app.txt
+python scripts/goggles_bridge_app.py
+```
+
+To build the installer, see the [packaging notes](packaging/README.md).
+
+## Start streaming from the command line
 
 1. Power on the goggles, connect a USB data cable, and open **More > DJI Virtual Flight**. On a Mac, when macOS asks whether the accessory can connect, select **Allow**.
 2. From the repository root, install the Python dependencies.

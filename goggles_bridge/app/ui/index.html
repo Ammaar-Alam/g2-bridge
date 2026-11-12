@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goggles Bridge</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-phase="idle">
+
+<header class="bar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="8"/>
+      <path fill-rule="evenodd" d="M9 10.5h14a4.5 4.5 0 0 1 4.5 4.5v2.7a4.8 4.8 0 0 1-8.8 2.7l-.6-.9a2.5 2.5 0 0 0-4.2 0l-.6.9a4.8 4.8 0 0 1-8.8-2.7V15A4.5 4.5 0 0 1 9 10.5zm1.6 3.2a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2zm10.8 0a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2z"/>
+    </svg>
+    <span>Goggles Bridge</span>
+  </div>
+  <button class="link" id="open-guide" type="button">Setup guide</button>
+</header>
+
+<main>
+  <section class="stage">
+    <div class="scene-slot" data-scene></div>
+    <div class="status" aria-live="polite">
+      <h1 id="headline">Getting ready</h1>
+      <p id="subline"></p>
+      <p class="stats" id="stats"></p>
+      <p class="notice" id="notice"></p>
+    </div>
+    <button class="button primary" id="action" type="button">Start streaming</button>
+    <ul class="checks" id="checks"></ul>
+  </section>
+
+  <section class="settings" aria-label="Stream settings">
+    <p class="locked" id="locked" hidden>To change settings, stop streaming.</p>
+    <fieldset id="options">
+      <div class="group" id="basic"></div>
+      <h2 class="group-title">Advanced</h2>
+      <div class="group" id="advanced"></div>
+    </fieldset>
+  </section>
+</main>
+
+<footer class="foot">
+  <span id="version"></span>
+  <span class="links">
+    <button class="link" type="button" data-link="report">Report a problem</button>
+    <button class="link" type="button" data-link="github">GitHub</button>
+    <button class="link" type="button" data-link="logs">Open logs</button>
+    <button class="link" type="button" id="diagnostics">Copy diagnostics</button>
+  </span>
+</footer>
+
+<section class="guide" id="guide" role="dialog" aria-modal="true" aria-label="Setup guide" hidden>
+  <button class="link" id="guide-skip" type="button">Skip</button>
+  <div class="scene-slot" data-scene></div>
+  <h2 id="guide-title"></h2>
+  <p id="guide-text"></p>
+  <div class="thumbs" id="guide-picker" hidden></div>
+  <p class="guide-status" id="guide-status" aria-live="polite">
+    <svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.2"/><path d="m5.8 9.3 2.2 2.2 4.2-4.6"/></svg>
+    <span id="guide-status-text"></span>
+  </p>
+  <button class="button primary" id="guide-action" type="button">Continue</button>
+  <div class="dots" id="dots" aria-hidden="true"></div>
+</section>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
