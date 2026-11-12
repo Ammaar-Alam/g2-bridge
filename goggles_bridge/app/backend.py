@@ -119,13 +119,14 @@ class Desktop:
     def __init__(self, *, settings_path=None, engine_factory=BridgeEngine, check=check_encoder, identify=identify):
         self._settings_path = Path(settings_path or data_dir()/'settings.json')
         self._engine_factory, self._check, self._identify = engine_factory, check, identify
-        # None before a look, False after a failed one, else what describe returns
+        # the connected goggles: None before a look, False after a failed one, else what describe returns.
+        # A stream's ready event also sets it, and a disconnect clears it
         self._device = None
         self._probe = None
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = None
-        self._state = dict(phase='idle', problem=None, device=None, stats=None, oversize=0, log=None)
+        self._state = dict(phase='idle', problem=None, stats=None, oversize=0, log=None)
         self._checks = (0, None)
         self._displays = []
         self._ffmpeg = find_ffmpeg()
@@ -192,11 +193,12 @@ class Desktop:
         """Return everything the window draws."""
         with self._lock:
             state = dict(self._state)
-        state['device'] = state['device'] or self._device or None
+        checks = self._preflight()  # first, because a disconnect clears the identity
+        state['device'] = self._device or None
         if not self._running() or not self._displays:
             self._displays = list_displays()
         return dict(app=dict(name=APP_NAME, version=__version__, platform=sys.platform),
-                    checks=self._preflight(), displays=self._displays, options=dict(self._options),
+                    checks=checks, displays=self._displays, options=dict(self._options),
                     choices=dict(fps=CHOICES['fps'], capture=CAPTURES, preset=CHOICES['preset'],
                                  keyframe_seconds=CHOICES['keyframe_seconds'], h264_profile=CHOICES['h264_profile'],
                                  usb_write_size=CHOICES['usb_write_size'], bitrates=self._bitrates()),
@@ -234,7 +236,7 @@ class Desktop:
             settings = self._settings({})
             log = data_dir()/'logs'/f'{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}.jsonl'
             self._stop.clear()
-            self._state.update(phase='checking', problem=None, device=None, stats=None, oversize=0, log=str(log))
+            self._state.update(phase='checking', problem=None, stats=None, oversize=0, log=str(log))
             self._thread = threading.Thread(target=self._run, args=(settings, log), daemon=True)
             self._thread.start()
         return dict(ok=True)
@@ -275,7 +277,7 @@ class Desktop:
                 state.update(phase='connecting', problem=None)
             elif event == 'ready':
                 state['phase'] = 'ready'
-                state['device'] = self._device = describe(row['model'], row['identity'])
+                self._device = describe(row['model'], row['identity'])
             elif event == 'streaming':
                 state['phase'] = 'streaming'
             elif event == 'stats':
@@ -292,7 +294,7 @@ class Desktop:
         lines = [f'{APP_NAME} {__version__}', f'{platform.platform()} | Python {platform.python_version()}',
                  f'FFmpeg: {self._ffmpeg}', f'Checks: {json.dumps(self._preflight())}',
                  f'Options: {json.dumps(self._options)}',
-                 f"State: {state['phase']} {json.dumps(state['problem'])} {json.dumps(state['device'])}"]
+                 f"State: {state['phase']} {json.dumps(state['problem'])} {json.dumps(self._device or None)}"]
         if self._ffmpeg and self._ffmpeg.is_file():
             version = subprocess.run([str(self._ffmpeg), '-hide_banner', '-version'], capture_output=True, text=True,
                                      errors='replace', timeout=10, creationflags=NO_WINDOW).stdout.splitlines()

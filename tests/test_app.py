@@ -84,6 +84,33 @@ class AppTests(unittest.TestCase):
         app._look()
         self.assertIsNone(app.snapshot()['device'])
 
+    def test_reconnected_goggles_replace_the_streamed_identity(self):
+        present = Path(self.folder.name)/'present'
+        present.touch()
+        plugged, found = [True], [('DJI Goggles 2', 'E3T ZV900 AC Feb 26 2025|12:39:57')]
+        for name, value in (('find_dll', lambda path=None: present), ('goggles_attached', lambda: plugged[0])):
+            patcher = mock.patch.object(backend, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        ready = dict(event='ready', model='DJI Goggles 2', identity='E3T ZV900 AC Dec 24 2024|12:34:04')
+        engine = type('Engine', (FakeEngine,), dict(events=(ready, dict(event='streaming', encoder_pid=1, gpu_realtime=True))))
+        app = Desktop(settings_path=self.settings_path, engine_factory=engine, check=lambda settings: None,
+                      identify=lambda: found[0])
+        app._ffmpeg = present
+        self.addCleanup(lambda: (app.stop(), app._thread and app._thread.join(5)))
+        app.start()
+        self.assertEqual(self.wait_for(app, 'streaming')['device']['version'], '01.11.00.00')
+        app.stop()
+        self.wait_for(app, 'idle')
+        app._thread.join(5)
+        plugged[0], app._checks = False, (0, None)
+        self.assertIsNone(app.snapshot()['device'])
+        plugged[0], app._checks = True, (0, None)
+        app.snapshot()
+        app._probe.join(5)
+        device = app.snapshot()['device']
+        self.assertEqual((device['build'], device['tested']), ('Feb 26 2025', False))
+
     def test_problems_name_their_recovery(self):
         app = self.app((dict(event='waiting', message=SIMULATOR_SILENT),))
         app.start()
