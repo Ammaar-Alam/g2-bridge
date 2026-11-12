@@ -197,6 +197,9 @@ class Desktop:
         state['device'] = self._device or None
         if not self._running() or not self._displays:
             self._displays = list_displays()
+            if self._displays and self._options['display_index'] not in {d['index'] for d in self._displays}:
+                # the saved display is gone, so fall back to the main one
+                self._options['display_index'] = next((d['index'] for d in self._displays if d['primary']), 0)
         return dict(app=dict(name=APP_NAME, version=__version__, platform=sys.platform),
                     checks=checks, displays=self._displays, options=dict(self._options),
                     choices=dict(fps=CHOICES['fps'], capture=CAPTURES, preset=CHOICES['preset'],

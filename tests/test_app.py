@@ -148,6 +148,9 @@ class AppTests(unittest.TestCase):
         self.assertEqual((again._options['fps'], again._options['display_index']), (60, 1))
         self.assertTrue(again.snapshot()['onboarded'])
         self.assertNotIn('unknown', again._options)
+        one = [dict(index=0, name='Display 1', x=0, y=0, width=1920, height=1080, hz=60, primary=True)]
+        with mock.patch.object(backend, 'list_displays', lambda: one):
+            self.assertEqual(again.snapshot()['options']['display_index'], 0)
         self.settings_path.write_text('{"fps": 61}', encoding='utf-8')
         self.assertEqual(self.app()._options['fps'], 100)
 
