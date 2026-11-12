@@ -23,9 +23,10 @@ Open `goggles_bridge/app/ui/index.html` in a browser. Opened as a file, the inte
 
 ## Release
 
-1. Set `__version__` in `goggles_bridge/__init__.py`, and merge the change.
-2. Push a tag with the same version, such as `0.1.0`.
+1. Set `__version__` in `goggles_bridge/__init__.py` in a pull request titled `chore(release): VERSION`, and merge it.
+2. On GitHub, go to **Actions > Release**, and then select **Run workflow**.
+3. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
 
-The release workflow builds the installer and creates a draft pre-release from `.github/RELEASE_TEMPLATE.md`, with the installer's SHA-256 and the merged pull requests filled in. Write the headline and the **What's Changed** entries, and then publish the draft.
+The workflow builds the installer for the version on `main` and attaches it to a draft pre-release. It fills in the installer's SHA-256 and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
 
 The macOS app isn't packaged yet.
