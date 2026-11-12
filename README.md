@@ -86,8 +86,15 @@ These values set the stream rate, not the goggles' panel refresh rate. Lower
 rates provide more bits per frame at the same bitrate, but increase the time
 between frames. The 100 fps target has the shortest frame interval.
 
-Windows encoding uses gradual refresh to reduce periodic compression blur.
+Windows encoding uses gradual refresh to reduce periodic compression blur. It
+also sends a keyframe every three seconds, and more often in the first three,
+so the goggles can start decoding at any point. To change the interval, use
+`--keyframe-seconds`.
 For details, see the [quality measurements and reproduction steps](docs/research/WINDOWS_QUALITY.md).
+
+FFmpeg 9.0 and earlier capture a frame only when the screen changes. On a still
+desktop, the bridge then reports only a few frames per second. Motion restores
+the full rate.
 
 ## Run tests
 

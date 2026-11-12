@@ -111,8 +111,9 @@ def encoder_command(settings, frames=0):
                 + (['--frames', str(frames)] if frames else []))
     # More NVENC bitrate must not enlarge the previous 20 Mbps buffer budget
     vbv = min(min(bitrate, 20_000_000)*2//settings.fps, MAX_VBV_BITS) if settings.nvenc else bitrate*2//settings.fps
+    period = settings.fps*settings.keyframe_seconds
     rate = ['-b:v', str(bitrate), '-maxrate', str(bitrate), '-bufsize', str(vbv), '-bf', '0',
-            '-g', str(settings.fps*settings.keyframe_seconds), '-level:v', '4.2' if settings.fps == 60 else '5.1',
+            '-g', str(period), '-level:v', '4.2' if settings.fps == 60 else '5.1',
             '-flush_packets', '1']
     command = [str(Path(settings.ffmpeg).resolve()), '-hide_banner', '-nostdin', '-loglevel', 'info']
     if settings.capture == 'avfoundation':
@@ -154,7 +155,10 @@ def encoder_command(settings, frames=0):
                     '-aud', '1', '-forced-idr', '1',
                     '-multipass', 'qres', '-intra-refresh', '1',
                     # single-slice refresh can exceed the receiver's picture-size limit
-                    '-single-slice-intra-refresh', '0']
+                    '-single-slice-intra-refresh', '0',
+                    # refresh alone sends one IDR, and goggles that miss it stay black. The first
+                    # interval repeats it often, because a still screen can deliver only a few frames a second
+                    '-force_key_frames', f'expr:not(mod(n,{period}))+lt(n,{period})*not(mod(n,{settings.fps//10}))']
         if settings.adaptive_quant:
             command += ['-spatial-aq', '1', '-temporal-aq', '1']
         if settings.low_latency:

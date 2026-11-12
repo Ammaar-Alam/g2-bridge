@@ -50,6 +50,9 @@ def main():
         command = encoder_command(BridgeSettings(None, ffmpeg, fps=args.fps))
         command[command.index('-i')+1] = source
         command[command.index('-single-slice-intra-refresh')+1] = str(int(single))
+        # compare refresh pictures only, without the recurring IDR
+        recurring = command.index('-force_key_frames')
+        del command[recurring:recurring+2]
         video = folder/f'{label}.avi'
         command[-1:] = ['-frames:v', '900', str(video)]
         with (folder/f'{label}.log').open('x', encoding='utf-8') as log:
