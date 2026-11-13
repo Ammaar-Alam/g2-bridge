@@ -41,6 +41,8 @@ To stream from Windows without installing Python or FFmpeg, use the Goggles Brid
 
 The app requires 64-bit Windows 10 or 11, an NVIDIA GPU, and the Microsoft Edge WebView2 Runtime, which Windows 11 includes.
 
+When a newer release is available, **Update to VERSION** appears at the bottom of the window. To download and install that release, select it. The app reopens when the installation finishes.
+
 ![The Goggles Bridge window while streaming. A drawing shows a computer connected to goggles, next to the stream settings. The numbers are simulated.](docs/images/app-window.png)
 
 To run the app from the repository, install its dependencies and start it:

@@ -276,6 +276,7 @@
     picture.dataset.state = m.look;
     picture.setAttribute('aria-label', m.headline);
     $('#version').textContent = `${s.app.name} ${s.app.version}`;
+    $('#update').hidden = !s.app.updatable;
 
     once('checks', m.checks, () => {
       $('#checks').replaceChildren(...m.checks.map(([name, state, note]) => {
@@ -431,6 +432,24 @@
     document.documentElement.classList.toggle('asleep', Boolean(idle));
   }
 
+  // the footer button looks for a release, then becomes the way to install the one it found
+  async function checkUpdate(asked) {
+    const button = $('#update');
+    const found = await api.check_update();
+    if (found.version) {
+      button.textContent = `Update to ${found.version}`;
+      button.onclick = async () => {
+        button.disabled = true;
+        button.textContent = `Downloading ${found.version}`;
+        const result = await api.install_update();
+        if (!result.error) return;
+        toast(result.error);
+        button.disabled = false;
+        button.textContent = `Update to ${found.version}`;
+      };
+    } else if (asked) toast(found.error || `${snap.app.name} is up to date`);
+  }
+
   async function refresh() {
     snap = await api.snapshot();
     render();
@@ -459,7 +478,9 @@
     addEventListener('resize', placeThumb);
     for (const name of ['visibilitychange', 'focus', 'blur']) addEventListener(name, rest);
     $('#guide').hidden = false;
+    $('#update').onclick = () => checkUpdate(true);
     await refresh();
+    if (snap.app.updatable) checkUpdate(false);
     if (!snap.onboarded || params.has('step')) openGuide(params.get('step') || 'welcome');
     requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('ready')));
     loop();

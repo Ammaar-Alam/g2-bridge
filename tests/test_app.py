@@ -1,3 +1,5 @@
+import hashlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -6,7 +8,7 @@ import threading
 import unittest
 from unittest import mock
 
-from goggles_bridge.app import backend
+from goggles_bridge.app import backend, updates
 from goggles_bridge.app.backend import Desktop, describe, problem_code
 from goggles_bridge.session import SIMULATOR_SILENT
 
@@ -164,6 +166,38 @@ class AppTests(unittest.TestCase):
             self.assertEqual(again.snapshot()['options']['display_index'], 0)
         self.settings_path.write_text('{"fps": 61}', encoding='utf-8')
         self.assertEqual(self.app()._options['fps'], 100)
+
+    def test_update_runs_the_verified_installer_and_closes_the_app(self):
+        installer = b'installer'
+        url = updates.DOWNLOADS+'0.2.0/GogglesBridge-0.2.0-Setup.exe'
+        asset = dict(name='GogglesBridge-0.2.0-Setup.exe', browser_download_url=url,
+                     digest='sha256:'+hashlib.sha256(installer).hexdigest())
+
+        def site(release):
+            return lambda request, timeout: io.BytesIO(
+                installer if request == url else json.dumps(release).encode())
+
+        release = dict(tag_name='0.2.0', assets=[asset])
+        self.assertTrue(updates.newer('0.10.0', '0.9.0'))
+        # current copies, installers without a published hash, and other download sites are not updates
+        for current, changed in (('0.2.0', {}), ('0.1.0', dict(digest=None)),
+                                 ('0.1.0', dict(browser_download_url='https://example.com/Setup.exe'))):
+            with mock.patch.object(updates.urllib.request, 'urlopen', site(dict(release, assets=[{**asset, **changed}]))):
+                self.assertIsNone(updates.find(current))
+
+        app, started, closed = self.app(), [], []
+        app._quit = lambda: closed.append(True)
+        with mock.patch.object(updates.urllib.request, 'urlopen', site(release)), \
+                mock.patch.object(backend.subprocess, 'Popen', started.append):
+            self.assertEqual(app.check_update(), dict(version='0.2.0'))
+            self.assertEqual(app.install_update(), dict(ok=True))
+            path = Path(self.folder.name)/'updates'/'GogglesBridge-Setup.exe'
+            self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
+            self.assertEqual((path.read_bytes(), closed), (installer, [True]))
+            # a download that differs from the published hash is deleted and never run
+            app._update = dict(app._update, sha256='0'*64)
+            self.assertIn('SHA-256', app.install_update()['error'])
+            self.assertEqual((path.exists(), len(started), closed), (False, 1, [True]))
 
 
 if __name__ == '__main__':

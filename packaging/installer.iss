@@ -38,3 +38,5 @@ Name: "{autodesktop}\{#Name}"; Filename: "{app}\{#Name}.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#Name}.exe"; Description: "Open {#Name}"; Flags: nowait postinstall skipifsilent
+; an update started from the app installs silently, so reopen the app afterward
+Filename: "{app}\{#Name}.exe"; Flags: nowait; Check: WizardSilent

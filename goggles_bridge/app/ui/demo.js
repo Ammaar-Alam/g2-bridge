@@ -1,5 +1,6 @@
 // fake backend so the window runs without goggles
-// index.html?state=idle|unplugged|nodriver|untested|waiting|streaming|error holds one state, state=fresh is a first run
+// index.html?state=idle|unplugged|nodriver|untested|waiting|streaming|error holds one state, state=fresh is a first run,
+// state=update offers a newer release
 (() => {
   'use strict';
   const frozen = new URLSearchParams(location.search).get('state');
@@ -16,7 +17,7 @@
     ? { model: 'DJI Goggles 2', identity: 'E3T ZV900 AC Feb 26 2025|12:39:57', build: 'Feb 26 2025', version: null, tested: false, tested_versions }
     : { model: 'DJI Goggles 2', identity: 'E3T ZV900 AC Dec 24 2024|12:34:04', build: 'Dec 24 2024', version: '01.11.00.00', tested: true, tested_versions };
   const state = {
-    app: { name: 'Goggles Bridge', version: '0.1.0', platform: 'win32' },
+    app: { name: 'Goggles Bridge', version: '0.1.0', platform: 'win32', updatable: true },
     checks: { driver: { needed: true, ok: frozen !== 'nodriver' }, ffmpeg: { needed: true, ok: true },
       attached: !['unplugged', 'fresh'].includes(frozen) },
     displays,
@@ -75,5 +76,7 @@
     finish_setup: async () => { state.onboarded = true; return { ok: true }; },
     diagnostics: async () => 'Goggles Bridge demo',
     open_link: async () => ({ ok: true }),
+    check_update: async () => ({ version: frozen === 'update' ? '0.2.0' : null }),
+    install_update: () => new Promise(done => setTimeout(() => done({ error: "Couldn't install the update." }), 3000)),
   };
 })();
