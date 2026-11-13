@@ -39,13 +39,16 @@ Open `goggles_bridge/app/ui/index.html` in a browser. Opened as a file, the inte
 
 ## Release
 
-1. Set `__version__` in `goggles_bridge/__init__.py` in a pull request titled `chore(release): VERSION`, and merge it.
-2. On GitHub, go to **Actions > Release**, and then select **Run workflow**.
-3. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
+1. On GitHub, go to **Actions > Release**, and then select **Run workflow**.
+2. Enter the version, such as `0.2.0`, and then select **Run workflow**. The workflow opens a pull request titled `chore(release): VERSION`.
+3. Merge that pull request. The merge starts the build.
+4. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
 
 The app updates only to a release that isn't a pre-release. To publish an update, clear **Set as a pre-release** before you select **Publish release**.
 
-The workflow builds the Windows installer and the Mac disk image for the version on `main`, and attaches both to a draft pre-release. It fills in their SHA-256 hashes and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
+To open the pull request, the workflow needs **Allow GitHub Actions to create and approve pull requests** turned on under **Settings > Actions > General**.
+
+The build runs when a change to `__version__` in `goggles_bridge/__init__.py` reaches `main`. It builds the Windows installer and the Mac disk image for that version, and attaches both to a draft pre-release. To build again after a failure, re-run the failed jobs on the **Actions** page. It fills in their SHA-256 hashes and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
 
 To sign and notarize the Mac app, the workflow reads these repository secrets:
 

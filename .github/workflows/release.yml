@@ -1,15 +1,56 @@
 name: Release
 
-# run from the Actions page: builds the Windows installer and the signed, notarized Mac disk image
-# for the version in the code, and opens a draft release to finish by hand
+# run from the Actions page with a version: opens the pull request that sets it in the code.
+# merging that pull request builds the Windows installer and the signed, notarized Mac disk image,
+# and opens a draft release to finish by hand
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, such as 0.2.0
+        required: true
+  push:
+    branches: [main]
+    paths: [goggles_bridge/__init__.py]
 
 permissions:
   contents: write
 
 jobs:
+  propose:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      NAME: ${{ github.actor }}
+      EMAIL: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open the version pull request
+        run: |
+          set -euo pipefail
+          # the app compares versions as three numbers
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Enter the version as three numbers, such as 0.2.0."
+            exit 1
+          fi
+          sed -i "s/^__version__ = .*/__version__ = '$VERSION'/" goggles_bridge/__init__.py
+          if git diff --quiet; then
+            echo "::error::The code already has version $VERSION."
+            exit 1
+          fi
+          git switch -c "release/$VERSION"
+          git -c user.name="$NAME" -c user.email="$EMAIL" commit -am "chore(release): $VERSION"
+          git push origin "release/$VERSION"
+          gh pr create --base main --title "chore(release): $VERSION" \
+            --body "Merging this pull request builds the Windows installer and the Mac disk image for $VERSION, and drafts the release."
+
   version:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
