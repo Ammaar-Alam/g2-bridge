@@ -43,7 +43,8 @@ class ControlSession:
         self.model = None
         self.pending = {}
         self.started_at = None
-        self.last_heartbeat_ack = None
+        # None until the goggles answer a heartbeat
+        self.unanswered_heartbeats = None
         self.next_heartbeat = None
 
     def reserve_sequence(self):
@@ -75,8 +76,6 @@ class ControlSession:
             self.started_at = now
             self.next_heartbeat = now
             self.state = 'heartbeat'
-        if self.last_heartbeat_ack is not None and now - self.last_heartbeat_ack >= 3*HEARTBEAT_SECONDS:
-            self._fail('Three heartbeat intervals passed without a matching success reply', SessionLost)
         if self.state not in ('ready', 'identified') and now - self.started_at >= 4:
             self._fail('Control handshake timed out', SessionLost)
         outgoing = []
@@ -86,6 +85,11 @@ class ControlSession:
             if item.packet.command == HEARTBEAT:
                 # The next heartbeat replaces this expired request.
                 del self.pending[seq]
+                # count unanswered requests, not seconds, so a stalled PC that sent nothing keeps its session
+                if self.unanswered_heartbeats is not None:
+                    self.unanswered_heartbeats += 1
+                    if self.unanswered_heartbeats >= 3:
+                        self._fail('Three consecutive heartbeats got no reply', SessionLost)
             elif item.attempts >= 3:
                 if item.packet.command == SIM_MODE:
                     # Heartbeats and identity still answer outside Virtual Flight, but simulator
@@ -116,7 +120,7 @@ class ControlSession:
         if reply.payload[:1] != b'\0':
             self._fail(f'Goggles rejected {req.command_set:02x}/{req.command_id:02x}: {reply.payload.hex()}')
         if reply.command == HEARTBEAT:
-            self.last_heartbeat_ack = now
+            self.unanswered_heartbeats = 0
             if self.state == 'heartbeat':
                 self.state = 'identity'
                 return [self._new(device_info, now)]
