@@ -80,6 +80,17 @@ def libusb(cache):
     return prefix/'lib'
 
 
+def check_minimum(app):
+    """Fail when a binary in the app needs a newer macOS than the app supports, as a Homebrew build would."""
+    for path in app.rglob('*'):
+        if path.is_symlink() or not path.is_file() or path.read_bytes()[:4] not in (b'\xcf\xfa\xed\xfe', b'\xca\xfe\xba\xbe'):
+            continue
+        listing = subprocess.run(['otool', '-l', path], capture_output=True, text=True).stdout
+        for version in re.findall(r'minos (\d+(?:\.\d+)*)', listing):
+            if tuple(map(int, version.split('.'))) > MIN_MACOS:
+                raise SystemExit(f'{path} needs macOS {version}, newer than {MINIMUM}')
+
+
 def sign(path, identity, *extra):
     hardened = ('--options', 'runtime', '--timestamp') if identity != '-' else ()
     run('codesign', '--force', '--sign', identity, *hardened, *extra, path)
@@ -105,6 +116,7 @@ def main():
         '--distpath', dist, '--workpath', build, '--specpath', build, ROOT/'scripts'/'goggles_bridge_app.py',
         cwd=ROOT, env=dict(os.environ, DYLD_LIBRARY_PATH=str(libraries)))
 
+    check_minimum(app)
     info_path = app/'Contents'/'Info.plist'
     info = plistlib.loads(info_path.read_bytes())
     # the interface is light only, so keep the title bar light in dark mode too

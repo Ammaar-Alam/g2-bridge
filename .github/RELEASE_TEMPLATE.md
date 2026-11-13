@@ -12,6 +12,8 @@ SHA-256: `{{SHA256}}`
 
 On a Mac with Apple silicon and macOS 12.3 or later, open `GogglesBridge-{{VERSION}}.dmg`, and then drag Goggles Bridge to Applications.
 
+SHA-256: `{{MAC_SHA256}}`
+
 ## Changelog
 
 {{CHANGELOG}}

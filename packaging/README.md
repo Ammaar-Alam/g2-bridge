@@ -41,18 +41,15 @@ Open `goggles_bridge/app/ui/index.html` in a browser. Opened as a file, the inte
 
 1. Set `__version__` in `goggles_bridge/__init__.py` in a pull request titled `chore(release): VERSION`, and merge it.
 2. On GitHub, go to **Actions > Release**, and then select **Run workflow**.
-3. On a Mac, build and notarize the disk image, and then attach it to the draft:
-
-   ```bash
-   GOGGLES_NOTARY_PROFILE=PROFILE .venv/bin/python packaging/build_macos.py
-   gh release upload VERSION dist/GogglesBridge-VERSION.dmg
-   ```
-
-   Replace `PROFILE` with the `notarytool` keychain profile, and replace `VERSION` with the release version.
-
-4. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
+3. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
 
 The app updates only to a release that isn't a pre-release. To publish an update, clear **Set as a pre-release** before you select **Publish release**.
 
-The workflow builds the installer for the version on `main` and attaches it to a draft pre-release. It fills in the installer's SHA-256 and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
+The workflow builds the Windows installer and the Mac disk image for the version on `main`, and attaches both to a draft pre-release. It fills in their SHA-256 hashes and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
 
+To sign and notarize the Mac app, the workflow reads these repository secrets:
+
+- `MACOS_CERTIFICATE`: the Developer ID Application certificate and its private key, exported as a `.p12` file and Base64-encoded.
+- `MACOS_CERTIFICATE_PASSWORD`: the password of the `.p12` file.
+- `NOTARY_KEY`: the contents of an App Store Connect API key file (`.p8`) with the Developer role.
+- `NOTARY_KEY_ID` and `NOTARY_ISSUER_ID`: that key's ID and issuer ID.
