@@ -188,7 +188,9 @@ class AppTests(unittest.TestCase):
 
         app, started, closed = self.app(), [], []
         app._quit = lambda: closed.append(True)
+        # the release is newer whatever version the code has
         with mock.patch.object(updates.urllib.request, 'urlopen', site(release)), \
+                mock.patch.object(backend, '__version__', '0.1.0'), \
                 mock.patch.object(backend.subprocess, 'Popen', lambda command, **_: started.append(command)):
             self.assertEqual(app.check_update(), dict(version='0.2.0'))
             download = updates.download
