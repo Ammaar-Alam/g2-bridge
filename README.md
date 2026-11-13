@@ -1,6 +1,26 @@
-# Goggles Bridge
+<p align="center">
+  <img src="goggles_bridge/app/ui/icon.svg" width="96" alt="">
+</p>
 
-Stream your Windows or Mac desktop to DJI Goggles 2 or DJI Goggles Integra over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the computer.
+<h1 align="center">Goggles Bridge</h1>
+
+<p align="center">Your screen, in your DJI goggles.</p>
+
+<p align="center">
+  <a href="https://github.com/Ammaar-Alam/goggles-bridge/releases/latest">Download</a> ·
+  <a href="docs/LATENCY.md">Latency</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
+https://github.com/user-attachments/assets/273c06b9-3275-4446-9f38-1e03a633cfc1
+
+Goggles Bridge streams a Windows or Mac display to DJI Goggles 2 or DJI Goggles Integra over a USB cable. The goggles keep their stock firmware and show the stream in Virtual Flight mode. Your simulator and controller run on the computer.
+
+The desktop app for Windows and Mac includes a setup guide and installs updates from its window.
+
+At 1080p100, the median monitor-to-lens delay is about 12 ms on Windows and about 10 ms on macOS. For more information, see [Measure video delay](docs/LATENCY.md).
+
+## Supported goggles
 
 The bridge detects the model when it connects:
 
@@ -8,8 +28,6 @@ The bridge detects the model when it connects:
 | --- | --- | --- |
 | DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.12.00.00, 01.14.00.00 (latest) |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
-
-At 1080p100, we measured a median monitor-to-lens delay of **about 12 ms on Windows** and **about 10 ms on macOS**. See [how we measured it](docs/LATENCY.md).
 
 ## Requirements
 
