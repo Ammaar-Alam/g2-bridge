@@ -170,8 +170,8 @@ class AppTests(unittest.TestCase):
 
     def test_update_runs_the_verified_installer_and_closes_the_app(self):
         installer = b'installer'
-        url = updates.DOWNLOADS+'0.2.0/GogglesBridge-0.2.0-Setup.exe'
-        asset = dict(name='GogglesBridge-0.2.0-Setup.exe', browser_download_url=url,
+        url = updates.DOWNLOADS+f'0.2.0/GogglesBridge-0.2.0{updates.ASSET}'
+        asset = dict(name=f'GogglesBridge-0.2.0{updates.ASSET}', browser_download_url=url,
                      digest='sha256:'+hashlib.sha256(installer).hexdigest())
 
         def site(release):
@@ -189,7 +189,7 @@ class AppTests(unittest.TestCase):
         app, started, closed = self.app(), [], []
         app._quit = lambda: closed.append(True)
         with mock.patch.object(updates.urllib.request, 'urlopen', site(release)), \
-                mock.patch.object(backend.subprocess, 'Popen', started.append):
+                mock.patch.object(backend.subprocess, 'Popen', lambda command, **_: started.append(command)):
             self.assertEqual(app.check_update(), dict(version='0.2.0'))
             download = updates.download
 
@@ -199,8 +199,11 @@ class AppTests(unittest.TestCase):
                 return download(update, folder)
             with mock.patch.object(updates, 'download', while_downloading):
                 self.assertEqual(app.install_update(), dict(ok=True))
-            path = Path(self.folder.name)/'updates'/'GogglesBridge-Setup.exe'
-            self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
+            path = Path(self.folder.name)/'updates'/f'GogglesBridge{updates.ASSET}'
+            if backend.MAC:
+                self.assertEqual(started[0][4], str(path))
+            else:
+                self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
             self.assertEqual((path.read_bytes(), closed), (installer, [True]))
             # a download that differs from the published hash is deleted and never run
             app._update = dict(app._update, sha256='0'*64)

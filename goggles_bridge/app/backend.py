@@ -351,8 +351,13 @@ class Desktop:
             self._updating = True
         try:
             installer = updates.download(self._update, data_dir()/'updates')
-            # silent mode skips the wizard pages, and the installer reopens the app when it finishes
-            subprocess.Popen([str(installer), '/SILENT', '/SUPPRESSMSGBOXES'])
+            if MAC:
+                app = Path(sys.executable).parents[2]  # Goggles Bridge.app/Contents/MacOS/Goggles Bridge
+                subprocess.Popen(['/bin/sh', '-c', updates.SWAP, 'swap', str(installer), str(app), str(os.getpid())],
+                                 start_new_session=True)
+            else:
+                # silent mode skips the wizard pages, and the installer reopens the app when it finishes
+                subprocess.Popen([str(installer), '/SILENT', '/SUPPRESSMSGBOXES'])
         except Exception:
             self._updating = False
             return dict(error="Couldn't install the update")
