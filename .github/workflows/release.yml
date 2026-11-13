@@ -130,10 +130,14 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
           security list-keychains -d user -s "$keychain"
           security default-keychain -s "$keychain"
+          # the certificate chains to Apple's first Developer ID intermediate, and the runner image has only G2
+          curl -fsSL https://www.apple.com/certificateauthority/DeveloperIDCA.cer -o "$RUNNER_TEMP/DeveloperIDCA.cer"
+          security import "$RUNNER_TEMP/DeveloperIDCA.cer" -k "$keychain"
           # any other certificate leaves the app signed ad hoc and not notarized, and Gatekeeper blocks it
           identities="$(security find-identity -v -p codesigning "$keychain")"
           if [[ "$identities" != *'"Developer ID Application: '* ]]; then
-            echo "::error::MACOS_CERTIFICATE must hold a Developer ID Application certificate and its private key."
+            echo "::error::MACOS_CERTIFICATE must hold a valid Developer ID Application certificate and its private key."
+            security find-identity -p codesigning "$keychain"
             exit 1
           fi
           printf '%s' "$NOTARY_KEY" > "$RUNNER_TEMP/notary.p8"
