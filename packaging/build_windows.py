@@ -20,7 +20,7 @@ FFMPEG = 'ffmpeg-2026-11-05-git-0893feba65-essentials_build'
 FFMPEG_URL = f'https://github.com/GyanD/codexffmpeg/releases/download/2026-11-05-git-0893feba65/{FFMPEG}.zip'
 FFMPEG_SHA256 = '763ca14d6896b4d8aabde8ff90be4f1428f8a21bd43e438a371be6d7ebf891a6'
 NOTICES = f'''{APP_NAME} is licensed under the GNU General Public License v3.0. See LICENSE.txt.
-Source code: https://github.com/Ammaar-Alam/g2-bridge
+Source code: https://github.com/Ammaar-Alam/goggles-bridge
 
 This app includes:
 - FFmpeg ({FFMPEG}), built by Gyan Doshi and licensed under the GPL v3.

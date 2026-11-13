@@ -4,8 +4,8 @@ import json
 import sys
 import urllib.request
 
-LATEST = 'https://api.github.com/repos/Ammaar-Alam/g2-bridge/releases/latest'
-DOWNLOADS = 'https://github.com/Ammaar-Alam/g2-bridge/releases/download/'
+LATEST = 'https://api.github.com/repos/Ammaar-Alam/goggles-bridge/releases/latest'
+DOWNLOADS = 'https://github.com/Ammaar-Alam/goggles-bridge/releases/download/'
 ASSET = '.dmg' if sys.platform == 'darwin' else '-Setup.exe'
 # run as sh -c SWAP swap IMAGE APP PID: waits for the app to close, replaces it with the copy in the disk image
 # when that copy is signed like the running app, and reopens the app either way

@@ -29,7 +29,7 @@ LIBUSB = 'libusb-1.0.30'
 LIBUSB_URL = f'https://github.com/libusb/libusb/releases/download/v1.0.30/{LIBUSB}.tar.bz2'
 LIBUSB_SHA256 = 'fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf'
 NOTICES = f'''{APP_NAME} is licensed under the GNU General Public License v3.0. See LICENSE.txt.
-Source code: https://github.com/Ammaar-Alam/g2-bridge
+Source code: https://github.com/Ammaar-Alam/goggles-bridge
 
 This app includes:
 - libusb ({LIBUSB}), licensed under the GNU LGPL v2.1. Source: {LIBUSB_URL}

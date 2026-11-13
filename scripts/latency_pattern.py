@@ -25,7 +25,7 @@ def main(argv=None):
     if player is None or not Path(player).is_file():
         parser.error('FFplay not found. Install an FFmpeg build that includes ffplay, or pass --ffplay with its path')
     command = [str(player), '-hide_banner', '-loglevel', 'warning', '-window_title',
-               'G2 Bridge latency test - film the center square', '-x', '1280', '-y', '720',
+               'Goggles Bridge latency test - film the center square', '-x', '1280', '-y', '720',
                '-an', '-f', 'lavfi', '-i', PATTERN, '-t', str(args.seconds)]
     print('Start the desktop bridge separately and place this window on the captured display.\n'
           'Film the center square on the monitor and through one goggle lens together.\n'

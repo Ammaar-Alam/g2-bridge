@@ -9,7 +9,7 @@ AppId={{4BEF1AEE-4D83-4F9B-9B91-C31BE10F9FB1}
 AppName={#Name}
 AppVersion={#Version}
 AppPublisher=Goggles Bridge contributors
-AppPublisherURL=https://github.com/Ammaar-Alam/g2-bridge
+AppPublisherURL=https://github.com/Ammaar-Alam/goggles-bridge
 ; installs for the current user, so no administrator prompt
 PrivilegesRequired=lowest
 DefaultDirName={localappdata}\Programs\{#Name}
