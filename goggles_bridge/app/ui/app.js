@@ -63,7 +63,7 @@
   const params = new URLSearchParams(location.search);
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
-  let api, snap, toastTimer, painted, scenes = 0;
+  let api, snap, toastTimer, painted, updating, scenes = 0;
   const drawn = {}, controls = {};
   const guide = { open: false, step: 'welcome' };
 
@@ -270,7 +270,7 @@
     const button = $('#action');
     button.textContent = m.action.label;
     button.dataset.kind = m.action.kind;
-    button.disabled = Boolean(m.action.disabled);
+    button.disabled = Boolean(m.action.disabled || updating);
     button.onclick = m.action.run;
     const picture = $('.stage .scene');
     picture.dataset.state = m.look;
@@ -432,19 +432,19 @@
     document.documentElement.classList.toggle('asleep', Boolean(idle));
   }
 
-  // the footer button looks for a release, then becomes the way to install the one it found
+  // the footer button checks for a release, then installs the one it found
   async function checkUpdate(asked) {
     const button = $('#update');
     const found = await api.check_update();
     if (found.version) {
       button.textContent = `Update to ${found.version}`;
       button.onclick = async () => {
-        button.disabled = true;
+        button.disabled = updating = true;
         button.textContent = `Downloading ${found.version}`;
         const result = await api.install_update();
         if (!result.error) return;
         toast(result.error);
-        button.disabled = false;
+        button.disabled = updating = false;
         button.textContent = `Update to ${found.version}`;
       };
     } else if (asked) toast(found.error || `${snap.app.name} is up to date`);

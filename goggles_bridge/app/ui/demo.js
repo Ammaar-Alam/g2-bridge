@@ -77,6 +77,6 @@
     diagnostics: async () => 'Goggles Bridge demo',
     open_link: async () => ({ ok: true }),
     check_update: async () => ({ version: frozen === 'update' ? '0.2.0' : null }),
-    install_update: () => new Promise(done => setTimeout(() => done({ error: "Couldn't install the update." }), 3000)),
+    install_update: () => new Promise(done => setTimeout(() => done({ error: "Couldn't install the update" }), 3000)),
   };
 })();

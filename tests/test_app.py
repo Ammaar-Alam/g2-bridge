@@ -190,14 +190,22 @@ class AppTests(unittest.TestCase):
         with mock.patch.object(updates.urllib.request, 'urlopen', site(release)), \
                 mock.patch.object(backend.subprocess, 'Popen', started.append):
             self.assertEqual(app.check_update(), dict(version='0.2.0'))
-            self.assertEqual(app.install_update(), dict(ok=True))
+            download = updates.download
+
+            def while_downloading(update, folder):
+                # the app is about to close, so a stream can't start
+                self.assertEqual(app.start(), dict(ok=False))
+                return download(update, folder)
+            with mock.patch.object(updates, 'download', while_downloading):
+                self.assertEqual(app.install_update(), dict(ok=True))
             path = Path(self.folder.name)/'updates'/'GogglesBridge-Setup.exe'
             self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
             self.assertEqual((path.read_bytes(), closed), (installer, [True]))
             # a download that differs from the published hash is deleted and never run
             app._update = dict(app._update, sha256='0'*64)
-            self.assertIn('SHA-256', app.install_update()['error'])
+            self.assertEqual(app.install_update(), dict(error="Couldn't install the update"))
             self.assertEqual((path.exists(), len(started), closed), (False, 1, [True]))
+            self.assertEqual(app.start(), dict(ok=True))
 
 
 if __name__ == '__main__':

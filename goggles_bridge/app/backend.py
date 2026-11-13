@@ -129,6 +129,7 @@ class Desktop:
         self._device = None
         self._probe = None
         self._update = None
+        self._updating = False
         self._quit = lambda: None
         self._lock = threading.Lock()
         self._stop = threading.Event()
@@ -238,6 +239,8 @@ class Desktop:
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return dict(ok=True)
+            if self._updating:
+                return dict(ok=False)  # the app is about to close
             checks = self._preflight()
             for name in ('driver', 'ffmpeg'):
                 if not checks[name]['ok']:
@@ -323,7 +326,7 @@ class Desktop:
         return report
 
     def check_update(self):
-        """Look for a newer release. Returns its version, or None when this copy is current."""
+        """Look for a newer release. Returns its version, or None when the app is up to date."""
         try:
             self._update = updates.find(__version__)
         except Exception:
@@ -331,15 +334,18 @@ class Desktop:
         return dict(version=self._update and self._update['version'])
 
     def install_update(self):
-        """Download the release check_update found, start its installer, and close so it can replace the app."""
-        if self._running():
-            return dict(error='To update, stop streaming')
+        """Download the release that check_update found, run its installer, and close the app so it can be replaced."""
+        with self._lock:
+            if self._running():
+                return dict(error='To update, stop streaming')
+            self._updating = True
         try:
             installer = updates.download(self._update, data_dir()/'updates')
             # silent mode skips the wizard pages, and the installer reopens the app when it finishes
             subprocess.Popen([str(installer), '/SILENT', '/SUPPRESSMSGBOXES'])
-        except Exception as exc:
-            return dict(error=f"Couldn't install the update. {exc}")
+        except Exception:
+            self._updating = False
+            return dict(error="Couldn't install the update")
         self._quit()
         return dict(ok=True)
 

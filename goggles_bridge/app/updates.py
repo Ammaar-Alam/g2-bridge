@@ -29,7 +29,7 @@ def find(current):
 
 
 def download(update, folder):
-    """Save the installer and return its path. A file that differs from the published SHA-256 is deleted."""
+    """Save the installer and return its path. Delete a file that doesn't match the published SHA-256."""
     folder.mkdir(parents=True, exist_ok=True)
     path = folder/'GogglesBridge-Setup.exe'
     digest = hashlib.sha256()
@@ -39,5 +39,5 @@ def download(update, folder):
             file.write(block)
     if digest.hexdigest() != update['sha256']:
         path.unlink()
-        raise ValueError('The download does not match the published SHA-256')
+        raise ValueError("The download doesn't match the published SHA-256")
     return path
