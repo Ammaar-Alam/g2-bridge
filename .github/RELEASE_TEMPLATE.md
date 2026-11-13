@@ -10,6 +10,8 @@ Run `GogglesBridge-{{VERSION}}-Setup.exe`. Requires 64-bit Windows 10 or 11, an 
 
 SHA-256: `{{SHA256}}`
 
+On a Mac with Apple silicon and macOS 12.3 or later, open `GogglesBridge-{{VERSION}}.dmg`, and then drag Goggles Bridge to Applications.
+
 ## Changelog
 
 {{CHANGELOG}}

@@ -41,6 +41,10 @@ To stream from Windows without installing Python or FFmpeg, use the Goggles Brid
 
 The app requires 64-bit Windows 10 or 11, an NVIDIA GPU, and the Microsoft Edge WebView2 Runtime, which Windows 11 includes.
 
+On a Mac with Apple silicon and macOS 12.3 or later, download `GogglesBridge-VERSION.dmg` from [Releases](https://github.com/Ammaar-Alam/g2-bridge/releases), and then drag Goggles Bridge to Applications. The setup guide asks for screen recording permission. Connect the goggles with a USB-A-to-USB-C cable.
+
+![The Goggles Bridge window on a Mac, asking for screen recording permission. The numbers are simulated.](docs/images/app-window-mac.png)
+
 To update the app, select **Update to VERSION** at the bottom of the window.
 
 ![The Goggles Bridge window while streaming. A drawing shows a computer connected to goggles, next to the stream settings. The numbers are simulated.](docs/images/app-window.png)
@@ -52,7 +56,7 @@ python -m pip install -r requirements-app.txt
 python scripts/goggles_bridge_app.py
 ```
 
-To build the installer, see the [packaging notes](packaging/README.md).
+To build the installer or the Mac app, see the [packaging notes](packaging/README.md).
 
 ## Start streaming from the command line
 
