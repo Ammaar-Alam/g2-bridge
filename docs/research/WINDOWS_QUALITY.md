@@ -6,7 +6,7 @@ reduces median host delay on the tested PC. The headset comparison did not
 establish a noticeable improvement. Panel cadence and optical latency remain
 unverified.
 
-The frame-size safeguards from [PR #18](https://github.com/Ammaar-Alam/g2-bridge/pull/18)
+The frame-size safeguards from [PR #18](https://github.com/Ammaar-Alam/goggles-bridge/pull/18)
 apply to Windows encoding. Defaults adapt to the selected frame rate, and an
 oversized picture triggers an encoder restart without reopening USB.
 
@@ -435,7 +435,7 @@ the limit on the tested configuration.
 NVENC makes the group of pictures unbounded when gradual refresh is on. A
 1,000-picture encode at 100 fps with gradual refresh alone contained one IDR,
 at the start. A decoder that misses that picture has no later entry point.
-[Issue #27](https://github.com/Ammaar-Alam/g2-bridge/issues/27) reports the
+[Issue #27](https://github.com/Ammaar-Alam/goggles-bridge/issues/27) reports the
 resulting black screen. Goggles 2 on firmware 01.11.00.00 reproduced it: a
 30-second stream delivered 2,132 pictures without a USB error or an oversized
 picture, and the display stayed black. With recurring IDR pictures, the same

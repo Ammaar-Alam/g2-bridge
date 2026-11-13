@@ -1,4 +1,4 @@
-# G2 Bridge
+# Goggles Bridge
 
 Stream your Windows or Mac desktop to DJI Goggles 2 or DJI Goggles Integra over USB. The goggles use Virtual Flight mode with stock firmware. The simulator and controller run on the computer.
 
@@ -36,12 +36,12 @@ The stream script offers to install whatever is missing. Tests used an M2 Pro Ma
 To stream from Windows without installing Python or FFmpeg, use the Goggles Bridge app:
 
 1. Install [DJI Assistant 2 (Consumer Drones Series)](https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series) for its USB driver.
-2. Download `GogglesBridge-VERSION-Setup.exe` from [Releases](https://github.com/Ammaar-Alam/g2-bridge/releases), and then run it. The installer isn't signed, so Windows might show a SmartScreen warning.
+2. Download `GogglesBridge-VERSION-Setup.exe` from [Releases](https://github.com/Ammaar-Alam/goggles-bridge/releases), and then run it. The installer isn't signed, so Windows might show a SmartScreen warning.
 3. Open Goggles Bridge, and then follow the setup guide.
 
 The app requires 64-bit Windows 10 or 11, an NVIDIA GPU, and the Microsoft Edge WebView2 Runtime, which Windows 11 includes.
 
-On a Mac with Apple silicon and macOS 12.3 or later, download `GogglesBridge-VERSION.dmg` from [Releases](https://github.com/Ammaar-Alam/g2-bridge/releases), and then drag Goggles Bridge to Applications. The setup guide asks for screen recording permission. Connect the goggles with a USB-A-to-USB-C cable.
+On a Mac with Apple silicon and macOS 12.3 or later, download `GogglesBridge-VERSION.dmg` from [Releases](https://github.com/Ammaar-Alam/goggles-bridge/releases), and then drag Goggles Bridge to Applications. The setup guide asks for screen recording permission. Connect the goggles with a USB-A-to-USB-C cable.
 
 ![The Goggles Bridge window on a Mac, asking for screen recording permission. The numbers are simulated.](docs/images/app-window-mac.png)
 
@@ -139,6 +139,6 @@ See the [contribution guide](CONTRIBUTING.md) to report bugs, submit changes, or
 
 ## License
 
-Copyright (C) 2026 G2 Bridge contributors.
+Copyright (C) 2026 Goggles Bridge contributors.
 
 The original code and documentation are licensed under the [GNU General Public License v3.0 only](LICENSE) (`GPL-3.0-only`). Third-party materials retain their own licenses.

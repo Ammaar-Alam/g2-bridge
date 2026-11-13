@@ -141,12 +141,12 @@ jobs:
             exit 1
           fi
           printf '%s' "$NOTARY_KEY" > "$RUNNER_TEMP/notary.p8"
-          xcrun notarytool store-credentials g2-bridge-notary --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
+          xcrun notarytool store-credentials goggles-bridge-notary --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
             --issuer "$NOTARY_ISSUER_ID"
           rm "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/notary.p8"
       - run: python packaging/build_macos.py
         env:
-          GOGGLES_NOTARY_PROFILE: g2-bridge-notary
+          GOGGLES_NOTARY_PROFILE: goggles-bridge-notary
       - uses: actions/upload-artifact@v4
         with:
           name: macos

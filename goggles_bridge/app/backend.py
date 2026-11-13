@@ -28,8 +28,8 @@ UI = Path(__file__).with_name('ui')
 WINDOWS, MAC = sys.platform == 'win32', sys.platform == 'darwin'
 LINKS = {
     'driver': 'https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series',
-    'github': 'https://github.com/Ammaar-Alam/g2-bridge',
-    'report': 'https://github.com/Ammaar-Alam/g2-bridge/issues/new',
+    'github': 'https://github.com/Ammaar-Alam/goggles-bridge',
+    'report': 'https://github.com/Ammaar-Alam/goggles-bridge/issues/new',
     'screen': 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
     'webview2': 'https://developer.microsoft.com/microsoft-edge/webview2/',
 }
