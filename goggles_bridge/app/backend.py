@@ -38,7 +38,8 @@ UPDATABLE = getattr(sys, 'frozen', False) and (WINDOWS or MAC)
 CAPTURES = (('screencapturekit',) if MAC else ('gfxcapture', 'ddagrab'))
 # identity build dates of the firmware that displayed video, by model. Integra 01.09.00.00 also
 # displayed video, but its build date was not recorded, so Integra builds are not judged
-TESTED_BUILDS = {'DJI Goggles 2': {'Dec 24 2024': '01.11.00.00', 'Aug 11 2026': '01.14.00.00'}}
+TESTED_BUILDS = {'DJI Goggles 2': {'Dec 24 2024': '01.11.00.00', 'Feb 26 2025': '01.12.00.00',
+                                   'Aug 11 2026': '01.14.00.00'}}
 # every stream option the window can change
 OPTIONS = tuple(f.name for f in fields(BridgeSettings) if f.name not in ('dll', 'ffmpeg', 'capture_fps'))
 

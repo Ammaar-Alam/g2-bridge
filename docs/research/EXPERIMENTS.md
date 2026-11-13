@@ -210,6 +210,21 @@ Other interruptions occurred before this trial, including one high-speed-to-full
 
 A later B run lost the device after about 116 seconds, and the client exited. No DJI device was present afterward. It is unknown whether the goggles had been powered off.
 
+## Firmware 01.12
+
+On November 13, 2026, a Goggles 2 on firmware 01.12.00.00 streamed from an M2 Pro MacBook Pro with macOS 27.0. The identity reply was `E3T ZV900 AC Feb 26 2025|12:39:57`. The firmware manifest named `01.12.0000`, with `ZV900_E3T` module `10.00.81.84` and CPLD `34.08.30.02`.
+
+| Test | Result |
+| --- | --- |
+| Descriptors | MI04 `ff/43/01`, `0x04/512` and `0x85/512`, matching the tested profile |
+| Heartbeat, identity, and simulator mode in Virtual Flight | Accepted. Request and reply bytes were identical to the 01.14 capture, apart from the identity date |
+| Probe test picture | 1,800 pictures at 30 fps over 60 seconds. The test pattern displayed |
+| Desktop stream, default settings | Ran for 10 minutes with 58,347 frames, an average of 97 fps, every heartbeat answered, and no reconnects. The desktop displayed without freezes |
+
+The goggles sent only heartbeat, identity, and simulator-mode replies, `00/81` advertisements, and the `09/43` status push, the same five packet types as on 01.11. The ScreenCaptureKit helper has no frame-size cap, and it sent frames of up to 170 KB. The lenses showed no freezes or black screens.
+
+A user had reported that 01.12 stopped streaming after about 30 seconds, then showed a black screen and refused to leave Virtual Flight. That state matches the oversize-frame result in [Frame size limit and bitrate](#frame-size-limit-and-bitrate). These tests didn't reproduce it.
+
 ## Firmware 01.14
 
 On November 8, 2026, a tester checked a Goggles 2 on firmware 01.14.00.00 from Windows 11, with an RTX 3080 and FFmpeg 9.0.2. The identity reply was `E3T ZV900 AC Aug 11 2026|07:21:27`. The firmware manifest named `01.14.0000`, with `ZV900_E3T` module `10.00.81.97`.

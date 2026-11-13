@@ -6,10 +6,10 @@ The bridge detects the model when it connects:
 
 | Goggles | Identity | Tested firmware |
 | --- | --- | --- |
-| DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.14.00.00 |
+| DJI Goggles 2 | `E3T ZV900` | 01.11.00.00, 01.12.00.00, 01.14.00.00 (latest) |
 | DJI Goggles Integra | `E3T ZV901` | 01.09.00.00 |
 
-We measured **about 12 ms median monitor-to-lens delay** at 1080p100. See [how we measured it](docs/LATENCY.md).
+At 1080p100, we measured a median monitor-to-lens delay of **about 12 ms on Windows** and **about 10 ms on macOS**. See [how we measured it](docs/LATENCY.md).
 
 ## Requirements
 
