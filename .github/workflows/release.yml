@@ -1,13 +1,14 @@
 name: Release
 
-# run from the Actions page with a version: opens the pull request that sets it in the code.
-# merging that pull request builds the Windows installer and the signed, notarized Mac disk image,
-# and opens a draft release to finish by hand
+# run from the Actions page with a version: opens the pull request that sets it in the code, and merges it
+# when the ruleset lets GitHub Actions bypass review. merging that pull request, or running again with the
+# version the code has, builds the Windows installer and the signed, notarized Mac disk image, and opens
+# a draft release to finish by hand
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version to release, such as 0.2.0
+        description: Version (e.g. 1.2.3)
         required: true
   push:
     branches: [main]
@@ -16,13 +17,19 @@ on:
 permissions:
   contents: write
 
+# one build at a time, so a merge and a manual run for the same version don't both draft it
+concurrency: release
+
 jobs:
-  propose:
-    if: github.event_name == 'workflow_dispatch'
+  version:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
       pull-requests: write
+    outputs:
+      # empty when this run only opened the version pull request, so nothing is built
+      version: ${{ steps.version.outputs.version }}
     env:
       GH_TOKEN: ${{ github.token }}
       VERSION: ${{ inputs.version }}
@@ -30,52 +37,51 @@ jobs:
       EMAIL: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
     steps:
       - uses: actions/checkout@v4
-      - name: Open the version pull request
-        run: |
-          set -euo pipefail
-          # the app compares versions as three numbers
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Enter the version as three numbers, such as 0.2.0."
-            exit 1
-          fi
-          sed -i "s/^__version__ = .*/__version__ = '$VERSION'/" goggles_bridge/__init__.py
-          if git diff --quiet; then
-            echo "::error::The code already has version $VERSION."
-            exit 1
-          fi
-          git switch -c "release/$VERSION"
-          git -c user.name="$NAME" -c user.email="$EMAIL" commit -am "chore(release): $VERSION"
-          git push origin "release/$VERSION"
-          gh pr create --base main --title "chore(release): $VERSION" \
-            --body "Merging this pull request builds the Windows installer and the Mac disk image for $VERSION, and drafts the release."
-
-  version:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Read the version and check that it is new
+      - name: Open the version pull request, or check that the version in the code is new
         id: version
         run: |
+          set -euo pipefail
           version="$(python3 -c 'import goggles_bridge; print(goggles_bridge.__version__)')"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$VERSION" != "$version" ]; then
+            # the app compares versions as three numbers
+            if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Enter the version as three numbers, for example 1.2.3."
+              exit 1
+            fi
+            sed -i "s/^__version__ = .*/__version__ = '$VERSION'/" goggles_bridge/__init__.py
+            git switch -c "release/$VERSION"
+            git -c user.name="$NAME" -c user.email="$EMAIL" commit -am "chore(release): $VERSION"
+            git push origin "release/$VERSION"
+            gh pr create --base main --title "chore(release): $VERSION" \
+              --body "Merging this pull request builds the Windows installer and the Mac disk image for $VERSION, and drafts the release."
+            # the merge succeeds only when GitHub Actions is on the bypass list of the ruleset for main
+            if gh pr merge "release/$VERSION" --merge --admin; then
+              gh workflow run release.yml --ref "$GITHUB_REF_NAME" -f version="$VERSION"
+            else
+              echo "::notice::To start the build, merge the pull request chore(release): $VERSION."
+            fi
+            exit 0
+          fi
           if gh release list --limit 200 --json tagName -q '.[].tagName' | grep -qx "$version"; then
-            echo "::error::Release $version already exists. Set a new __version__ in goggles_bridge/__init__.py first."
+            # a second run for the commit that already has its draft
+            if [ "$(gh release view "$version" --json isDraft,targetCommitish -q '"\(.isDraft) \(.targetCommitish)"')" = "true $GITHUB_SHA" ]; then
+              echo "::notice::The draft release for $version already exists."
+              exit 0
+            fi
+            echo "::error::Release $version already exists. Run the workflow with a new version."
             exit 1
           fi
           # an existing tag must be the commit being built, or the installers and the tagged source would differ
           tagged="$(git ls-remote origin "refs/tags/$version" "refs/tags/$version^{}" | tail -n 1 | cut -f 1)"
           if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
-            echo "::error::Tag $version exists at another commit. Set a new __version__ in goggles_bridge/__init__.py, or delete the tag."
+            echo "::error::Tag $version exists at another commit. Run the workflow with a new version, or delete the tag."
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
   windows:
     needs: version
+    if: needs.version.outputs.version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +102,7 @@ jobs:
 
   macos:
     needs: version
+    if: needs.version.outputs.version
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
