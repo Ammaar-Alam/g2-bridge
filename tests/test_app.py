@@ -12,7 +12,8 @@ from goggles_bridge.app import backend, updates
 from goggles_bridge.app.backend import Desktop, describe, problem_code
 from goggles_bridge.session import SIMULATOR_SILENT
 
-READY = dict(driver=dict(needed=True, ok=True), ffmpeg=dict(needed=True, ok=True), attached=True)
+READY = dict(driver=dict(needed=True, ok=True), screen=dict(needed=False, ok=True), ffmpeg=dict(needed=True, ok=True),
+             attached=True)
 
 
 class FakeEngine:
@@ -36,7 +37,7 @@ class AppTests(unittest.TestCase):
         # two displays on every test host, so a saved second display stays valid
         two = [dict(index=i, name=f'Display {i+1}', x=1920*i, y=0, width=1920, height=1080, hz=60, primary=not i) for i in range(2)]
         for name, value in (('data_dir', lambda: Path(self.folder.name)), ('goggles_attached', lambda: True),
-                            ('list_displays', lambda: two)):
+                            ('list_displays', lambda: two), ('screen_access', lambda request=False: True)):
             patcher = mock.patch.object(backend, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -139,11 +140,11 @@ class AppTests(unittest.TestCase):
         app.start()
         state = self.wait_for(app, 'error')
         self.assertEqual(state['problem'], dict(code='encoder', message='FFmpeg test encode failed.\n  detail'))
-        missing = dict(READY, driver=dict(needed=True, ok=False))
-        app = self.app(checks=missing)
-        self.assertEqual(app.start(), dict(ok=False))
-        self.assertEqual(app.snapshot()['problem']['code'], 'driver')
-        self.assertIsNone(app._thread)
+        for name in ('driver', 'screen'):
+            app = self.app(checks=dict(READY, **{name: dict(needed=True, ok=False)}))
+            self.assertEqual(app.start(), dict(ok=False))
+            self.assertEqual(app.snapshot()['problem']['code'], name)
+            self.assertIsNone(app._thread)
 
     def test_options_follow_the_engine_rules_and_persist(self):
         app = self.app()
@@ -169,8 +170,8 @@ class AppTests(unittest.TestCase):
 
     def test_update_runs_the_verified_installer_and_closes_the_app(self):
         installer = b'installer'
-        url = updates.DOWNLOADS+'0.2.0/GogglesBridge-0.2.0-Setup.exe'
-        asset = dict(name='GogglesBridge-0.2.0-Setup.exe', browser_download_url=url,
+        url = updates.DOWNLOADS+f'0.2.0/GogglesBridge-0.2.0{updates.ASSET}'
+        asset = dict(name=f'GogglesBridge-0.2.0{updates.ASSET}', browser_download_url=url,
                      digest='sha256:'+hashlib.sha256(installer).hexdigest())
 
         def site(release):
@@ -188,7 +189,7 @@ class AppTests(unittest.TestCase):
         app, started, closed = self.app(), [], []
         app._quit = lambda: closed.append(True)
         with mock.patch.object(updates.urllib.request, 'urlopen', site(release)), \
-                mock.patch.object(backend.subprocess, 'Popen', started.append):
+                mock.patch.object(backend.subprocess, 'Popen', lambda command, **_: started.append(command)):
             self.assertEqual(app.check_update(), dict(version='0.2.0'))
             download = updates.download
 
@@ -198,8 +199,11 @@ class AppTests(unittest.TestCase):
                 return download(update, folder)
             with mock.patch.object(updates, 'download', while_downloading):
                 self.assertEqual(app.install_update(), dict(ok=True))
-            path = Path(self.folder.name)/'updates'/'GogglesBridge-Setup.exe'
-            self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
+            path = Path(self.folder.name)/'updates'/f'GogglesBridge{updates.ASSET}'
+            if backend.MAC:
+                self.assertEqual(started[0][4], str(path))
+            else:
+                self.assertEqual(started, [[str(path), '/SILENT', '/SUPPRESSMSGBOXES']])
             self.assertEqual((path.read_bytes(), closed), (installer, [True]))
             # a download that differs from the published hash is deleted and never run
             app._update = dict(app._update, sha256='0'*64)

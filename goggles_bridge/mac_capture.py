@@ -3,6 +3,7 @@ import hashlib
 from pathlib import Path
 import platform
 import subprocess
+import sys
 
 SOURCE = Path(__file__).with_name('mac_capture.swift')
 MIN_MACOS = (12, 3)
@@ -16,6 +17,8 @@ def supported(version=None):
 
 def helper_path():
     """Return the compiled helper path, keyed by the source hash so edits trigger a rebuild."""
+    if getattr(sys, 'frozen', False):
+        return Path(sys._MEIPASS) / 'mac-capture'  # the packaged app ships it built and signed
     digest = hashlib.sha256(SOURCE.read_bytes()).hexdigest()[:12]
     return SOURCE.parents[1] / 'work' / 'bin' / f'mac-capture-{digest}'
 
