@@ -1,6 +1,6 @@
 # Goggles 2 PC video protocol
 
-This protocol displayed video on a stock DJI Goggles 2 with firmware 01.11.00.00 and 01.14.00.00. Apart from the identity date, the control exchange is byte-identical on both. It adapts the Android Virtual Flight application's video metadata to the PC USB interface.
+This protocol displayed video on a stock DJI Goggles 2 with firmware 01.11.00.00, 01.12.00.00, and 01.14.00.00. Apart from the identity date, the control exchange is byte-identical on all three. It adapts the Android Virtual Flight application's video metadata to the PC USB interface.
 
 ## Source artifacts
 

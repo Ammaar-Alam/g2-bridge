@@ -77,9 +77,10 @@ class AppTests(unittest.TestCase):
     def test_goggles_are_identified_and_untested_firmware_is_flagged(self):
         tested = describe('DJI Goggles 2', 'E3T ZV900 AC Aug 11 2026|07:21:27')
         self.assertEqual((tested['build'], tested['version'], tested['tested']), ('Aug 11 2026', '01.14.00.00', True))
-        other = describe('DJI Goggles 2', 'E3T ZV900 AC Feb 26 2025|12:39:57')
+        self.assertEqual(describe('DJI Goggles 2', 'E3T ZV900 AC Feb 26 2025|12:39:57')['version'], '01.12.00.00')
+        other = describe('DJI Goggles 2', 'E3T ZV900 AC Jun 2 2026|09:00:00')
         self.assertEqual((other['version'], other['tested'], other['tested_versions']),
-                         (None, False, ['01.11.00.00', '01.14.00.00']))
+                         (None, False, ['01.11.00.00', '01.12.00.00', '01.14.00.00']))
         # no Integra build date is recorded, so its firmware is not judged
         self.assertIsNone(describe('DJI Goggles Integra', 'E3T ZV901 AC Jan 5 2025|10:00:00')['tested'])
         app = self.app()
@@ -94,7 +95,7 @@ class AppTests(unittest.TestCase):
     def test_reconnected_goggles_replace_the_streamed_identity(self):
         present = Path(self.folder.name)/'present'
         present.touch()
-        plugged, found = [True], [('DJI Goggles 2', 'E3T ZV900 AC Feb 26 2025|12:39:57')]
+        plugged, found = [True], [('DJI Goggles 2', 'E3T ZV900 AC Jun 2 2026|09:00:00')]
         for name, value in (('find_dll', lambda path=None: present), ('goggles_attached', lambda: plugged[0])):
             patcher = mock.patch.object(backend, name, value)
             patcher.start()
@@ -116,7 +117,7 @@ class AppTests(unittest.TestCase):
         app.snapshot()
         app._probe.join(5)
         device = app.snapshot()['device']
-        self.assertEqual((device['build'], device['tested']), ('Feb 26 2025', False))
+        self.assertEqual((device['build'], device['tested']), ('Jun 2 2026', False))
 
     @unittest.skipUnless(sys.platform == 'win32', 'the WebView2 Runtime is a Windows component')
     def test_missing_webview2_is_detected(self):
