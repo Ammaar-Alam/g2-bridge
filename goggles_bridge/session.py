@@ -85,11 +85,11 @@ class ControlSession:
             if item.packet.command == HEARTBEAT:
                 # The next heartbeat replaces this expired request.
                 del self.pending[seq]
-                # count requests, not seconds, because a stalled PC sends none and that isn't the goggles' silence
+                # count unanswered requests, not seconds, so a stalled PC that sent nothing keeps its session
                 if self.unanswered_heartbeats is not None:
                     self.unanswered_heartbeats += 1
                     if self.unanswered_heartbeats >= 3:
-                        self._fail('Three heartbeats in a row got no matching success reply', SessionLost)
+                        self._fail('Three consecutive heartbeats got no reply', SessionLost)
             elif item.attempts >= 3:
                 if item.packet.command == SIM_MODE:
                     # Heartbeats and identity still answer outside Virtual Flight, but simulator

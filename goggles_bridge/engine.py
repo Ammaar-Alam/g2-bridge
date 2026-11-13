@@ -35,7 +35,7 @@ MAX_FRAME_BYTES = 56_000
 MAX_VBV_BITS = MAX_FRAME_BYTES * 8
 # Largest tested average frame, 40 Mbps at 100 fps
 MAX_AVERAGE_FRAME_BYTES = 50_000
-# longest wait for a picture, FFmpeg 9.0 sends none while the screen is still
+# seconds without a picture before the encoder restarts
 SILENT_SECONDS = 5
 
 
@@ -313,7 +313,7 @@ class BridgeEngine:
             def read_usb():
                 try:
                     while not local_stop.is_set():
-                        # the DJI driver aborts the endpoint on a read timeout and drops a reply that lands
+                        # the DJI driver aborts the endpoint on a read timeout and drops a reply that arrives
                         # during the abort, so wait longer than the gap between the goggles' packets
                         data = usb.read(timeout_ms=500)
                         if data:
@@ -405,7 +405,7 @@ class BridgeEngine:
                             if time.perf_counter()-last_frame > SILENT_SECONDS:
                                 if encoder_first_frame:
                                     raise RuntimeError(f'No video from display. See {encoder_path}')
-                                # a new encoder opens with keyframes, so a still screen still reaches the goggles
+                                # FFmpeg 9.0 sends no pictures on a still screen, and a new encoder starts with keyframes
                                 stop_encoder()
                                 start_encoder()
                                 self.emit('capture_restart')

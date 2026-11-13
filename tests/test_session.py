@@ -115,14 +115,14 @@ class SessionTests(unittest.TestCase):
         request, = session.poll(0)
         info, = session.receive(answer(request), .01)
         session.receive(answer(info, b'\0E3T ZV900'), .02)
-        # one lost reply in every pair is survivable
+        # losing every other reply keeps the session
         for now in (.5, 1, 1.5, 2):
             due = session.poll(now)
             if now in (1, 2):
                 session.receive(answer(due[0]), now+.01)
         for now in (2.5, 3, 3.5):
             session.poll(now)
-        with self.assertRaisesRegex(SessionLost, 'Three heartbeats'):
+        with self.assertRaisesRegex(SessionLost, 'heartbeats got no reply'):
             session.poll(4)
 
     def test_stalled_host_keeps_an_answered_session(self):
@@ -131,7 +131,7 @@ class SessionTests(unittest.TestCase):
         info, = session.receive(answer(request), .01)
         session.receive(answer(info, b'\0E3T ZV900'), .02)
         heartbeat, = session.poll(.5)
-        # the loop froze for ten seconds with the reply already queued
+        # the loop froze for 10 seconds with the reply already queued
         session.receive(answer(heartbeat), 10.5)
         self.assertEqual([p.command for p in session.poll(10.5)], [(0, 0)])
         self.assertEqual(session.state, 'identified')
