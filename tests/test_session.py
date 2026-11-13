@@ -109,8 +109,29 @@ class SessionTests(unittest.TestCase):
             session.receive(answer(hb), now+.01)
         with self.assertRaises(SessionError):
             session.poll(1.52)
-        session = ControlSession()
+
+    def test_three_unanswered_heartbeats_lose_the_session(self):
+        session = ControlSession(enter_simulator=False)
         request, = session.poll(0)
-        session.receive(answer(request), .01)
-        with self.assertRaises(SessionError):
-            session.poll(1.51)
+        info, = session.receive(answer(request), .01)
+        session.receive(answer(info, b'\0E3T ZV900'), .02)
+        # one lost reply in every pair is survivable
+        for now in (.5, 1, 1.5, 2):
+            due = session.poll(now)
+            if now in (1, 2):
+                session.receive(answer(due[0]), now+.01)
+        for now in (2.5, 3, 3.5):
+            session.poll(now)
+        with self.assertRaisesRegex(SessionLost, 'Three heartbeats'):
+            session.poll(4)
+
+    def test_stalled_host_keeps_an_answered_session(self):
+        session = ControlSession(enter_simulator=False)
+        request, = session.poll(0)
+        info, = session.receive(answer(request), .01)
+        session.receive(answer(info, b'\0E3T ZV900'), .02)
+        heartbeat, = session.poll(.5)
+        # the loop froze for ten seconds with the reply already queued
+        session.receive(answer(heartbeat), 10.5)
+        self.assertEqual([p.command for p in session.poll(10.5)], [(0, 0)])
+        self.assertEqual(session.state, 'identified')

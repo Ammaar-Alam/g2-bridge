@@ -6,6 +6,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 from goggles_bridge.control import V1Stream
 from goggles_bridge.engine import (BridgeEngine, BridgeSettings, MAX_FRAME_BYTES, MAX_VBV_BITS, check_encoder,
@@ -373,6 +374,24 @@ class EngineTests(unittest.TestCase):
                 dropped = [e for e in events if e['event'] == 'oversize_frame']
                 self.assertEqual(len(dropped), capture == 'gfxcapture')
                 self.assertTrue(all(e['limit'] == MAX_FRAME_BYTES for e in dropped))
+
+    def test_silent_capture_restarts_the_encoder_unless_it_never_sent_a_picture(self):
+        stop = threading.Event()
+        usb = FakeUsb(threading.Event())
+        started = []
+        def encoder():
+            started.append(1)
+            if len(started) == 3:
+                stop.set()
+            return FakeEncoder(framed=True)
+        with mock.patch('goggles_bridge.engine.SILENT_SECONDS', .05):
+            events, encoders = self.run_case(lambda _: usb, stop, encoder_factory=encoder)
+            self.assertEqual(len(usb.video), 2)
+            self.assertEqual([e['event'] for e in events].count('capture_restart'), 2)
+            self.assertTrue(all(e.terminated for e in encoders))
+            with self.assertRaisesRegex(RuntimeError, 'No video from display'):
+                self.run_case(lambda _: FakeUsb(threading.Event()), threading.Event(),
+                              encoder_factory=lambda: FakeEncoder(framed=True, packets=()))
 
     def test_encoder_check_runs_one_frame_and_explains_missing_features(self):
         calls = []
