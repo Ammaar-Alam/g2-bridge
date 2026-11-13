@@ -27,6 +27,8 @@ Open `goggles_bridge/app/ui/index.html` in a browser. Opened as a file, the inte
 2. On GitHub, go to **Actions > Release**, and then select **Run workflow**.
 3. Under **Releases**, open the draft. Write the headline and the **What's Changed** entries, and then select **Publish release**.
 
+The app updates only to a release that isn't a pre-release. To publish an update, clear **Set as a pre-release** before you select **Publish release**.
+
 The workflow builds the installer for the version on `main` and attaches it to a draft pre-release. It fills in the installer's SHA-256 and the pull requests merged since the last release from `.github/RELEASE_TEMPLATE.md`. Publishing the draft creates the version tag.
 
 The macOS app isn't packaged yet.

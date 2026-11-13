@@ -63,7 +63,7 @@
   const params = new URLSearchParams(location.search);
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
-  let api, snap, toastTimer, painted, scenes = 0;
+  let api, snap, toastTimer, painted, updating, scenes = 0;
   const drawn = {}, controls = {};
   const guide = { open: false, step: 'welcome' };
 
@@ -270,12 +270,13 @@
     const button = $('#action');
     button.textContent = m.action.label;
     button.dataset.kind = m.action.kind;
-    button.disabled = Boolean(m.action.disabled);
+    button.disabled = Boolean(m.action.disabled || updating);
     button.onclick = m.action.run;
     const picture = $('.stage .scene');
     picture.dataset.state = m.look;
     picture.setAttribute('aria-label', m.headline);
     $('#version').textContent = `${s.app.name} ${s.app.version}`;
+    $('#update').hidden = !s.app.updatable;
 
     once('checks', m.checks, () => {
       $('#checks').replaceChildren(...m.checks.map(([name, state, note]) => {
@@ -431,6 +432,24 @@
     document.documentElement.classList.toggle('asleep', Boolean(idle));
   }
 
+  // the footer button checks for a release, then installs the one it found
+  async function checkUpdate(asked) {
+    const button = $('#update');
+    const found = await api.check_update();
+    if (found.version) {
+      button.textContent = `Update to ${found.version}`;
+      button.onclick = async () => {
+        button.disabled = updating = true;
+        button.textContent = `Downloading ${found.version}`;
+        const result = await api.install_update();
+        if (!result.error) return;
+        toast(result.error);
+        button.disabled = updating = false;
+        button.textContent = `Update to ${found.version}`;
+      };
+    } else if (asked) toast(found.error || `${snap.app.name} is up to date`);
+  }
+
   async function refresh() {
     snap = await api.snapshot();
     render();
@@ -459,7 +478,9 @@
     addEventListener('resize', placeThumb);
     for (const name of ['visibilitychange', 'focus', 'blur']) addEventListener(name, rest);
     $('#guide').hidden = false;
+    $('#update').onclick = () => checkUpdate(true);
     await refresh();
+    if (snap.app.updatable) checkUpdate(false);
     if (!snap.onboarded || params.has('step')) openGuide(params.get('step') || 'welcome');
     requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('ready')));
     loop();

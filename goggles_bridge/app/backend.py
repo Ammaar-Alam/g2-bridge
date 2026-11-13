@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -15,6 +16,7 @@ import uuid
 import webbrowser
 
 from .. import __version__, mac_capture
+from . import updates
 from .displays import list_displays
 from ..control import V1Stream
 from ..engine import CHOICES, MAX_FRAME_BYTES, NO_WINDOW, BridgeEngine, BridgeSettings, check_encoder, find_program
@@ -30,6 +32,8 @@ LINKS = {
     'report': 'https://github.com/Ammaar-Alam/g2-bridge/issues/new',
     'webview2': 'https://developer.microsoft.com/microsoft-edge/webview2/',
 }
+# only the installed Windows app can replace itself
+UPDATABLE = WINDOWS and getattr(sys, 'frozen', False)
 CAPTURES = (('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'))
 # identity build dates of the firmware that displayed video, by model. Integra 01.09.00.00 also
 # displayed video, but its build date was not recorded, so Integra builds are not judged
@@ -124,6 +128,9 @@ class Desktop:
         # A stream's ready event also sets it, and a disconnect clears it
         self._device = None
         self._probe = None
+        self._update = None
+        self._updating = False
+        self._quit = lambda: None
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = None
@@ -201,7 +208,7 @@ class Desktop:
             if self._displays and self._options['display_index'] not in {d['index'] for d in self._displays}:
                 # the saved display is gone, so fall back to the main one
                 self._options['display_index'] = next((d['index'] for d in self._displays if d['primary']), 0)
-        return dict(app=dict(name=APP_NAME, version=__version__, platform=sys.platform),
+        return dict(app=dict(name=APP_NAME, version=__version__, platform=sys.platform, updatable=UPDATABLE),
                     checks=checks, displays=self._displays, options=dict(self._options),
                     choices=dict(fps=CHOICES['fps'], capture=CAPTURES, preset=CHOICES['preset'],
                                  keyframe_seconds=CHOICES['keyframe_seconds'], h264_profile=CHOICES['h264_profile'],
@@ -232,6 +239,8 @@ class Desktop:
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return dict(ok=True)
+            if self._updating:
+                return dict(ok=False)  # the app is about to close
             checks = self._preflight()
             for name in ('driver', 'ffmpeg'):
                 if not checks[name]['ok']:
@@ -316,6 +325,30 @@ class Desktop:
                            timeout=10, creationflags=NO_WINDOW)
         return report
 
+    def check_update(self):
+        """Look for a newer release. Returns its version, or None when the app is up to date."""
+        try:
+            self._update = updates.find(__version__)
+        except Exception:
+            return dict(error="Couldn't check for updates")
+        return dict(version=self._update and self._update['version'])
+
+    def install_update(self):
+        """Download the release that check_update found, run its installer, and close the app so it can be replaced."""
+        with self._lock:
+            if self._running():
+                return dict(error='To update, stop streaming')
+            self._updating = True
+        try:
+            installer = updates.download(self._update, data_dir()/'updates')
+            # silent mode skips the wizard pages, and the installer reopens the app when it finishes
+            subprocess.Popen([str(installer), '/SILENT', '/SUPPRESSMSGBOXES'])
+        except Exception:
+            self._updating = False
+            return dict(error="Couldn't install the update")
+        self._quit()
+        return dict(ok=True)
+
     def open_link(self, name):
         """Open a known page, or the folder that holds the logs."""
         if name == 'logs':
@@ -368,6 +401,9 @@ def main():
     window = webview.create_window(APP_NAME, str(UI/'index.html'), js_api=api, width=1120, height=740,
                                    min_size=(940, 660), background_color='#F5F5F7', hidden=self_test)
     window.events.closed += api._stop.set
+    api._quit = window.destroy
+    # the installer left by the last update
+    shutil.rmtree(data_dir()/'updates', ignore_errors=True)
     if WINDOWS:
         window.events.shown += lambda: tint_title_bar(window)
     drawn = []

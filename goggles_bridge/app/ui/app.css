@@ -56,6 +56,7 @@ body:not(.guiding) #action { view-transition-name: action; }
 .mark path { fill: #fff; }
 .link { background: none; border: 0; padding: 4px 8px; border-radius: 6px; color: #0066cc; font-size: 13px; cursor: pointer; }
 .link:hover { background: #0071e314; }
+.link:disabled { color: var(--ink-3); background: none; cursor: default; }
 
 main { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 20px; min-height: 0; padding: 10px 24px 8px; }
 
