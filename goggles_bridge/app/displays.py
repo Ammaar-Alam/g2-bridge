@@ -1,12 +1,13 @@
-"""List attached displays in the order Windows Graphics Capture numbers them."""
+"""List attached displays in the order the screen capture numbers them."""
 import ctypes as C
 import sys
 
 
 def list_displays():
     """Return dicts of index, name, x, y, width, height, hz, and primary, in physical pixels."""
+    if sys.platform == 'darwin':
+        return _mac_displays()
     if sys.platform != 'win32':
-        # shortcut: other platforms report one unmeasured display, add real enumeration with the macOS app
         return [dict(index=0, name='Display 1', x=0, y=0, width=1920, height=1080, hz=0, primary=True)]
     from ctypes import wintypes as W
 
@@ -50,4 +51,32 @@ def list_displays():
         return True
 
     user32.EnumDisplayMonitors(None, None, callback(visit), 0)
+    return displays
+
+
+def _mac_displays():
+    """CGGetActiveDisplayList order, main display first, which the capture helper's --display follows."""
+    class Rect(C.Structure):
+        _fields_ = [('x', C.c_double), ('y', C.c_double), ('width', C.c_double), ('height', C.c_double)]
+
+    cg = C.CDLL('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics')
+    cg.CGDisplayBounds.restype = Rect
+    cg.CGDisplayCopyDisplayMode.restype = C.c_void_p
+    cg.CGDisplayModeGetPixelWidth.argtypes = cg.CGDisplayModeGetPixelHeight.argtypes = [C.c_void_p]
+    cg.CGDisplayModeGetPixelWidth.restype = cg.CGDisplayModeGetPixelHeight.restype = C.c_size_t
+    cg.CGDisplayModeGetRefreshRate.argtypes, cg.CGDisplayModeGetRefreshRate.restype = [C.c_void_p], C.c_double
+    cg.CGDisplayModeRelease.argtypes = [C.c_void_p]
+    ids, count = (C.c_uint32*16)(), C.c_uint32()
+    if cg.CGGetActiveDisplayList(16, ids, C.byref(count)):
+        return []
+    displays = []
+    for index, display in enumerate(ids[:count.value]):
+        bounds, mode = cg.CGDisplayBounds(display), cg.CGDisplayCopyDisplayMode(display)
+        width, height, hz = 1920, 1080, 0
+        if mode:
+            width, height = cg.CGDisplayModeGetPixelWidth(mode), cg.CGDisplayModeGetPixelHeight(mode)
+            hz = round(cg.CGDisplayModeGetRefreshRate(mode))
+            cg.CGDisplayModeRelease(mode)
+        displays.append(dict(index=index, name=f'Display {index+1}', x=int(bounds.x), y=int(bounds.y),
+                             width=width, height=height, hz=hz, primary=bool(cg.CGDisplayIsMain(display))))
     return displays

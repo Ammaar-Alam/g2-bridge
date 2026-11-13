@@ -12,7 +12,8 @@ from goggles_bridge.app import backend, updates
 from goggles_bridge.app.backend import Desktop, describe, problem_code
 from goggles_bridge.session import SIMULATOR_SILENT
 
-READY = dict(driver=dict(needed=True, ok=True), ffmpeg=dict(needed=True, ok=True), attached=True)
+READY = dict(driver=dict(needed=True, ok=True), screen=dict(needed=False, ok=True), ffmpeg=dict(needed=True, ok=True),
+             attached=True)
 
 
 class FakeEngine:
@@ -36,7 +37,7 @@ class AppTests(unittest.TestCase):
         # two displays on every test host, so a saved second display stays valid
         two = [dict(index=i, name=f'Display {i+1}', x=1920*i, y=0, width=1920, height=1080, hz=60, primary=not i) for i in range(2)]
         for name, value in (('data_dir', lambda: Path(self.folder.name)), ('goggles_attached', lambda: True),
-                            ('list_displays', lambda: two)):
+                            ('list_displays', lambda: two), ('screen_access', lambda request=False: True)):
             patcher = mock.patch.object(backend, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -139,11 +140,11 @@ class AppTests(unittest.TestCase):
         app.start()
         state = self.wait_for(app, 'error')
         self.assertEqual(state['problem'], dict(code='encoder', message='FFmpeg test encode failed.\n  detail'))
-        missing = dict(READY, driver=dict(needed=True, ok=False))
-        app = self.app(checks=missing)
-        self.assertEqual(app.start(), dict(ok=False))
-        self.assertEqual(app.snapshot()['problem']['code'], 'driver')
-        self.assertIsNone(app._thread)
+        for name in ('driver', 'screen'):
+            app = self.app(checks=dict(READY, **{name: dict(needed=True, ok=False)}))
+            self.assertEqual(app.start(), dict(ok=False))
+            self.assertEqual(app.snapshot()['problem']['code'], name)
+            self.assertIsNone(app._thread)
 
     def test_options_follow_the_engine_rules_and_persist(self):
         app = self.app()

@@ -23,7 +23,7 @@
     { key: 'show_cursor', label: 'Mouse pointer', kind: 'switch' },
   ];
   const ADVANCED = [
-    { key: 'capture', label: 'Capture method', kind: 'select',
+    { key: 'capture', label: 'Capture method', kind: 'select', windows: true,
       info: 'Windows Graphics Capture scales the picture on the GPU. Desktop Duplication scales it on the CPU. Use it if capture fails. With more than one graphics adapter, Desktop Duplication can number displays differently from the Display setting.' },
     { key: 'keyframe_seconds', label: 'Keyframe interval', kind: 'select',
       info: 'Time between complete pictures. The goggles need a complete picture to start or recover the image.' },
@@ -55,6 +55,7 @@
   const GUIDE = {
     welcome: ['Your screen, in your goggles', 'Goggles Bridge sends this computer’s screen to DJI Goggles 2 or DJI Goggles Integra over a USB cable.'],
     driver: ['Install the DJI USB driver', 'Install DJI Assistant 2 (Consumer Drones Series). It includes the USB driver for the goggles.'],
+    screen: ['Allow screen recording', 'Goggles Bridge needs permission to send this Mac’s screen. Turn it on in System Settings, and then reopen the app.'],
     cable: ['Connect the goggles', 'Use a USB-A to USB-C data cable, with the USB-A end in this computer. Then power the goggles on.'],
     display: ['Choose a display', 'The goggles show one display. Select the one to send.'],
     flight: ['Open DJI Virtual Flight', 'On the goggles, go to More > DJI Virtual Flight. Then start streaming.'],
@@ -145,6 +146,9 @@
     if (!c.driver.ok) {
       [headline, subline, look] = ['Install the DJI USB driver', GUIDE.driver[1], 'driver'];
       action = { label: 'Get DJI Assistant 2', kind: 'start', run: () => api.open_link('driver') };
+    } else if (!c.screen.ok) {
+      [headline, subline, look] = [...GUIDE.screen, 'driver'];
+      action = { label: 'Open Settings', kind: 'start', run: () => api.open_link('screen') };
     } else if (!c.ffmpeg.ok) {
       [headline, subline, look] = ['FFmpeg not found', 'Reinstall Goggles Bridge. From the repository, set GOGGLES_FFMPEG to an FFmpeg executable.', 'error'];
       action.disabled = true;
@@ -173,6 +177,7 @@
       `USB send ${s.stats.send_ms_p95.toFixed(1)} ms`, ...(s.oversize ? [`${s.oversize} skipped`] : [])].join(' · ') : '';
     const checks = [];
     if (c.driver.needed) checks.push(['DJI driver', c.driver.ok ? 'done' : 'attention', c.driver.ok ? 'Installed' : 'Not installed']);
+    if (c.screen.needed) checks.push(['Screen recording', c.screen.ok ? 'done' : 'attention', c.screen.ok ? 'Allowed' : 'Not allowed']);
     const d = s.device;
     checks.push([d ? d.model : 'Goggles',
       d && d.tested === false ? 'attention' : c.attached ? 'done' : c.attached === false && c.driver.ok ? 'attention' : 'todo',
@@ -333,7 +338,7 @@
     rest();
   }
 
-  const guideSteps = s => ['welcome', ...(s.checks.driver.needed ? ['driver'] : []), 'cable',
+  const guideSteps = s => ['welcome', ...(s.checks.driver.needed ? ['driver'] : []), ...(s.checks.screen.needed ? ['screen'] : []), 'cable',
     ...(s.displays.length > 1 ? ['display'] : []), 'flight', 'done'];
 
   function go(step) {
@@ -362,6 +367,7 @@
   function resumeStep(s) {
     if (s.phase === 'streaming') return 'done';
     if (!s.checks.driver.ok) return 'driver';
+    if (!s.checks.screen.ok) return 'screen';
     return s.checks.attached === false ? 'cable' : 'flight';
   }
 
@@ -380,12 +386,15 @@
 
     // a detected step shows a check and waits for the user to continue
     let label = 'Continue', kind = 'start', run = next, disabled = false, status = '', state = '';
-    let look = { welcome: 'welcome', driver: 'driver', cable: 'unplugged', display: 'idle', flight: 'idle', done: 'streaming' }[step];
+    let look = { welcome: 'welcome', driver: 'driver', screen: 'driver', cable: 'unplugged', display: 'idle', flight: 'idle', done: 'streaming' }[step];
     if (step === 'welcome') {
       label = 'Set up';
     } else if (step === 'driver') {
       if (s.checks.driver.ok) [status, state, look] = ['Driver installed', 'done', 'unplugged'];
       else [label, run, status, state] = ['Get DJI Assistant 2', () => api.open_link('driver'), 'Waiting for the driver', 'waiting'];
+    } else if (step === 'screen') {
+      if (s.checks.screen.ok) [status, state, look] = ['Screen recording allowed', 'done', 'unplugged'];
+      else [label, run, status, state] = ['Open Settings', () => api.open_link('screen'), 'Waiting for permission', 'waiting'];
     } else if (step === 'cable') {
       const d = s.device;
       if (s.checks.attached === true && d && d.tested === false) [status, state, look] = [`${d.model} connected. ${untested(d)}`, 'warn', 'idle'];

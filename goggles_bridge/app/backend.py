@@ -15,7 +15,7 @@ import time
 import uuid
 import webbrowser
 
-from .. import __version__, mac_capture
+from .. import __version__
 from . import updates
 from .displays import list_displays
 from ..control import V1Stream
@@ -30,11 +30,12 @@ LINKS = {
     'driver': 'https://www.dji.com/downloads/softwares/dji-assistant-2-consumer-drones-series',
     'github': 'https://github.com/Ammaar-Alam/g2-bridge',
     'report': 'https://github.com/Ammaar-Alam/g2-bridge/issues/new',
+    'screen': 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
     'webview2': 'https://developer.microsoft.com/microsoft-edge/webview2/',
 }
-# only the installed Windows app can replace itself
-UPDATABLE = WINDOWS and getattr(sys, 'frozen', False)
-CAPTURES = (('screencapturekit', 'avfoundation') if MAC else ('gfxcapture', 'ddagrab'))
+# only the installed app can replace itself
+UPDATABLE = getattr(sys, 'frozen', False) and (WINDOWS or MAC)
+CAPTURES = (('screencapturekit',) if MAC else ('gfxcapture', 'ddagrab'))
 # identity build dates of the firmware that displayed video, by model. Integra 01.09.00.00 also
 # displayed video, but its build date was not recorded, so Integra builds are not judged
 TESTED_BUILDS = {'DJI Goggles 2': {'Dec 24 2024': '01.11.00.00', 'Aug 11 2026': '01.14.00.00'}}
@@ -103,8 +104,16 @@ def describe(model, identity):
                 tested_versions=sorted(known.values()) if known else [])
 
 
+def screen_access(request=False):
+    """Return whether macOS lets this app record the screen; a request also lists the app in System Settings."""
+    cg = C.CDLL('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics')
+    check = cg.CGRequestScreenCaptureAccess if request else cg.CGPreflightScreenCaptureAccess
+    check.restype = C.c_bool
+    return check()
+
+
 def default_options():
-    capture = ('screencapturekit' if mac_capture.supported() else 'avfoundation') if MAC else BridgeSettings.capture
+    capture = 'screencapturekit' if MAC else BridgeSettings.capture
     return {name: (capture if name == 'capture' else getattr(BridgeSettings, name)) for name in OPTIONS}
 
 
@@ -175,6 +184,7 @@ class Desktop:
         if result is None or (not self._running() and time.monotonic()-checked >= 1):
             needs_ffmpeg = self._options['capture'] != 'screencapturekit'
             result = dict(driver=dict(needed=WINDOWS, ok=not WINDOWS or find_dll().is_file()),
+                          screen=dict(needed=MAC, ok=not MAC or screen_access()),
                           ffmpeg=dict(needed=needs_ffmpeg, ok=not needs_ffmpeg or bool(self._ffmpeg and self._ffmpeg.is_file())),
                           attached=goggles_attached())
             self._checks = (time.monotonic(), result)
@@ -242,7 +252,7 @@ class Desktop:
             if self._updating:
                 return dict(ok=False)  # the app is about to close
             checks = self._preflight()
-            for name in ('driver', 'ffmpeg'):
+            for name in ('driver', 'screen', 'ffmpeg'):
                 if not checks[name]['ok']:
                     self._state.update(phase='error', problem=dict(code=name, message=f'{name} not found'))
                     return dict(ok=False)
@@ -358,6 +368,9 @@ class Desktop:
                 os.startfile(folder)
             else:
                 subprocess.run(['open' if MAC else 'xdg-open', str(folder)])
+        elif name == 'screen':
+            screen_access(request=True)
+            subprocess.run(['open', LINKS['screen']])
         elif name in LINKS:
             webbrowser.open(LINKS[name])
         return dict(ok=True)
