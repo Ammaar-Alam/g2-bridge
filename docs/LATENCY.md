@@ -4,7 +4,7 @@ Film the monitor and one goggle lens in the same high-speed recording. The time 
 
 ## Measured delay
 
-We measured **12.1 ms median added delay** across 20 black/white transitions. The test used native D3D11 capture, DJI Goggles 2 firmware 01.11.00.00, an RTX 5060 Laptop GPU, and a 240 Hz monitor, with no added GPU load. Output was 1920x1080 with a 100 fps encoder target, 20 Mbps limit, and NVENC High/`p4`.
+On Windows, we measured **12.1 ms median added delay** across 20 black/white transitions. The test used native D3D11 capture, DJI Goggles 2 firmware 01.11.00.00, an RTX 5060 Laptop GPU, and a 240 Hz monitor, with no added GPU load. Output was 1920x1080 with a 100 fps encoder target, 20 Mbps limit, and NVENC High/`p4`.
 
 The result uses the 50% brightness crossing in a small patch on each display:
 
@@ -15,6 +15,22 @@ The result uses the 50% brightness crossing in a small patch on each display:
 The Windows desktop CLI uses Windows Graphics Capture. For its results, see [earlier desktop measurements](research/EXPERIMENTS.md#monitor-to-lens-delay).
 
 Matching the monitor flashes in the 30 fps export to logged source timestamps gave 240.03 stored frames per second of capture time.
+
+On macOS, we measured **10.3 ms median added delay** across 19 black-to-white transitions. The test used ScreenCaptureKit capture, DJI Goggles 2 firmware 01.12.00.00, and an M2 Pro MacBook Pro with its built-in 120 Hz display. Output was 1920x1080 with a 100 fps encoder target and 20 Mbps limit.
+
+| Transitions | Median | Mean | 95th percentile | Range |
+| ---: | ---: | ---: | ---: | --- |
+| 19 | 10.3 ms | 10.1 ms | 17.3 ms | 3.9-20.3 ms |
+
+In the following sequence, the laptop crosses 50% brightness between frames 584 and 585. The lens crosses at frame 587.4, which gives **10.3 ms**:
+
+![Seven consecutive camera frames show the laptop square brightening at frame 585 and the lens turning white at frames 587 and 588.](images/latency-mac-transition.png)
+
+The MacBook display takes about 25 ms to fade from white to black, while the lens changes within about one camera frame:
+
+![Nine consecutive camera frames show the laptop square fading from frame 3200 to frame 3206, while the lens turns dark at frame 3202.](images/latency-mac-fade.png)
+
+White-to-black transitions measure that fade, so the macOS result uses only black-to-white transitions. The 240 fps Slo-mo recording skipped about 13% of its frames, so the analysis timed each frame from its stored timestamp. Pattern transitions were 650 ms apart on average, matching the pattern's 0.65-second cadence.
 
 ## Count matching transitions
 
