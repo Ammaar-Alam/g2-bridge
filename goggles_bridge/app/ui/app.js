@@ -8,6 +8,8 @@
     screencapturekit: 'ScreenCaptureKit', avfoundation: 'AVFoundation',
   };
   const NAMES = {
+    source: { display: 'Display', virtual: 'Virtual Display' },
+    virtual_resolution: { '720p': '1280 × 720', '1080p': '1920 × 1080' },
     capture: CAPTURE,
     keyframe_seconds: { 1: '1 second', 3: '3 seconds' },
     h264_profile: { high: 'High', baseline: 'Baseline' },
@@ -15,7 +17,11 @@
     usb_write_size: { 16384: '16 KB', 2048: '2 KB' },
   };
   const BASIC = [
+    { key: 'source', label: 'Source', kind: 'select', windows: true,
+      info: 'Send an existing display, or create an independent desktop for this stream.' },
     { key: 'display_index', label: 'Display', kind: 'display' },
+    { key: 'virtual_resolution', label: 'Resolution', kind: 'select', windows: true },
+    { key: 'virtual_driver', label: 'Virtual display driver', kind: 'button', windows: true },
     { key: 'fps', label: 'Frame rate', kind: 'segment',
       info: 'Frames sent to the goggles each second. At the same bitrate, a higher frame rate leaves less data for each frame.' },
     { key: 'bitrate_mbps', label: 'Bitrate', kind: 'select',
@@ -146,6 +152,17 @@
     if (!c.driver.ok) {
       [headline, subline, look] = ['Install the DJI USB driver', GUIDE.driver[1], 'driver'];
       action = { label: 'Get DJI Assistant 2', kind: 'start', run: () => api.open_link('driver') };
+    } else if (s.installing_display) {
+      [headline, subline, look] = ['Setting up the virtual display', 'Complete Windows authorization when prompted.', 'waiting'];
+      action = { label: 'Setting up', kind: 'start', disabled: true };
+    } else if (o.source === 'virtual' && !c.virtual_display?.ok) {
+      const conflict = c.virtual_display?.installed && !c.virtual_display?.owned;
+      [headline, subline, look] = ['Set up Virtual Display', conflict
+        ? 'Another app owns the existing virtual display. Remove it using that app before installing this driver.'
+        : 'Install the signed virtual display driver. Windows will ask for administrator approval.', 'driver'];
+      if (failed && problem.message) subline = problem.message;
+      action = { label: c.virtual_display?.owned ? 'Update display driver' : 'Install display driver', kind: 'start',
+        disabled: conflict, run: () => api.install_virtual_display(false).then(refresh) };
     } else if (!c.screen.ok) {
       [headline, subline, look] = [...GUIDE.screen, 'driver'];
       action = { label: 'Open Settings', kind: 'start', run: () => api.open_link('screen') };
@@ -159,7 +176,7 @@
       action = failed ? { ...action, label: 'Try again' } : { label: 'Stop', kind: 'stop', run: stop };
     } else if (live) {
       [headline, look] = [`Streaming to ${s.device ? s.device.model : 'the goggles'}`, 'streaming'];
-      subline = `1920 × 1080 at ${o.fps} fps and ${bitrate} Mbps.`;
+      subline = `${o.source === 'virtual' && o.virtual_resolution === '720p' ? '1280 × 720' : '1920 × 1080'} at ${o.fps} fps and ${bitrate} Mbps.`;
       action = { label: 'Stop', kind: 'stop', run: stop };
     } else if (active(s)) {
       [headline, subline] = BUSY[phase] || ['Starting', ''];
@@ -231,6 +248,12 @@
           const raw = control.value;
           setOptions({ [row.key]: raw === '' ? null : Number.isNaN(Number(raw)) ? raw : Number(raw) });
         };
+      } else if (row.kind === 'button') {
+        control = el('button', { className: 'button', type: 'button', text: 'Install driver' });
+        control.onclick = () => api.install_virtual_display(Boolean(snap.checks.virtual_display?.ok)).then(result => {
+          if (result.error) toast(result.error);
+          return refresh();
+        });
       } else if (row.kind === 'switch') {
         const input = el('input', { type: 'checkbox', role: 'switch' });
         input.setAttribute('aria-label', row.label);
@@ -244,6 +267,7 @@
       }
       controls[row.key] = control;
       const node = el('div', { className: 'row' }, label, control);
+      node.dataset.option = row.key;
       if (row.windows) node.dataset.windows = '';
       target.append(node);
     }
@@ -294,9 +318,10 @@
       }));
     });
 
-    const locked = active(s);
+    const locked = active(s) || s.installing_display;
     $('#options').disabled = locked;
     $('#locked').hidden = !locked;
+    $('#locked').textContent = s.installing_display ? 'Driver setup is in progress.' : 'To change settings, stop streaming.';
     for (const node of $$('[data-windows]')) node.hidden = s.app.platform !== 'win32';
     once('display-row', s.displays.length, () => {
       const row = controls.display_index;
@@ -325,6 +350,18 @@
       fill(key, s.choices[key], NAMES[key], o[key]);
     }
     for (const key of ['show_cursor', 'adaptive_quant', 'low_latency']) $('input', controls[key]).checked = Boolean(o[key]);
+    const virtual = o.source === 'virtual';
+    if (s.app.platform === 'win32') {
+      fill('source', ['display', 'virtual'], NAMES.source, o.source || 'display');
+      fill('virtual_resolution', ['720p', '1080p'], NAMES.virtual_resolution, o.virtual_resolution || '1080p');
+      const driver = s.checks.virtual_display;
+      controls.virtual_driver.textContent = s.installing_display ? 'Setting up…' : driver?.ok ? 'Remove driver' : driver?.owned ? 'Update driver' : 'Install driver';
+      controls.virtual_driver.disabled = active(s) || s.installing_display || Boolean(driver?.installed && !driver?.owned);
+    }
+    controls.display_index.closest('.row').hidden = virtual;
+    controls.virtual_resolution.closest('.row').hidden = !virtual;
+    controls.virtual_driver.closest('.row').hidden = !virtual;
+    controls.capture.closest('.row').hidden = s.app.platform !== 'win32' || virtual;
   }
 
   function render() {

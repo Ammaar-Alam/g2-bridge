@@ -20,9 +20,10 @@
     app: { name: 'Goggles Bridge', version: '0.1.0', platform: mac ? 'darwin' : 'win32', updatable: true },
     checks: { driver: { needed: !mac, ok: mac || frozen !== 'nodriver' }, screen: { needed: mac, ok: !mac || frozen !== 'noscreen' },
       ffmpeg: { needed: !mac, ok: true },
+      virtual_display: { owned: true, installed: true, config_current: true, ok: true },
       attached: !['unplugged', 'fresh'].includes(frozen) },
     displays,
-    options: { fps: 100, bitrate_mbps: null, capture: 'gfxcapture', display_index: 0, show_cursor: true, preset: 'p1',
+    options: { source: 'display', virtual_resolution: '1080p', fps: 100, bitrate_mbps: null, capture: 'gfxcapture', display_index: 0, show_cursor: true, preset: 'p1',
       keyframe_seconds: 3, low_latency: true, usb_write_size: 16384, h264_profile: 'high', adaptive_quant: false },
     choices: { fps: [60, 75, 90, 100], capture: ['gfxcapture', 'ddagrab'], preset: ['p1', 'p4'], keyframe_seconds: [1, 3],
       h264_profile: ['baseline', 'high'], usb_write_size: [2048, 16384], bitrates },
@@ -50,7 +51,19 @@
   else if (frozen === 'waiting') Object.assign(state, { phase: 'waiting', problem: { code: 'virtual_flight', message: '' } });
   else if (frozen === 'error') Object.assign(state, { phase: 'error', device, problem: { code: 'rejected', message: 'Goggles rejected 0b/1a: d6' } });
 
+  if (!mac && ['virtual', 'novirtual', 'foreignvirtual'].includes(frozen)) state.options.source = 'virtual';
+  if (frozen === 'novirtual') state.checks.virtual_display = { installed: false, owned: false, config_current: false, ok: false };
+  if (frozen === 'foreignvirtual') state.checks.virtual_display = { installed: true, owned: false, config_current: false, ok: false };
+
   window.demoBackend = {
+    install_virtual_display: async remove => {
+      state.installing_display = true;
+      setTimeout(() => {
+        state.installing_display = false;
+        state.checks.virtual_display = { installed: !remove, owned: !remove, config_current: !remove, ok: !remove };
+      }, 1200);
+      return { ok: true };
+    },
     snapshot: async () => JSON.parse(JSON.stringify(state)),
     set_options: async options => {
       const next = { ...state.options, ...options };
