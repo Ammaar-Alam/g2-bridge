@@ -19,6 +19,8 @@ from goggles_bridge.app.backend import APP_NAME
 FFMPEG = 'ffmpeg-2026-11-05-git-0893feba65-essentials_build'
 FFMPEG_URL = f'https://github.com/GyanD/codexffmpeg/releases/download/2026-11-05-git-0893feba65/{FFMPEG}.zip'
 FFMPEG_SHA256 = '763ca14d6896b4d8aabde8ff90be4f1428f8a21bd43e438a371be6d7ebf891a6'
+VDD_URL = 'https://github.com/VirtualDrivers/Virtual-Display-Driver/releases/download/25.7.23/VirtualDisplayDriver-x86.Driver.Only.zip'
+VDD_SHA256 = 'e24210692b442b39af763536330ce78b423f19342b7a7792c26de3944e418b3a'
 NOTICES = f'''{APP_NAME} is licensed under the GNU General Public License v3.0. See LICENSE.txt.
 Source code: https://github.com/Ammaar-Alam/goggles-bridge
 
@@ -26,6 +28,8 @@ This app includes:
 - FFmpeg ({FFMPEG}), built by Gyan Doshi and licensed under the GPL v3.
   See ffmpeg/LICENSE.txt. Source: https://github.com/FFmpeg/FFmpeg/commit/0893feba65
 - PyUSB, pywebview, pythonnet, and Python, under their own licenses.
+- Virtual Display Driver 25.7.23 (MIT), signed by SignPath Foundation.
+  See _internal/vendor/vdd/LICENSE.txt. Source: https://github.com/VirtualDrivers/Virtual-Display-Driver/tree/25.7.23
 '''
 
 
@@ -37,7 +41,39 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def prepare_vdd():
+    """Extract only the pinned signed driver payload; do not modify the driver."""
+    from goggles_bridge.app.virtual_display.virtual_driver import HASHES
+    cache, target = ROOT/'packaging/cache', ROOT/'vendor/vdd'
+    cache.mkdir(parents=True, exist_ok=True)
+    archive = cache/'vdd-25.7.23.zip'
+    if not archive.is_file():
+        partial = archive.with_suffix('.partial')
+        urllib.request.urlretrieve(VDD_URL, partial)
+        if sha256(partial) != VDD_SHA256:
+            raise ValueError('Virtual display driver archive checksum mismatch')
+        partial.replace(archive)
+    if sha256(archive) != VDD_SHA256:
+        raise ValueError('Virtual display driver archive checksum mismatch')
+    with zipfile.ZipFile(archive) as bundle:
+        payload = {}
+        for name in HASHES:
+            members = [item for item in bundle.namelist() if Path(item).name.casefold() == name.casefold()]
+            if len(members) != 1:
+                raise ValueError(f'Expected exactly one driver file: {name}')
+            content = bundle.read(members[0])
+            if hashlib.sha256(content).hexdigest() != HASHES[name]:
+                raise ValueError(f'Virtual display driver file checksum mismatch: {name}')
+            payload[name] = content
+    target.mkdir(parents=True, exist_ok=True)
+    for name, content in payload.items():
+        (target/name).write_bytes(content)
+    shutil.copyfile(ROOT/'goggles_bridge/app/virtual_display/LICENSE.txt', target/'LICENSE.txt')
+    return target
+
+
 def main():
+    vdd = prepare_vdd()
     dist, cache = ROOT/'dist', ROOT/'packaging'/'cache'
     app = dist/APP_NAME
     archive = cache/f'{FFMPEG}.zip'
@@ -50,10 +86,20 @@ def main():
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--windowed', '--name', APP_NAME,
                     '--icon', str(ROOT/'packaging'/'goggles-bridge.ico'),
                     '--add-data', f"{ROOT/'goggles_bridge'/'app'/'ui'};goggles_bridge/app/ui",
+                    '--add-data', f'{vdd};vendor/vdd',
                     # PyUSB loads its backends by name at run time
                     '--hidden-import', 'usb.backend.libusb0', '--hidden-import', 'usb.backend.libusb1',
                     '--distpath', str(dist), '--workpath', str(ROOT/'build'), '--specpath', str(ROOT/'build'),
                     str(ROOT/'scripts'/'goggles_bridge_app.py')], check=True, cwd=ROOT)
+    subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--console',
+                    '--name', 'GogglesBridgeDisplaySetup', '--contents-directory', '_display_setup_internal',
+                    '--add-data', f'{vdd};vendor/vdd',
+                    '--distpath', str(dist), '--workpath', str(ROOT/'build/display-setup'),
+                    '--specpath', str(ROOT/'build'), str(ROOT/'scripts/goggles_bridge_display_setup.py')],
+                   check=True, cwd=ROOT)
+    # Keep the helper's Python archive separate; merging onedir internals can
+    # replace the GUI's base_library.zip with a smaller helper-specific archive.
+    shutil.copytree(dist/'GogglesBridgeDisplaySetup', app, dirs_exist_ok=True)
     (app/'ffmpeg').mkdir(exist_ok=True)
     with zipfile.ZipFile(archive) as bundle:
         for member, target in ((f'{FFMPEG}/bin/ffmpeg.exe', 'ffmpeg.exe'), (f'{FFMPEG}/LICENSE', 'LICENSE.txt')):
